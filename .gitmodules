@@ -1,0 +1,3 @@
+[submodule "src/JavascriptUI"]
+	path = src/JavascriptUI
+	url = https://github.com/FL0WL0W/JavascriptUI
