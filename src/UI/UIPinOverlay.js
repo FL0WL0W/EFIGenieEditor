@@ -18,28 +18,25 @@ export default class UIPinOverlay extends HTMLDivElement {
             return !element? undefined : getNameFromPinSelectChildren(element) ?? getNameFromPinSelectElement(element.parentElement)
         }
 
-        let pinSelectElements = [...document.querySelectorAll(`.pinselect`)]
-        var elements = []
-        if(pinSelectElements) {
-            for(var i=0; i<pinSelectElements.length; i++) {
-                elements.push({
-                    name: getNameFromPinSelectElement(pinSelectElements[i]),
-                    pinselectmode: pinSelectElements[i].getAttribute(`data-pinselectmode`),
-                    pin: pinSelectElements[i].value,
-                    element: pinSelectElements[i]
-                })
-            }
-        }
+        let elements = [...document.querySelectorAll(`.pinselect`)]
+        elements.forEach((element) => {
+            element.name = getNameFromPinSelectElement(element)
+            element.updateOptions?.(this.pinOut);
+            element.addEventListener(`change`, () => {
+                this.update();
+            })
+        })
         return elements
     }
 
-    static PinOut
-    get pinOut() { return UIPinOverlay.PinOut }
+    #pinOut
+    get pinOut() { return this.#pinOut }
     set pinOut(pinOut) {
         if(!pinOut) return
-        UIPinOverlay.PinOut = pinOut
-        let scale = 750 / (pinOut.OverlayWidth + 300)
-        this.style.width = pinOut.OverlayWidth
+        this.#pinOut = pinOut
+        let scale = 910 / (pinOut.OverlayWidth + 300)
+        this.overlayImage.style.width = `${pinOut.OverlayWidth}px`
+        this.style.width = `910px`
         this.style.transform = `scale(${scale})`
         this.overlayImage.src = pinOut.Overlay
         while(pinOut.Pins.length < this.pinElements.children.length) this.pinElements.removeChild(this.pinElements.lastChild)
@@ -59,9 +56,9 @@ export default class UIPinOverlay extends HTMLDivElement {
                             let option = {
                                 name: pinSelectElements[s].name,
                                 value: s,
-                                disabled: this.supportedModes.split(` `).indexOf(pinSelectElements[s].pinselectmode) === -1
+                                disabled: this.supportedModes.split(` `).indexOf(pinSelectElements[s].pinType) === -1
                             }
-                            if(pinSelectElements[s].pin == this.pin) {
+                            if(pinSelectElements[s].value == this.pin) {
                                 if(selectedOption) {
                                     option.Class = `pinconflict`
                                     if(typeof selectedOption !== `string`)
@@ -87,7 +84,7 @@ export default class UIPinOverlay extends HTMLDivElement {
                     }
                 })
                 pinElement.addEventListener(`change`, () => {
-                    if(this.value != undefined) this._pinSelectElements[this.value].element.parentElement.value = this.pin
+                    if(pinElement.value != undefined) pinElement._pinSelectElements[pinElement.value].value = pinElement.pin
                 })
             }
             pinElement.pin = pinOut.Pins[i].value
@@ -107,8 +104,6 @@ export default class UIPinOverlay extends HTMLDivElement {
     constructor() {
         super()
         this.class = `pinoverlay`
-        this.overlayImage.style.position = `absolute`
-        this.overlayImage.style.left = `150px`
         this.append(this.overlayImage)
         this.append(this.pinElements)
     }

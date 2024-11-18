@@ -7,7 +7,7 @@ export default class Output_Digital extends UITemplate {
     static inputTypes = [ `bool` ]
     static template =   `<label>Pin:</label><div data-element="pin"></div><div data-element="inverted"></div>Inverted <div data-element="highZ"></div>High Z`
 
-    pin = new UIPinSelection({ value: 0xFFFF, pinType: `digital` })
+    pin = new UIPinSelection({ value: 0xFFFF, pinType: `digitalout` })
     
     constructor(prop){
         super()
@@ -15,10 +15,6 @@ export default class Output_Digital extends UITemplate {
         this.highZ = new UICheckBox()
         this.style.display = `block`
         this.Setup(prop)
-    }
-
-    RegisterVariables() {
-        this.pin.updateOptions()
     }
 }
 BooleanOutputConfigs.push(Output_Digital)

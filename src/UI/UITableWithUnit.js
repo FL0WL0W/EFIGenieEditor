@@ -189,7 +189,6 @@ export default class UITableWithUnit extends UITemplate {
                 this.xAxis = ConvertValueFromUnitToUnit(this.xDisplayAxis, this.xDisplayUnit, this.xUnit)
             if(this.yDisplayAxis != undefined)
                 this.yAxis = ConvertValueFromUnitToUnit(this.yDisplayAxis, this.yDisplayUnit, this.yUnit)
-                this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         this.#xLabelElementWithUnit.append(this.#xLabelElement)
         this.#xLabelElementWithUnit.append(this.xDisplayUnitElement)

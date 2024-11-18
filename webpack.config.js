@@ -1,13 +1,13 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
-const HtmlWebpackInlineSVGPlugin = require("html-webpack-inline-svg-plugin")
 
 module.exports = {
     mode: 'production',
     entry: path.resolve(__dirname, 'src/index.js'),
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'main.js'
+        filename: 'main.js',
+        clean: true,
     },
     devtool: 'source-map',
     performance: {
@@ -32,6 +32,20 @@ module.exports = {
                     'style-loader',
                     'css-loader'
                 ]
+            },
+            {
+                test: /\.svg$/,
+                use: [
+                    {
+                        loader: 'svg-url-loader',
+                        options: {
+                            limit: 8192,
+                            name: '[name].[ext]',
+                            noquotes: true
+                        }
+                    },
+                    'svgo-loader'
+                ]
             }
         ]
     },
@@ -40,9 +54,6 @@ module.exports = {
             title: 'EFIGenie Editor',
             filename: 'index.html',
             template: 'src/template.html',
-        }),
-        new HtmlWebpackInlineSVGPlugin({
-          runPreEmit: true,
-        }),
+        })
     ]
 }

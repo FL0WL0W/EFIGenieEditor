@@ -2,7 +2,7 @@ import UINumber from "../JavascriptUI/UINumber"
 import UISelection from "../JavascriptUI/UISelection"
 import UITemplate from "../JavascriptUI/UITemplate"
 import ConfigList from "../Top/ConfigList"
-import PinOverlay from "../UI/UIPinOverlay"
+import UIPinOverlay from "../UI/UIPinOverlay"
 import CAN_ParseData from "./CAN_ParseData"
 import CANConfigs from "./CANConfigs"
 export default class CAN_ReadData extends UITemplate {
@@ -32,13 +32,17 @@ export default class CAN_ReadData extends UITemplate {
         super()
         this.canBusLabel.innerText = `Bus:`
         this.canIDLabel.innerText = "Identifier:"
-        this.updateOptions()
+        document.addEventListener('change', (e) => {
+            if(e.target instanceof UIPinOverlay){
+                this.updateOptions(e.target.pinOut)
+            }
+        })
+        this.updateOptions(document.querySelectorAll(`.pinoverlay`)[0]?.pinOut)
         this.Setup(prop)
     }
 
-    updateOptions() {
+    updateOptions(pinOut) {
         var options = []
-        let pinOut = PinOverlay.PinOut //this sucks
         if(!pinOut) return
         for(var i = 0; i < pinOut.CANBusCount; i++) {
             options.push({
@@ -55,7 +59,6 @@ export default class CAN_ReadData extends UITemplate {
     }
 
     RegisterVariables(reference) {
-        this.updateOptions()
         this.parseData.RegisterVariables(reference)
     }
 }

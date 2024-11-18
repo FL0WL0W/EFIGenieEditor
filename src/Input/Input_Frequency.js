@@ -22,10 +22,6 @@ export default class Input_Frequency extends UITemplate {
         this.style.display = `block`
         this.Setup(prop)
     }
-
-    RegisterVariables() {
-        this.pin.updateOptions()
-    }
 }
 RawInputConfigs.push(Input_Frequency)
 customElements.define(`input-frequency`, Input_Frequency, { extends: `span` })

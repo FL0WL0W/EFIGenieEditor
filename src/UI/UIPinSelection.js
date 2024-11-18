@@ -1,23 +1,18 @@
 import UISelection from "../JavascriptUI/UISelection"
-import UIPinOverlay from "./UIPinOverlay"
 export default class UIPinSelection extends UISelection {
     constructor(prop){
         super(prop)
         this.selectDisabled = prop.selectDisabled ?? true
         this.selectValue = prop.selectValue ?? 0xFFFF
-
-        this.updateOptions()
-        this.addEventListener(`change`, () => {
-            UpdateOverlay()
-        })
-        this.selectedElement.dataset.pinselectmode = this.pinType
-        this.selectedElement.classList.add(`pinselect`)
+        
+        this.classList.add(`pinselect`)
     }
+
+    wtf = 1
     
-    updateOptions() {
+    updateOptions(pinOut) {
         var options = []
         var endOptions = []
-        let pinOut = UIPinOverlay.PinOut //this sucks
         if(!pinOut) return
         for(var i = 0; i < pinOut.Pins.length; i++) {
             const selected = this.value === pinOut.Pins[i].value

@@ -74,11 +74,15 @@ export default class ConfigList extends HTMLDivElement {
                 down.disabled = false
             }
         }
-        this.lastChild.controlElement.append(this.newItemElement)
+        if(this.lastChild)
+            this.lastChild.controlElement.append(this.newItemElement)
+        else
+            this.parentElement.insertBefore(this.newItemElement, this)
         this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
     appendNewItem(newItem, before) {
+        newItem = newItem ?? this.newItem()
         let itemContainer = document.createElement(`div`)
         itemContainer.classList.add(`itemContainer`)
         itemContainer.style.display = `flex`
@@ -127,9 +131,6 @@ export default class ConfigList extends HTMLDivElement {
                 get: function() { return this.item[elementName] },
                 set: function(elementValue) { this.item[elementName] = elementValue }
             })
-        })
-        itemContainer.item.addEventListener(`change`, () => {
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         if(before === undefined) {
             this.append(itemContainer)

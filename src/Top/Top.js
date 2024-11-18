@@ -34,8 +34,8 @@ export default class Top extends UITemplate {
     </span>
     <hr style="margin: 0px 0px 5px 0px;">
     <div data-element="Dashboard"></div>
-    <div data-element="Inputs"></div>
-    <div data-element="CAN"></div>
+    <div data-element="inputsWorkspace"></div>
+    <div data-element="canWorkspace"></div>
     <div data-element="Engine"></div>
     <div data-element="Fuel"></div>
     <div data-element="Ignition"></div>
@@ -49,11 +49,14 @@ export default class Top extends UITemplate {
     engineTab = document.createElement(`div`)
     fuelTab = document.createElement(`div`)
     ignitionTab = document.createElement(`div`)
+
+    inputsWorkspace = document.createElement(`span`)
+    canWorkspace = document.createElement(`div`)
+
     Dashboard = new Dashboard()
     Inputs = new Inputs()
     CAN = new ConfigList({
-        newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) },
-        saveValue: [{}]
+        newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
     })
     Engine = new Engine()
     Fuel = new Fuel()
@@ -62,6 +65,10 @@ export default class Top extends UITemplate {
     sidebarOpen = new UIButton({className: `sidebaropenclose w3-button w3-padding-16`})
     constructor(prop){
         super()
+        this.inputsWorkspace.append(this.Inputs)
+        this.canWorkspace.append(this.CAN.newItemElement)
+        this.canWorkspace.append(this.CAN)
+        this.class = "top"
         // this.Engine.addEventListener(`change`, () => {
         //     if(this.Engine.value.find(x => Object.keys(x)[0] === `EngineCalculations`).EngineCalculations.CylinderAirmass.selection == undefined) {
         //         this.fuelTab.classList.add(`disabled`)
@@ -189,8 +196,8 @@ export default class Top extends UITemplate {
         window.localStorage.setItem(`lastTab`, activeTab)
         this.title.textContent = activeTab
         this.Dashboard.hidden = true
-        this.Inputs.hidden = true
-        this.CAN.hidden = true
+        this.inputsWorkspace.hidden = true
+        this.canWorkspace.hidden = true
         this.Engine.hidden = true
         this.Fuel.hidden = true
         this.Ignition.hidden = true
@@ -206,11 +213,11 @@ export default class Top extends UITemplate {
                 this.dashboardTab.classList.add(`active`)
                 break
             case `Inputs`:
-                this.Inputs.hidden = false
+                this.inputsWorkspace.hidden = false
                 this.inputsTab.classList.add(`active`)
                 break
             case `CAN`:
-                this.CAN.hidden = false
+                this.canWorkspace.hidden = false
                 this.canTab.classList.add(`active`)
                 break
             case `Engine`:

@@ -10,7 +10,7 @@ export default class Input_DigitalRecord extends UITemplate {
                         `<br/><label>Length:</label><div data-element="length"></div>`
 
     inverted = new UICheckBox()
-    pin = new UIPinSelection({ value: 0xFFFF, pinType: `digital` })
+    pin = new UIPinSelection({ value: 0xFFFF, pinType: `digitalinterrupt` })
     length = new UINumber ({
         value: 2,
         step: 1,
@@ -21,10 +21,6 @@ export default class Input_DigitalRecord extends UITemplate {
         super()
         this.style.display = `block`
         this.Setup(prop)
-    }
-
-    RegisterVariables() {
-        this.pin.updateOptions()
     }
 }
 RawInputConfigs.push(Input_DigitalRecord)

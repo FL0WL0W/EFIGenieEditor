@@ -11,7 +11,6 @@ export default class UIDisplayNumberWithUnit extends UINumberWithUnit {
         this.displayUnitElement.addEventListener(`change`, () => {
             this.ZeroesToAdd = 10000000
             this.UpdateDisplayValue()
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         this.displayElement.style.display = this.displayUnitElement.style.display = `inline-block`
         this.ZeroesToAdd = 10000000

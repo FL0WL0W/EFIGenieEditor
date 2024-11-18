@@ -30,10 +30,6 @@ export default class OutputList extends ConfigContainer {
         while(this.Outputs.children.length > saveValue.length) this.Outputs.removeChild(this.Outputs.lastChild)
         for(let i = 0; i < saveValue.length; i++){
             if(!this.Outputs.children[i]) {
-                const output = this.newOutput(i)
-                output.addEventListener(`change`, () => {
-                    this.dispatchEvent(new Event(`change`, {bubbles: true}))
-                })
                 this.Outputs.append(output)
             }
             this.Outputs.children[i].saveValue = saveValue[i]
@@ -47,9 +43,6 @@ export default class OutputList extends ConfigContainer {
         for(let i = 0; i < value.length; i++){
             if(!this.Outputs.children[i]) {
                 const output = this.newOutput(i)
-                output.addEventListener(`change`, () => {
-                    this.dispatchEvent(new Event(`change`, {bubbles: true}))
-                })
                 this.Outputs.append(output)
             }
             this.Outputs.children[i].value = value[i]

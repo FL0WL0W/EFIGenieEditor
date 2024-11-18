@@ -8,7 +8,23 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
   <body>
+    <div style="position: fixed; background-color: #121619; z-index: 100; width: 100%; height: 57px;">
+        <label tabindex=0 for="btnLoad" class="w3-button w3-padding-16">Open</label>
+        <input id="btnSave" type="button" class="w3-button w3-padding-16" value="Save">
+        <input id="btnSaveCompressed" type="button" class="w3-button w3-padding-16" value="Save Compressed">
+        <input id="btnSaveBin" type="button" class="w3-button w3-padding-16" value="Save Bin">
+        <input id="btnBurnBin" type="button" class="w3-button w3-padding-16" value="Burn Bin">
+        <input id="btnConnect" type="button" class="w3-button w3-padding-16" value="Connect">
+        <input id="btnLoad" type="file" style="display: none;">
+        </select>
+    </div>
+    <div id="overlay"></div>
     <div style="position: relative; top: 57px;"><div id="workspace" style="position: static; margin: 0; padding: 0;"></div></div>
-    <img inline src="ESP32C6-CAN-Actual-Page.svg">
+    <script>
+      var siteWidth = 750
+      var scale = screen.width /siteWidth
+
+      document.querySelector('meta[name="viewport"]').setAttribute('content', 'width='+siteWidth+', initial-scale='+scale+'')
+  </script>
   </body>
 </html>

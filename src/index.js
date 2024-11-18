@@ -35,7 +35,7 @@ import { parseObject } from "./objectParser.js"
 import { downloadBin, downloadObject, downloadCompressedObject } from "./download.js"
 
 import Pinouts from "./Pinouts/Pinouts.js"
-import "./Pinouts/PinoutESP32C6Expander.js"
+import "./Pinouts/PinoutESP32C6_Expander.js"
 
 import VariableRegistry from "./VariableRegistry.js"
 window.VariableRegister = new VariableRegistry()
@@ -118,14 +118,15 @@ import TPS_Linear from "./TPS/TPS_Linear.js"
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
     let b = new Top()
-    b.RegisterVariables()
+    let test = 0
+    b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
+    let workspace = document.querySelector(`#workspace`)
+    workspace.innerHtml = ``
+    workspace.append(b)
     const lastConfig = window.localStorage.getItem(`config`)
     if (lastConfig) {
         loadConfig(lastConfig)
     } else {
         b.RegisterVariables()
     }
-    let workspace = document.querySelector(`#workspace`)
-    workspace.innerHtml = ``
-    workspace.append(b)
 })

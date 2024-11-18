@@ -49,7 +49,6 @@ export default class Input extends UITemplate {
                 this.hr.hidden = false
                 this.rawConfig.hidden = false
             }
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         this.translationConfig.labelElement.replaceWith(this.name)
         this.rawConfig.addEventListener(`change`, () => {
@@ -57,7 +56,6 @@ export default class Input extends UITemplate {
                 this.translationConfig.inputUnits = this.rawConfig.outputUnits
                 this.translationConfig.xLabel = GetMeasurementNameFromUnitName(this.rawConfig.outputUnits?.[0])
             }
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         this.hr.hidden = true
         this.hr.style.margin = `2px`

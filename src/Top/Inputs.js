@@ -11,7 +11,7 @@ export default class Inputs extends UITemplate {
     inputListElement = document.createElement(`div`)
     targetDevice = new UISelection({
         options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),
-        value: `ESP_WROOM_32`
+        value: `ESP32C6_Expander`
     })
     pinOverlay = new UIPinOverlay()
     inputs = new ConfigList({
@@ -24,7 +24,7 @@ export default class Inputs extends UITemplate {
         this.inputListNewElement = document.createElement(`div`)
         this.inputListNewElement.class = `w3-bar-subitem w3-button`
         this.inputListNewElement.textContent = `+ New`
-        this.inputListNewElement.addEventListener(`click`, () => { this.inputs.appendNewInput() })
+        this.inputListNewElement.addEventListener(`click`, () => { this.inputs.appendNewItem() })
         this.addEventListener(`change`, () => {
             while([...this.inputs.children].filter(x => x.item.constructor === Input).length < this.inputListElement.children.length || this.inputListElement?.firstChild?.firstChild === this.inputListNewElement) this.inputListElement.removeChild(this.inputListElement.lastChild)
             for(let i = 0, iL = 0; i < this.inputs.children.length; i++){
@@ -57,7 +57,6 @@ export default class Inputs extends UITemplate {
                 let inputElement = this.inputListElement.appendChild(document.createElement(`div`))
                 inputElement.appendChild(this.inputListNewElement)
             }
-            this.pinOverlay.update()
         })
         this.targetDevice.addEventListener(`change`, () => { 
             this.pinOverlay.pinOut = Pinouts[this.targetDevice.value]
@@ -73,6 +72,7 @@ export default class Inputs extends UITemplate {
         for(var i = 0; i < this.inputListElement.children.length; i++){
             this.inputListElement.children[i].RegisterVariables?.()
         }
+        this.pinOverlay.update();
     }
 }
 customElements.define('config-inputs', Inputs, { extends: `span` })

@@ -44,8 +44,6 @@ export default class Calculation_Polynomial extends HTMLDivElement {
                 if(i !== 0) {
                     let label = coeffecientElement.appendChild(document.createElement(`span`))
                     label.innerHTML = `x<sup>${i}</sup> +`
-                } else {
-                    number.addEventListener(`change`, () => { coeffecientElement.dispatchEvent(new Event(`change`, {bubbles: true})) })
                 }
                 coeffecientElement.style.display = `inline`
                 Object.defineProperty(coeffecientElement, 'value', {

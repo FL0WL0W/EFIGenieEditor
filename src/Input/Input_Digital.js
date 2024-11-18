@@ -8,15 +8,11 @@ export default class Input_Digital extends UITemplate {
     static template = `<label>Pin:</label><div data-element="pin"></div><div data-element="inverted"></div>Inverted`
 
     inverted = new UICheckBox()
-    pin = new UIPinSelection({ value: 0xFFFF, pinType: `digital` })
+    pin = new UIPinSelection({ value: 0xFFFF, pinType: `digitalin` })
     constructor(prop){
         super()
         this.style.display = `block`
         this.Setup(prop)
-    }
-
-    RegisterVariables() {
-        this.pin.updateOptions()
     }
 }
 RawInputConfigs.push(Input_Digital)
