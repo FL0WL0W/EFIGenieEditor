@@ -77,7 +77,7 @@ export default class ConfigList extends HTMLDivElement {
         if(this.lastChild)
             this.lastChild.controlElement.append(this.newItemElement)
         else
-            this.parentElement.insertBefore(this.newItemElement, this)
+            this.parentElement?.insertBefore?.(this.newItemElement, this)
         this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
@@ -165,6 +165,7 @@ export default class ConfigList extends HTMLDivElement {
                 this.children[i].item.saveValue = saveValue[i]
         }
         this.#addStaticItems();
+        this.updateControls()
     }
 
     get value () { return [...this.children].map(e => { return this.staticItems.find(x => x.item === e.item) !== undefined? { [this.staticItems.find(x => x.item === e.item)?.name] : e.item.value } : e.item.value }) }

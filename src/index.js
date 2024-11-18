@@ -114,19 +114,54 @@ import Top from "./Top/Top.js"
 
 import TPS_Linear from "./TPS/TPS_Linear.js"
 
+import { stringifyObject } from "./objectParser.js"
+
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
     let b = new Top()
-    let test = 0
-    b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
     let workspace = document.querySelector(`#workspace`)
     workspace.innerHtml = ``
     workspace.append(b)
+    b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
     const lastConfig = window.localStorage.getItem(`config`)
+    const loadConfig = (config) => {
+        try {
+            b.saveValue = parseObject(config)
+            let btnLoad = document.querySelector(`#btnLoad`)
+            btnLoad.value = ``
+        } catch { }
+    }
     if (lastConfig) {
         loadConfig(lastConfig)
     } else {
         b.RegisterVariables()
     }
+    let configJsonName = `tune.json`
+    document.querySelector(`#btnSave`).addEventListener(`click`, function(){
+        var cfg = b.saveValue
+        window.localStorage.setItem(`config`, stringifyObject(cfg))
+    })
+    document.querySelector(`#btnDownload`).addEventListener(`click`, function(){
+        var cfg = b.saveValue
+        downloadObject(cfg, configJsonName)
+    })
+    document.querySelector(`#btnLoad`).addEventListener(`change`, function(evt){
+        var test = new FileReader()
+
+        test.onload = function(evt) {
+            if(evt.target.readyState != 2) return
+            if(evt.target.error) {
+                alert(`Error while reading file`)
+                return
+            }
+
+            const result = evt.target.result
+            window.localStorage.setItem(`config`, result)
+            loadConfig(result)
+        }
+
+        test.readAsText(evt.target.files[0])
+        configJsonName = evt.target.files[0].name
+    })
 })
