@@ -1,5 +1,6 @@
 const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
 module.exports = {
@@ -8,6 +9,7 @@ module.exports = {
         minimize: true,
         minimizer: [
             new TerserPlugin({
+                parallel: true,
                 terserOptions: {
                     keep_classnames: true, // This preserves class names
                 }
@@ -39,10 +41,7 @@ module.exports = {
         rules: [
             {
                 test: /\.css$/,
-                use: [
-                    'style-loader',
-                    'css-loader'
-                ]
+                use:[MiniCssExtractPlugin.loader, 'css-loader']
             },
             {
                 test: /\.svg$/,
@@ -61,6 +60,9 @@ module.exports = {
         ]
     },
     plugins: [
+        new MiniCssExtractPlugin({
+            filename: 'app.css',
+        }),
         new HtmlWebpackPlugin({
             title: 'EFIGenie Editor',
             filename: 'index.html',
