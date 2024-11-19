@@ -3,7 +3,7 @@ import { stringifyObject } from "./objectParser"
 import { base64ToArrayBuffer } from "./base64"
 
 export default function buildConfig(obj) {
-    return obj.types.find(x => x.type === obj.type).toArrayBuffer.call(obj)
+    return types.find(x => x.type === obj.type).toArrayBuffer.call(obj)
 }
 
 let OperationArchitectureFactoryIDs = {
@@ -271,9 +271,9 @@ let x86TypeAlignment = [
 
 function Packagize(definition, val) {
     val = {...val}
-    val.outputVariables ??= this.outputVariables
-    val.outputUnits = val.unit == undefined? val.outputUnits : [val.unit]
-    val.outputUnits ??= this.unit == undefined? this.outputUnits : [this.unit]
+    val.outputVariables ??= []
+    val.outputUnits = (val.unit == undefined? val.outputUnits : [val.unit]) ?? []
+    delete val.unit
     val.outputVariables = val.outputVariables?.map((ov, idx) => {
         if(typeof ov !== `string`)
             return ov
@@ -282,15 +282,14 @@ function Packagize(definition, val) {
         if(unit.indexOf(`)`) > 0)
         {
             unit = unit.substring(0, unit.indexOf(`)`))
-            val.outputUnits ??= []
             val.outputUnits[idx] ??= unit
         }
 
         let variableReference = ov.substring(0, ov.indexOf(`(`) > -1? ov.indexOf(`(`) : ov.length)
+        console.log(variableReference)
         return variableReference
     })
-    val.inputVariables ??= this.inputVariables
-    delete val.unit
+    val.inputVariables ??= []
     if( (val.outputVariables && val.outputVariables.some(x => x != undefined)) || 
         (val.intputVariables && val.intputVariables.some(x => x != undefined))) {
         definition.type = `Package`
@@ -964,13 +963,11 @@ let types = [
         ]}
     }},
     { type: `Inputs`, toDefinition() {
-        return { type: `Group`, value: [
-            { type: `Package`, //Package
-                value: [{ type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.GetTick }], //GetTick factory ID
-                outputVariables: [ { name: `CurrentTick`, type: `tick` } ]
-            }, 
-            { type: `ConfigList`, value: this.inputs, itemType: `Input` }
-        ]}
+        return { 
+            type: `ConfigList`, 
+            value: this.value,
+            itemType: `Input`
+        }
     }},
     { type: `CylinderAirmass_AlphaN`, outputUnits: [`g`], toDefinition() {
         return { ...this.Airmass, type: `CalculationOrVariableSelection`, outputVariables: this.outputVariables }
@@ -1218,7 +1215,7 @@ let types = [
 
             //inputs
             { type: `Group`, value: [
-                { ...this.Inputs, type: `Inputs` }, 
+                { type: `Inputs`, value: this.Inputs }, 
                 { type: `CAN`, value: this.CAN },
                 { type: `Engine`, value: this.Engine },
             ]},

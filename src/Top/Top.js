@@ -6,9 +6,10 @@ import Ignition from "./Ignition"
 import Fuel from "./Fuel"
 import Inputs from "./Inputs"
 import CAN from "./CAN"
-import GenericCalculation from "../Calculation/GenericCalculation"
-import ConfigList from "./ConfigList"
+import UIPinOverlay from "../UI/UIPinOverlay"
 import { communication } from "../communication"
+import UISelection from "../JavascriptUI/UISelection"
+import Pinouts from "../Pinouts/Pinouts"
 
 export default class Top extends UITemplate {
     static template = 
@@ -19,6 +20,7 @@ export default class Top extends UITemplate {
     </div>
     <div class="w3-bar-block sidebarSelection">
         <div data-element="dashboardTab"></div>
+        <div data-element="pinOverlayTab"></div>
         <div data-element="inputsTab"></div>
         <div data-element="inputsTabList"></div>
         <div data-element="canTab"></div>
@@ -35,6 +37,7 @@ export default class Top extends UITemplate {
     </span>
     <hr style="margin: 0px 0px 5px 0px;">
     <div data-element="Dashboard"></div>
+    <div data-element="pinOverlayWorkspace"></div>
     <div data-element="inputsWorkspace"></div>
     <div data-element="canWorkspace"></div>
     <div data-element="Engine"></div>
@@ -44,6 +47,7 @@ export default class Top extends UITemplate {
 
     title = document.createElement(`div`)
     dashboardTab = document.createElement(`div`)
+    pinOverlayTab = document.createElement(`div`)
     inputsTabExpend = document.createElement(`span`)
     inputsTab = document.createElement(`div`)
     canTabExpend = document.createElement(`span`)
@@ -52,10 +56,16 @@ export default class Top extends UITemplate {
     fuelTab = document.createElement(`div`)
     ignitionTab = document.createElement(`div`)
 
+    pinOverlayWorkspace = document.createElement(`span`)
     inputsWorkspace = document.createElement(`span`)
     canWorkspace = document.createElement(`div`)
 
     Dashboard = new Dashboard()
+    PinOverlay = new UIPinOverlay()
+    TargetDevice = new UISelection({
+        options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),
+        value: `ESP32C6_Expander`
+    })
     Inputs = new Inputs()
     CAN = new CAN();
     Engine = new Engine()
@@ -68,6 +78,11 @@ export default class Top extends UITemplate {
         this.inputsWorkspace.append(this.Inputs)
         this.canWorkspace.append(this.CAN.newItemElement)
         this.canWorkspace.append(this.CAN)
+        this.pinOverlayWorkspace.append(this.PinOverlay)
+        this.TargetDevice.addEventListener(`change`, () => { 
+            this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
+        })
+        this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
         this.class = "top"
         // this.Engine.addEventListener(`change`, () => {
         //     if(this.Engine.value.find(x => Object.keys(x)[0] === `EngineCalculations`).EngineCalculations.CylinderAirmass.selection == undefined) {
@@ -129,6 +144,10 @@ export default class Top extends UITemplate {
         this.dashboardTab.class = `w3-bar-item w3-button dashboard-tab`
         this.dashboardTab.addEventListener(`click`, () => {
             this.activeTab = `Dashboard`
+        })
+        this.pinOverlayTab.class = `w3-bar-item w3-button pinoverlay-tab`
+        this.pinOverlayTab.addEventListener(`click`, () => {
+            this.activeTab = `Pin Mapping`
         })
         this.inputsTabList = this.Inputs.inputListElement
         this.inputsTabList.addEventListener(`click`, () => {
@@ -218,12 +237,14 @@ export default class Top extends UITemplate {
         window.localStorage.setItem(`lastTab`, activeTab)
         this.title.textContent = activeTab
         this.Dashboard.hidden = true
+        this.PinOverlay.hidden = true
         this.inputsWorkspace.hidden = true
         this.canWorkspace.hidden = true
         this.Engine.hidden = true
         this.Fuel.hidden = true
         this.Ignition.hidden = true
         this.dashboardTab.classList.remove(`active`)
+        this.pinOverlayTab.classList.remove(`active`)
         this.inputsTab.classList.remove(`active`)
         this.canTab.classList.remove(`active`)
         this.engineTab.classList.remove(`active`)
@@ -233,6 +254,10 @@ export default class Top extends UITemplate {
             case `Dashboard`:
                 this.Dashboard.hidden = false
                 this.dashboardTab.classList.add(`active`)
+                break
+            case `Pin Mapping`:
+                this.PinOverlay.hidden = false
+                this.pinOverlayTab.classList.add(`active`)
                 break
             case `Inputs`:
                 this.inputsWorkspace.hidden = false
@@ -273,6 +298,7 @@ export default class Top extends UITemplate {
         this.Fuel.RegisterVariables()
         this.Ignition.RegisterVariables()
         this.Dashboard.RegisterVariables()
+        this.PinOverlay.update();
     }
 }
 customElements.define(`top-top`, Top, { extends: `span` })

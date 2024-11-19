@@ -521,6 +521,7 @@ select .pinconflict{
     content: "▼\00a0";
 }
 .dashboard-tab::before,
+.pinoverlay-tab::before,
 .engine-tab::before,
 .fuel-tab::before,
 .ignition-tab::before {
@@ -529,6 +530,9 @@ select .pinconflict{
 }
 .dashboard-tab::after {
     content: "Dashboard";
+}
+.pinoverlay-tab::after {
+    content: "Pin Mapping";
 }
 .input-tab::after {
     content: "Inputs";

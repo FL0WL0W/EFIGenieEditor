@@ -45,7 +45,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
         return  this._outputUnits? undefined : (
                     this._outputTypes ??                 
                     this.GetSubConfigProperty(`outputTypes`) ?? 
-                    (this.selection.value?.unit != undefined? undefined : (
+                    (this.selection.value?.unit !== undefined || this.selection.value?.type == undefined? undefined : (
                         [ this.selection.value?.type ]
                     ))
                 )
@@ -195,10 +195,10 @@ export default class CalculationOrVariableSelection extends UITemplate {
         const subConfig = this.SubConfig
         return {
             ...super.value,
-            outputTypes: this.outputTypes,
-            outputUnits: this.outputUnits,
-            inputTypes: this.inputTypes,
-            inputUnits: this.inputUnits,
+            ...(this.outputTypes !== undefined && this.outputTypes?.length > 0) && {outputTypes: this.outputTypes },
+            ...(this.outputUnits !== undefined && this.outputUnits?.length > 0) && {outputUnits: this.outputUnits },
+            ...(this.inputTypes !== undefined && this.inputTypes?.length > 0) && {inputTypes: this.inputTypes },
+            ...(this.inputUnits !== undefined && this.inputUnits?.length > 0) && {inputUnits: this.inputUnits },
             ...(subConfig != undefined) && {calculation: subConfig.value}
         }
     }
@@ -275,7 +275,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
 
     GetSubConfigProperty(prop) {
         const cl = this.SubConfig
-        cl?.[prop] ?? cl?.constructor?.[prop]
+        return cl?.[prop] ?? cl?.constructor?.[prop]
     }
 }
 customElements.define(`calculation-orvariableselection`, CalculationOrVariableSelection, { extends: `span` })

@@ -119,6 +119,7 @@ import { stringifyObject } from "./objectParser.js"
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
+    window.buildConfig = buildConfig
     let b = new Top()
     let workspace = document.querySelector(`#workspace`)
     workspace.innerHtml = ``
