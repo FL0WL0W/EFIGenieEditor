@@ -5,11 +5,11 @@ import Engine from "./Engine"
 import Ignition from "./Ignition"
 import Fuel from "./Fuel"
 import Inputs from "./Inputs"
+import CAN from "./CAN"
 import GenericCalculation from "../Calculation/GenericCalculation"
 import ConfigList from "./ConfigList"
-import CANConfigs from "../CAN/CANConfigs"
-import GenericConfigs from "../Calculation/GenericConfigs"
 import { communication } from "../communication"
+
 export default class Top extends UITemplate {
     static template = 
 `<div class="w3-sidebar" style="display: none;">
@@ -22,6 +22,7 @@ export default class Top extends UITemplate {
         <div data-element="inputsTab"></div>
         <div data-element="inputsTabList"></div>
         <div data-element="canTab"></div>
+        <div data-element="canTabList"></div>
         <div data-element="engineTab"></div>
         <div data-element="fuelTab"></div>
         <div data-element="ignitionTab"></div>
@@ -45,6 +46,7 @@ export default class Top extends UITemplate {
     dashboardTab = document.createElement(`div`)
     inputsTabExpend = document.createElement(`span`)
     inputsTab = document.createElement(`div`)
+    canTabExpend = document.createElement(`span`)
     canTab = document.createElement(`div`)
     engineTab = document.createElement(`div`)
     fuelTab = document.createElement(`div`)
@@ -55,9 +57,7 @@ export default class Top extends UITemplate {
 
     Dashboard = new Dashboard()
     Inputs = new Inputs()
-    CAN = new ConfigList({
-        newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
-    })
+    CAN = new CAN();
     Engine = new Engine()
     Fuel = new Fuel()
     Ignition = new Ignition()
@@ -153,6 +153,25 @@ export default class Top extends UITemplate {
         this.inputsTab.addEventListener(`click`, () => {
             this.activeTab = `Inputs`
         })
+        this.canTabList = this.CAN.canListElement
+        this.canTabList.addEventListener(`click`, () => {
+            this.activeTab = `CAN`
+        })
+        this.canTabExpend.className = `despand`
+        this.canTabExpend.addEventListener(`click`, event => {
+            this.canTabList.hidden = !this.canTabList.hidden
+            if(this.canTabList.hidden) {
+                window.localStorage.setItem(`canExpanded`, `false`)
+                this.canTabExpend.className = `expand`
+            } else {
+                window.localStorage.setItem(`canExpanded`, `true`)
+                this.canTabExpend.className = `despand`
+            }
+            event.preventDefault()
+            event.stopPropagation()
+            return false
+        })
+        this.canTab.append(this.canTabExpend)
         this.canTab.class = `w3-bar-item w3-button can-tab`
         this.canTab.addEventListener(`click`, () => {
             this.activeTab = `CAN`
@@ -184,6 +203,9 @@ export default class Top extends UITemplate {
         window.setTimeout(() => {
             if((window.localStorage.getItem(`inputExpanded`) ?? 'true') === `false`) {
                 this.inputsTabExpend.dispatchEvent(new Event(`click`))
+            }
+            if((window.localStorage.getItem(`canExpanded`) ?? 'true') === `false`) {
+                this.canTabExpend.dispatchEvent(new Event(`click`))
             }
             if((window.localStorage.getItem(`expanded`) ?? `false`) === `true`) {
                 this.sidebarOpen.dispatchEvent(new Event(`click`))

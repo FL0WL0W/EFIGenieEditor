@@ -7,7 +7,7 @@ import ConfigList from "./ConfigList"
 import Pinouts from "../Pinouts/Pinouts"
 //todo, context menu
 export default class Inputs extends UITemplate {
-    static template = `<div style="block-size: fit-content; width: fit-content;"><div data-element="inputs"></div><div data-element="newInputElement"></div></div><div data-element="pinOverlay"></div>`
+    static template = `<div style="block-size: fit-content; width: fit-content;"><div data-element="inputs"></div></div><div data-element="pinOverlay"></div>`
     inputListElement = document.createElement(`div`)
     targetDevice = new UISelection({
         options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),

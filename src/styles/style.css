@@ -512,8 +512,15 @@ select .pinconflict{
     font-family:monospace;
     content: "▼\00a0";
 }
+.can-tab .expand::before {
+    font-family:monospace;
+    content: "►\00a0";
+}
+.can-tab .despand::before {
+    font-family:monospace;
+    content: "▼\00a0";
+}
 .dashboard-tab::before,
-.can-tab::before,
 .engine-tab::before,
 .fuel-tab::before,
 .ignition-tab::before {
