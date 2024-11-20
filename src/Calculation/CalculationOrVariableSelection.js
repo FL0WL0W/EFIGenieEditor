@@ -23,20 +23,20 @@ export default class CalculationOrVariableSelection extends UITemplate {
         Object.keys(this.calculationValues).map(x=>this.calculationValues[x]).forEach(calculationValue => { calculationValue.label = label })
     }
 
-    _xlabel = `X`
-    get xLabel() { return this._xlabel }
-    set xLabel(xlabel) {
-        if(this._xlabel === xlabel) return
-        this._xlabel = xlabel
-        Object.keys(this.calculationValues).map(x=>this.calculationValues[x]).forEach(calculationValue => { calculationValue.xLabel = xlabel })
+    _xLabel = `X`
+    get xLabel() { return this._xLabel }
+    set xLabel(xLabel) {
+        if(this._xLabel === xLabel) return
+        this._xLabel = xLabel
+        Object.keys(this.calculationValues).map(x=>this.calculationValues[x]).forEach(calculationValue => { calculationValue.xLabel = xLabel })
     }
 
-    _ylabel = `Y`
-    get yLabel() { return this._xlabel }
-    set yLabel(ylabel) {
-        if(this._ylabel === ylabel) return
-        this._ylabel = ylabel
-        Object.keys(this.calculationValues).map(x=>this.calculationValues[x]).forEach(calculationValue => { calculationValue.yLabel = ylabel })
+    _yLabel = `Y`
+    get yLabel() { return this._yLabel }
+    set yLabel(yLabel) {
+        if(this._yLabel === yLabel) return
+        this._yLabel = yLabel
+        Object.keys(this.calculationValues).map(x=>this.calculationValues[x]).forEach(calculationValue => { calculationValue.yLabel = yLabel })
     }
 
     selectionFilter = defaultFilter

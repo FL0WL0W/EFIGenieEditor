@@ -4,7 +4,7 @@ import UIDisplayLiveUpdate from "../UI/UIDisplayLiveUpdate"
 import ConfigList from "./ConfigList"
 //todo, context menu
 export default class Inputs extends ConfigList {
-    inputListElement = document.createElement(`div`)
+    tabListElement = document.createElement(`div`)
 
     constructor(prop) {
         super({ ...prop,
@@ -16,13 +16,13 @@ export default class Inputs extends ConfigList {
         this.inputListNewElement.textContent = `+ New`
         this.inputListNewElement.addEventListener(`click`, () => { this.appendNewItem() })
         this.addEventListener(`change`, () => {
-            while([...this.children].filter(x => x.item.constructor === Input).length < this.inputListElement.children.length || this.inputListElement?.firstChild?.firstChild === this.inputListNewElement) this.inputListElement.removeChild(this.inputListElement.lastChild)
+            while([...this.children].filter(x => x.item.constructor === Input).length < this.tabListElement.children.length || this.tabListElement?.firstChild?.firstChild === this.inputListNewElement) this.tabListElement.removeChild(this.tabListElement.lastChild)
             for(let i = 0, iL = 0; i < this.children.length; i++){
                 if(this.children[i].item.constructor !== Input)
                     continue
-                let inputElement = this.inputListElement.children[iL++]
+                let inputElement = this.tabListElement.children[iL++]
                 if(!inputElement) {
-                    inputElement = this.inputListElement.appendChild(document.createElement(`div`))
+                    inputElement = this.tabListElement.appendChild(document.createElement(`div`))
                     inputElement.appendChild(new UIDisplayLiveUpdate()).style.float = `right`
                     inputElement.append(document.createElement(`div`))
                     inputElement.class = `w3-bar-subitem w3-button`
@@ -43,8 +43,8 @@ export default class Inputs extends ConfigList {
                 inputElement.lastChild.textContent = this.children[i].name.value
                 inputElement.class = `w3-bar-subitem w3-button`
             }
-            if(this.inputListElement.children.length === 0){
-                let inputElement = this.inputListElement.appendChild(document.createElement(`div`))
+            if(this.tabListElement.children.length === 0){
+                let inputElement = this.tabListElement.appendChild(document.createElement(`div`))
                 inputElement.appendChild(this.inputListNewElement)
             }
         })
@@ -54,8 +54,8 @@ export default class Inputs extends ConfigList {
     RegisterVariables() {
         VariableRegister.CurrentTick = { name: `CurrentTick`, type: `tick`, id: VariableRegister.GenerateVariableId() }
         super.RegisterVariables()
-        for(var i = 0; i < this.inputListElement.children.length; i++){
-            this.inputListElement.children[i].RegisterVariables?.()
+        for(var i = 0; i < this.tabListElement.children.length; i++){
+            this.tabListElement.children[i].RegisterVariables?.()
         }
     }
 }

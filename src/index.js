@@ -107,7 +107,8 @@ import Engine from "./Top/Engine.js"
 import Fuel from "./Top/Fuel.js"
 import Ignition from "./Top/Ignition.js"
 import Inputs from "./Top/Inputs.js"
-import Top from "./Top/Top.js"
+import TopExpander from "./Top/TopExpander.js"
+import TopEngine from "./Top/TopEngine.js"
 
 import TPS_Linear from "./TPS/TPS_Linear.js"
 
@@ -117,7 +118,7 @@ import pako from "pako"
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
     window.buildConfig = buildConfig
-    let b = new Top()
+    let b = new TopEngine()
     let workspace = document.querySelector(`#workspace`)
     workspace.innerHtml = ``
     workspace.append(b)

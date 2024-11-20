@@ -528,9 +528,24 @@ select .pinconflict{
     font-family:monospace;
     content: "\00a0\00a0";
 }
-.dashboard-tab::after {
-    content: "Dashboard";
+
+
+.tab::before {
+    font-family:monospace;
+    content: "\00a0\00a0";
 }
+.tab .expand::before {
+    font-family:monospace;
+    content: "►\00a0";
+}
+.tab .despand::before {
+    font-family:monospace;
+    content: "▼\00a0";
+}
+.tab::after {
+    content: attr(data-label);
+}
+
 .pinoverlay-tab::after {
     content: "Pin Mapping";
 }

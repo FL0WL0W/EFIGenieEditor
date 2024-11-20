@@ -176,10 +176,10 @@
     user-select: none;
 }
 
-.ui table.numerictable tr td div.xaxis {
+.ui table.numerictable tr td div.xAxis {
     display: flex;
 }
-.ui table.numerictable tr td div.yaxis {
+.ui table.numerictable tr td div.yAxis {
     display: flex;
     flex-wrap: wrap;
     max-width: calc(var(--cell-width) + var(--border-width) + var(--border-axis-width));
@@ -208,13 +208,13 @@
     height: 0.3em;
 }
 
-.ui table.numerictable tr td.yaxis {
+.ui table.numerictable tr td.yAxis {
     width: var(--cell-width);
 }
 
 .ui table.numerictable tr td div.value div,
-.ui table.numerictable tr td div.yaxis div,
-.ui table.numerictable tr td div.xaxis div {
+.ui table.numerictable tr td div.yAxis div,
+.ui table.numerictable tr td div.xAxis div {
     cursor: default;
     min-width: var(--cell-width);
     max-width: var(--cell-width);
@@ -225,8 +225,8 @@
 .ui table.numerictable tr td div.value div.selected{
     border-color: var(--border-selected-color) !important;
 }
-.ui table.numerictable tr td div.yaxis div.selected,
-.ui table.numerictable tr td div.xaxis div.selected {
+.ui table.numerictable tr td div.yAxis div.selected,
+.ui table.numerictable tr td div.xAxis div.selected {
     border-color: var(--border-selected-color) !important;
     background-color: var(--background-selected-color) !important;
 }
@@ -245,17 +245,17 @@
 .ui table.numerictable tr td div.value div.selected {
     background-color: hsla(calc(180 - (180 * (var(--data-value) - var(--valuemin)) / (var(--valuemax) - var(--valuemin)))), 50%, 50%, 50%);
 }
-.ui table.numerictable tr td div.xaxis div {
+.ui table.numerictable tr td div.xAxis div {
     border-bottom-width: var(--border-axis-width);
 }
-.ui table.numerictable tr td div.yaxis div {
+.ui table.numerictable tr td div.yAxis div {
     text-align: right;
     border-right-width: var(--border-axis-width);
 }
 
 .ui table.numerictable tr td.xtrans {
 }
-.ui table.numerictable tr td.xtrans .xlabel {
+.ui table.numerictable tr td.xtrans .xLabel {
     display: flex;
     flex-direction: column; 
     align-items: start;
@@ -264,8 +264,8 @@
 .ui table.numerictable tr td.xztrans {
     vertical-align: bottom;
 }
-.ui table.numerictable tr td.xztrans .xlabel,
-.ui table.numerictable tr td.xztrans .zlabel {
+.ui table.numerictable tr td.xztrans .xLabel,
+.ui table.numerictable tr td.xztrans .zLabel {
     display: flex;
     flex-direction: column; 
     align-items: end;
@@ -276,7 +276,7 @@
     width: 0;
     padding: 5px;
 }
-.ui table.numerictable tr td.ytrans .ylabel {
+.ui table.numerictable tr td.ytrans .yLabel {
     position: absolute;
     transform-origin: 50% 0%;
     transform: translateX(-50%) rotate(-90deg) translateY(-100%) translateX(-50%) translateX(5px); 
@@ -1053,9 +1053,24 @@ select .pinconflict{
     font-family:monospace;
     content: "\00a0\00a0";
 }
-.dashboard-tab::after {
-    content: "Dashboard";
+
+
+.tab::before {
+    font-family:monospace;
+    content: "\00a0\00a0";
 }
+.tab .expand::before {
+    font-family:monospace;
+    content: "►\00a0";
+}
+.tab .despand::before {
+    font-family:monospace;
+    content: "▼\00a0";
+}
+.tab::after {
+    content: attr(data-label);
+}
+
 .pinoverlay-tab::after {
     content: "Pin Mapping";
 }

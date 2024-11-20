@@ -4,7 +4,7 @@ import CANConfigs from "../CAN/CANConfigs"
 import GenericConfigs from "../Calculation/GenericConfigs"
 //todo, context menu
 export default class CAN extends ConfigList {
-    canListElement = document.createElement(`div`)
+    tabListElement = document.createElement(`div`)
 
     constructor(prop) {
         super({ ...prop,
@@ -15,13 +15,13 @@ export default class CAN extends ConfigList {
         this.canListNewElement.textContent = `+ New`
         this.canListNewElement.addEventListener(`click`, () => { this.appendNewItem() })
         this.addEventListener(`change`, () => {
-            while([...this.children].filter(x => x?.item?.constructor === GenericCalculation).length < this.canListElement.children.length || this.canListElement?.firstChild?.firstChild === this.canListNewElement) this.canListElement.removeChild(this.canListElement.lastChild)
+            while([...this.children].filter(x => x?.item?.constructor === GenericCalculation).length < this.tabListElement.children.length || this.tabListElement?.firstChild?.firstChild === this.canListNewElement) this.tabListElement.removeChild(this.tabListElement.lastChild)
             for(let i = 0, iL = 0; i < this.children.length; i++){
                 if(this.children[i].item.constructor !== GenericCalculation)
                     continue
-                let canElement = this.canListElement.children[iL++]
+                let canElement = this.tabListElement.children[iL++]
                 if(!canElement) {
-                    canElement = this.canListElement.appendChild(document.createElement(`div`))
+                    canElement = this.tabListElement.appendChild(document.createElement(`div`))
                     canElement.append(document.createElement(`div`))
                     canElement.class = `w3-bar-subitem w3-button`
                     const thisClass = this
@@ -37,8 +37,8 @@ export default class CAN extends ConfigList {
                 canElement.lastChild.textContent = this.children[i].name.value
                 canElement.class = `w3-bar-subitem w3-button`
             }
-            if(this.canListElement.children.length === 0){
-                let canElement = this.canListElement.appendChild(document.createElement(`div`))
+            if(this.tabListElement.children.length === 0){
+                let canElement = this.tabListElement.appendChild(document.createElement(`div`))
                 canElement.appendChild(this.canListNewElement)
             }
         })
