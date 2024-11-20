@@ -118,7 +118,7 @@ import pako from "pako"
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
     window.buildConfig = buildConfig
-    let b = new TopEngine()
+    let b = new TopExpander()
     let workspace = document.querySelector(`#workspace`)
     workspace.innerHtml = ``
     workspace.append(b)
@@ -178,7 +178,7 @@ window.addEventListener(`load`, function() {
                 }
             }
         };
-        xhr.send(buildConfig({ ...b.value, type: `Top` }))
+        xhr.send(buildConfig({ ...b.value, type: `TopExpander` }))
     })
     document.querySelector(`#btnDownload`).addEventListener(`click`, function(){
         var cfg = b.saveValue

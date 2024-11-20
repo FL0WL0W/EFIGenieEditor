@@ -1207,7 +1207,7 @@ let types = [
             itemType: `CAN_GenericCalculation`
         }
     }},
-    { type: `Top`, toDefinition() {
+    { type: `TopEngine`, toDefinition() {
         return { type: `definition`, value: [
             { type: `UINT32`, value: 0}, //signal last operation
 
@@ -1231,6 +1231,27 @@ let types = [
             { type: `Group`, value: [ 
                 { type: `Fuel`, value: this.Fuel },
                 { type: `Ignition`, value: this.Ignition }
+            ]},
+        ]}
+    }, toArrayBuffer() {
+        let buf = buildConfig({ type:`definition`, value: [ this ], types: types })
+        buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
+        buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
+
+        let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(VariableRegister.GetVariableReferenceList()))).buffer
+        bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
+        bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
+
+        return buf.concatArray(bufMeta)
+    }},
+    { type: `TopExpander`, toDefinition() {
+        return { type: `definition`, value: [
+            { type: `UINT32`, value: 0}, //signal last operation
+
+            //main loop execute
+            { type: `Group`, value: [
+                { type: `Inputs`, value: this.Inputs }, 
+                { type: `CAN`, value: this.CAN }
             ]},
         ]}
     }, toArrayBuffer() {

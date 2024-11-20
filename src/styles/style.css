@@ -504,31 +504,6 @@ select .pinconflict{
 .sidebaropenclose::after {
     content: "☰"
 }
-.input-tab .expand::before {
-    font-family:monospace;
-    content: "►\00a0";
-}
-.input-tab .despand::before {
-    font-family:monospace;
-    content: "▼\00a0";
-}
-.can-tab .expand::before {
-    font-family:monospace;
-    content: "►\00a0";
-}
-.can-tab .despand::before {
-    font-family:monospace;
-    content: "▼\00a0";
-}
-.dashboard-tab::before,
-.pinoverlay-tab::before,
-.engine-tab::before,
-.fuel-tab::before,
-.ignition-tab::before {
-    font-family:monospace;
-    content: "\00a0\00a0";
-}
-
 
 .tab::before {
     font-family:monospace;
@@ -546,24 +521,6 @@ select .pinconflict{
     content: attr(data-label);
 }
 
-.pinoverlay-tab::after {
-    content: "Pin Mapping";
-}
-.input-tab::after {
-    content: "Inputs";
-}
-.can-tab::after {
-    content: "CAN";
-}
-.engine-tab::after {
-    content: "Engine";
-}
-.fuel-tab::after {
-    content: "Fuel";
-}
-.ignition-tab::after {
-    content: "Ignition";
-}
 .ui.text.formula {
     width: 100%;
     flex-grow: 1;

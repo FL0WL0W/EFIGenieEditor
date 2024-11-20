@@ -22,6 +22,10 @@ export default class TopExpander extends Top {
         this.addTab(this.PinOverlay, `Pin Mapping`)
         this.addTab(this.Inputs, `Inputs`)
         this.addTab(this.CAN, `CAN`)
+        this.TargetDevice.addEventListener(`change`, () => { 
+            this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
+        })
+        this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
         this.Setup(prop)
     }
 
