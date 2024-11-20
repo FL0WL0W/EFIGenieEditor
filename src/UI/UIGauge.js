@@ -8,7 +8,7 @@ import UIButton from "../JavascriptUI/UIButton"
 import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit } from "./UIUnit"
 import Dashboard from "../Top/Dashboard"
 import generateGUID from "../GUID"
-import { BaseGauge } from "./gauge.min"
+import { BaseGauge } from "canvas-gauges"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 export default class UIGauge extends UITemplate {

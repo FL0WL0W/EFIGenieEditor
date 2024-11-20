@@ -120,7 +120,7 @@ class EFIGenieLog {
     loggedVariableValues = []
 
     get saveValue() {
-        var objectArray = base64ToArrayBuffer(lzjs.compressToBase64(stringifyObject(this.variableMetadata.GetVariableReferenceList())))
+        var objectArray = pako.gzip(new TextEncoder().encode(JSON.stringify(his.variableMetadata.GetVariableReferenceList()))).buffer
         return (new Uint32Array([objectArray.byteLength]).buffer).concatArray(objectArray).concatArray(LogBytes)
     }
     set saveValue(saveValue) {

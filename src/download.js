@@ -1,5 +1,3 @@
-import { stringifyObject, stringifyCompressedObject } from "./objectParser"
-
 export function downloadBin(data, fileName) {
     var blob, url
     blob = new Blob([data], {
@@ -13,11 +11,7 @@ export function downloadBin(data, fileName) {
 }
 
 export function downloadObject(obj, fileName) {
-    downloadstring(stringifyObject(obj), fileName)
-}
-
-export function downloadCompressedObject(obj, fileName) {
-    downloadstring(stringifyCompressedObject(obj), fileName)
+    downloadstring(JSON.stringify(obj), fileName)
 }
 
 function downloadstring(text, fileName) {

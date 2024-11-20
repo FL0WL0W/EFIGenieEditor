@@ -29,10 +29,7 @@ Object.defineProperty(HTMLElement.prototype, 'class', {
 import "./JavascriptUI/UI.css"
 import "./styles/style.css"
 
-import lzjs from "./lzjs.js"
-
-import { parseObject } from "./objectParser.js"
-import { downloadBin, downloadObject, downloadCompressedObject } from "./download.js"
+import { downloadBin, downloadObject } from "./download.js"
 
 import Pinouts from "./Pinouts/Pinouts.js"
 import "./Pinouts/PinoutESP32C6_Expander.js"
@@ -114,7 +111,7 @@ import Top from "./Top/Top.js"
 
 import TPS_Linear from "./TPS/TPS_Linear.js"
 
-import { stringifyObject } from "./objectParser.js"
+import pako from "pako"
 
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
@@ -125,23 +122,62 @@ window.addEventListener(`load`, function() {
     workspace.innerHtml = ``
     workspace.append(b)
     b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
-    const lastConfig = window.localStorage.getItem(`config`)
     const loadConfig = (config) => {
         try {
-            b.saveValue = parseObject(config)
+            b.saveValue = JSON.parse(config)
             let btnLoad = document.querySelector(`#btnLoad`)
             btnLoad.value = ``
         } catch { }
     }
-    if (lastConfig) {
-        loadConfig(lastConfig)
-    } else {
-        b.RegisterVariables()
-    }
+    let lastConfig = window.localStorage.getItem(`config`)
+    const xhr = new XMLHttpRequest()
+    xhr.open(`GET`, `/config.json`, true)
+    xhr.onreadystatechange = () => {
+        if (xhr.status == 200) {
+            lastConfig = xhr.responseText
+        }
+        if (lastConfig) {
+            loadConfig(lastConfig)
+        } else {
+            b.RegisterVariables()
+        }
+    };
+    xhr.send()
+
     let configJsonName = `tune.json`
     document.querySelector(`#btnSave`).addEventListener(`click`, function(){
-        var cfg = b.saveValue
-        window.localStorage.setItem(`config`, stringifyObject(cfg))
+        const cfg = JSON.stringify(b.saveValue)
+
+        //save config to browser as backup
+        window.localStorage.setItem(`config`, cfg)
+
+        //save config to ESP32
+        const compressedData = pako.gzip(new TextEncoder().encode(cfg))
+        let xhr = new XMLHttpRequest()
+        xhr.open(`POST`, `/upload/config.json.gz`, true)
+        xhr.setRequestHeader(`Content-Type`, `application/octet-stream`) // Indicating raw binary data
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState == 4) {
+                if (xhr.status == 200) {
+                    alert("Saved Configuration to Device")
+                } else {
+                    alert("Saved Configuration to Browser")
+                }
+            }
+        };
+        xhr.send(compressedData)
+
+        xhr = new XMLHttpRequest()
+        xhr.open(`POST`, `/upload/config.bin`, true)
+        xhr.setRequestHeader(`Content-Type`, `application/octet-stream`) // Indicating raw binary data
+        xhr.onreadystatechange = () => {
+            if (xhr.readyState == 4) {
+                if (xhr.status == 200) {
+                    alert("Saved Binary to Device")
+                }
+            }
+        };
+        xhr.send(buildConfig({ ...b.value, type: `Top` }))
     })
     document.querySelector(`#btnDownload`).addEventListener(`click`, function(){
         var cfg = b.saveValue

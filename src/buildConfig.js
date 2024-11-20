@@ -1,6 +1,4 @@
-import lzjs from "./lzjs"
-import { stringifyObject } from "./objectParser"
-import { base64ToArrayBuffer } from "./base64"
+import pako from "pako"
 
 export default function buildConfig(obj) {
     return types.find(x => x.type === obj.type).toArrayBuffer.call(obj)
@@ -390,7 +388,7 @@ let types = [
     { type: `UINT64`, toArrayBuffer() { return new BigUint64Array(Array.isArray(this.value)? this.value : [BigInt(this.value)]).buffer }},
     { type: `FLOAT`, toArrayBuffer() { return new Float32Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
     { type: `DOUBLE`, toArrayBuffer() { return new Float64Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `CompressedObject`, toArrayBuffer() { return base64ToArrayBuffer(lzjs.compressToBase64(stringifyObject(this.value))) }},
+    { type: `CompressedObject`, toArrayBuffer() { return pako.gzip(new TextEncoder().encode(JSON.stringify(this.value))).buffer }},
     { type: `VariableId`, toDefinition() { 
         return { type: `definition`, value: [
             { type: `UINT32`, value: typeof this.value === `number`? this.value : VariableRegister.GetVariableId(this.value) }
@@ -1240,7 +1238,7 @@ let types = [
         buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
         buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
 
-        let bufMeta = base64ToArrayBuffer(lzjs.compressToBase64(stringifyObject(VariableRegister.GetVariableReferenceList())))
+        let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(VariableRegister.GetVariableReferenceList()))).buffer
         bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
         bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
 
