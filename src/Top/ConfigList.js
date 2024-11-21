@@ -1,6 +1,7 @@
-import UITemplate from "../JavascriptUI/UITemplate"
 import UIButton from "../JavascriptUI/UIButton"
 import { objectTester } from "../JavascriptUI/UIUtils"
+import Input from "../Input/Input"
+import UIDisplayLiveUpdate from "../UI/UIDisplayLiveUpdate"
 export default class ConfigList extends HTMLDivElement {
     #staticItems = []
     get staticItems() { return this.#staticItems }
@@ -44,6 +45,48 @@ export default class ConfigList extends HTMLDivElement {
             this.saveValue = propSaveValue
         if(propValue != undefined)
             this.value = propValue
+
+        this.tabListElement = document.createElement(`div`)
+        this.tabListNewElement = document.createElement(`div`)
+        this.tabListNewElement.class = `w3-bar-subitem w3-button`
+        this.tabListNewElement.textContent = `+ New`
+        this.tabListNewElement.addEventListener(`click`, () => { this.appendNewItem() })
+        this.addEventListener(`change`, () => {
+            while([...this.children].filter(x => x.item.constructor === Input).length < this.tabListElement.children.length || this.tabListElement?.firstChild?.firstChild === this.tabListNewElement) this.tabListElement.removeChild(this.tabListElement.lastChild)
+            for(let i = 0, iL = 0; i < this.children.length; i++){
+                if(!this.children[i].item?.name?.value)
+                    continue
+                let tabElement = this.tabListElement.children[iL++]
+                if(!tabElement) {
+                    tabElement = this.tabListElement.appendChild(document.createElement(`div`))
+                    if(this.children[i].item.constructor === Input) {
+                        tabElement.appendChild(new UIDisplayLiveUpdate()).style.float = `right`
+                        tabElement.RegisterVariables = function() {
+                            const input = thisClass.children[this.childIndex]
+                            this.firstChild.RegisterVariables({ name: `Inputs.${input.name.value}`, unit: input.translationConfig.outputUnits?.[0] ?? input.rawConfig.outputUnits?.[0] })
+                        }
+                    }
+                    tabElement.append(document.createElement(`div`))
+                    tabElement.class = `w3-bar-subitem w3-button`
+                    const thisClass = this
+                    tabElement.addEventListener(`click`, function() {
+                        thisClass.children[this.childIndex].scrollIntoView({
+                            behavior: 'auto',
+                            block: 'center',
+                            inline: 'center'
+                        })
+                    })
+                }
+                tabElement.childIndex = i
+                tabElement.lastChild.textContent = this.children[i].item.name.value
+                tabElement.class = `w3-bar-subitem w3-button`
+            }
+            if(this.tabListElement.children.length === 0){
+                let tabElement = this.tabListElement.appendChild(document.createElement(`div`))
+                tabElement.appendChild(this.tabListNewElement)
+            }
+        })
+        this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
     updateControls() {
@@ -193,6 +236,9 @@ export default class ConfigList extends HTMLDivElement {
     RegisterVariables(reference) {
         for(var i = 0; i < this.children.length; i++){
             this.children[i].RegisterVariables(reference)
+        }
+        for(var i = 0; i < this.tabListElement.children.length; i++){
+            this.tabListElement.children[i].RegisterVariables?.()
         }
     }
 }

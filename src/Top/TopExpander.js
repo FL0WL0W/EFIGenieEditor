@@ -2,9 +2,13 @@ import Top from "./Top";
 import Dashboard from "./Dashboard";
 import UIPinOverlay from "../UI/UIPinOverlay"
 import UISelection from "../JavascriptUI/UISelection";
-import Inputs from "./Inputs";
-import CAN from "./CAN";
 import Pinouts from "../Pinouts/Pinouts";
+import ConfigList from "./ConfigList";
+import Input from "../Input/Input";
+import CANConfigs from "../CAN/CANConfigs";
+import GenericCalculation from "../Calculation/GenericCalculation";
+import GenericConfigs from "../Calculation/GenericConfigs";
+import FloatOutputConfigs from "../Output/FloatOutputConfigs";
 
 export default class TopExpander extends Top {
     Dashboard = new Dashboard()
@@ -13,8 +17,16 @@ export default class TopExpander extends Top {
         options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),
         value: `ESP32C6_Expander`
     })
-    Inputs = new Inputs()
-    CAN = new CAN();
+    Inputs = new ConfigList({
+        itemConstructor: Input,
+        saveValue: [{}]
+    })
+    CAN = new ConfigList({
+        newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
+    })
+    Outputs = new ConfigList({
+        newItem() { return new GenericCalculation({ calculations: [ {group: `Output`, calculations: FloatOutputConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
+    })
 
     constructor(prop) {
         super()
@@ -22,6 +34,7 @@ export default class TopExpander extends Top {
         this.addTab(this.PinOverlay, `Pin Mapping`)
         this.addTab(this.Inputs, `Inputs`)
         this.addTab(this.CAN, `CAN`)
+        this.addTab(this.Outputs, `Outputs`)
         this.TargetDevice.addEventListener(`change`, () => { 
             this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
         })
@@ -39,6 +52,7 @@ export default class TopExpander extends Top {
         VariableRegister.Clear()
         this.Inputs.RegisterVariables()
         this.CAN.RegisterVariables({ name: `CANParameters` })
+        this.Outputs.RegisterVariables({ name: `Outputs` })
         this.Dashboard.RegisterVariables()
         this.PinOverlay.update();
     }

@@ -141,5 +141,4 @@ export default class Calculation_Polynomial extends HTMLDivElement {
     get displayUnits() { return [ this.displayUnit ] }
     set displayUnits(displayUnits) { this.displayUnit = displayUnits?.[0] }
 }
-GenericConfigs.push(Calculation_Polynomial)
 customElements.define('ui-polynomial', Calculation_Polynomial, { extends: `div` })

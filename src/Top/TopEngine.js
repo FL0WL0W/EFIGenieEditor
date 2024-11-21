@@ -2,12 +2,14 @@ import Top from "./Top";
 import Dashboard from "./Dashboard";
 import UIPinOverlay from "../UI/UIPinOverlay"
 import UISelection from "../JavascriptUI/UISelection";
-import Inputs from "./Inputs";
-import CAN from "./CAN";
 import Pinouts from "../Pinouts/Pinouts";
 import Engine from "./Engine";
 import Fuel from "./Fuel";
 import Ignition from "./Ignition";
+import Input from "../Input/Input";
+import CANConfigs from "../CAN/CANConfigs";
+import GenericCalculation from "../Calculation/GenericCalculation";
+import GenericConfigs from "../Calculation/GenericConfigs";
 
 export default class TopEngine extends Top {
     Dashboard = new Dashboard()
@@ -16,8 +18,13 @@ export default class TopEngine extends Top {
         options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),
         value: `ESP32C6_Expander`
     })
-    Inputs = new Inputs()
-    CAN = new CAN();
+    Inputs = new ConfigList({
+        itemConstructor: Input,
+        saveValue: [{}]
+    })
+    CAN = new ConfigList({
+        newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
+    });
     Engine = new Engine()
     Fuel = new Fuel()
     Ignition = new Ignition()
@@ -46,6 +53,7 @@ export default class TopEngine extends Top {
 
     RegisterVariables() {
         VariableRegister.Clear()
+        VariableRegister.CurrentTick = { name: `CurrentTick`, type: `tick`, id: VariableRegister.GenerateVariableId() }
         this.Inputs.RegisterVariables()
         this.CAN.RegisterVariables({ name: `CANParameters` })
         this.Engine.RegisterVariables()
