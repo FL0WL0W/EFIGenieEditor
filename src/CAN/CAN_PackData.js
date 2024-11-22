@@ -55,6 +55,7 @@ export default class CAN_PackData extends UITemplate {
     }
 
     RegisterVariables(reference) {
+        this.variable.RegisterVariables(reference)
     }
 }
 customElements.define(`can-pack-data`, CAN_PackData, { extends: `span` })

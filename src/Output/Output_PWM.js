@@ -26,6 +26,11 @@ export default class Output_PWM extends UITemplate {
         this.style.display = `block`
         this.Setup(prop)
     }
+
+    RegisterVariables(reference) {
+        this.period.RegisterVariables(reference)
+        this.pulseWidth.RegisterVariables(reference)
+    }
 }
 FloatOutputConfigs.push(Output_PWM)
 customElements.define(`output-pwm`, Output_PWM, { extends: `span` })

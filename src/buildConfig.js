@@ -1229,6 +1229,16 @@ let types = [
             itemType: `CAN_GenericCalculation`
         }
     }},
+    { type: `Outputs`, toDefinition() {
+        return { 
+            types : [{ type: `Output_GenericCalculation`, toDefinition() {
+                return { ...this, type: `GenericCalculation`, outputVariables: [ { name: `Outputs.` } ] }
+            }}],
+            type: `ConfigList`, 
+            value: this.value,
+            itemType: `Output_GenericCalculation`
+        }
+    }},
     { type: `TopEngine`, toDefinition() {
         return { type: `definition`, value: [
             { type: `UINT32`, value: 0}, //signal last operation
@@ -1273,7 +1283,8 @@ let types = [
             //main loop execute
             { type: `Group`, value: [
                 { type: `Inputs`, value: this.Inputs }, 
-                { type: `CAN`, value: this.CAN }
+                { type: `CAN`, value: this.CAN },
+                { type: `Outputs`, value: this.Outputs }
             ]},
         ]}
     }, toArrayBuffer() {
