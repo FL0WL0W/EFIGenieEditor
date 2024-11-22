@@ -530,16 +530,16 @@ let types = [
         if(this.calculation) return { ...this, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
         if(!this.selection) return
         const outputUnit = this.outputVariables?.[0]?.unit ?? this.outputUnits?.[0]
-        if(outputUnit != undefined && this.selection.unit != outputUnit && !VariableRegister.GetVariableByReference({ ...this.selection, unit: outputUnit })) {
-            const baseVariableReference = VariableRegister.GetVariableByReference(this.selection)
-            return { outputVariables: [ { ...baseVariableReference, unit: outputUnit } ], inputVariables: [ baseVariableReference ], type: `Calculation_UnitConversion` }
-        }
         VariableRegister.RegisterVariable({ 
             ...this.selection, 
             ...this.outputVariables?.[0], 
             ...(this.selection?.name != undefined && { id: this.selection.name }),
             ...(outputUnit != undefined && { unit: outputUnit })
         })
+        if(outputUnit != undefined && this.selection.unit != outputUnit && !VariableRegister.GetVariableByReference({ ...this.selection, unit: outputUnit })) {
+            const baseVariableReference = VariableRegister.GetVariableByReference(this.selection)
+            return { outputVariables: [ { ...baseVariableReference, unit: outputUnit } ], inputVariables: [ baseVariableReference ], type: `Calculation_UnitConversion` }
+        }
     }},
     { type: `GenericCalculation`, toDefinition() {
         return { ...this, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `${this.outputVariables?.[0]?.name?? ``}${this.name}`, unit: this.outputUnits?.[0], type: this.outputTypes?.[0] } ] }
@@ -804,16 +804,23 @@ let types = [
         ]}
     }},
     { type: `CAN_WriteData`, toDefinition() {
+        let tempIndex = 0
+        const packData = this.packData.map(x => { //pack data configuration
+            x.variable.outputVariables = [ { name: `temp${tempIndex++}` } ]
+        })
         return { type: `definition`, value: [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.Interval}, //interval factory ID
             { type: `FLOAT`, value: 1 / this.interval}, //interval time
             { type: `Group`, value: [//group operation to execute during interval
+                ...packData.map(x => { //pack data variable calculations
+                    return { ...x.variable, type: `CalculationOrVariableSelection` }
+                }),
                 { type: `definition`, value: [
                     { type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.Package}, //package factory ID
                     { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANPackData}, //pack factory ID
                     { type: `UINT64`, value: 0}, //base data TODO
                     { type: `UINT8`, value: this.packData.length }, //number of pack data values
-                    ...this.packData.map(x => { //pack data configuration
+                    ...packData.map(x => { //pack data configuration
                         const isBool = x.bitLength < 2
                         return { type: `definition`, value: [
                             { type: `FLOAT`, value: x.multiplier}, //muiltiplier
@@ -824,8 +831,8 @@ let types = [
                         ]}
                     }),
                     { type: `VariableId`, value: { name: `temp` }}, //output to temp
-                    ...this.packData.map(x => { //pack data input variables
-                        return { type: `VariableId`, value: x.variable }
+                    ...packData.map(x => { //pack data input variables
+                        return { type: `VariableId`, value: x.variable.outputVariables[0] }
                     })
                 ]},
                 { type: `definition`, value: [
@@ -892,6 +899,21 @@ let types = [
             { type: `UINT16`, value: this.pin },
             { type: `UINT8`, value: this.inverted | (this.highZ? 0x02 : 0x00) }
         ]}, this)
+    }},
+    { type: `Output_PWM`, toDefinition() {
+        this.inputVariables ??= [ undefined, undefined ]
+        this.inputVariables[0] = { name: `temp0`, unit: `s` }
+        this.inputVariables[1] = { name: `temp1`, unit: `s` }
+
+        return { type: `Group`, value: [
+            { ...this.period, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },
+            { ...this.pulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[1] ] },
+            Packagize({ type: `definition`, value: [
+                { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.PulseWidthPinWrite }, //variable
+                { type: `UINT16`, value: this.pin },
+                { type: `UINT16`, value: this.minFrequency }
+            ]}, this)
+        ]}
     }},
     { type: `Reluctor_GM24x`, toDefinition() {
         return ReluctorTemplate.call(
