@@ -113,6 +113,7 @@ import TopEngine from "./Top/TopEngine.js"
 import TPS_Linear from "./TPS/TPS_Linear.js"
 
 import pako from "pako"
+import { communication } from "./communication.js"
 
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
@@ -202,4 +203,6 @@ window.addEventListener(`load`, function() {
         test.readAsText(evt.target.files[0])
         configJsonName = evt.target.files[0].name
     })
+
+    communication.connect()
 })

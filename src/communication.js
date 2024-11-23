@@ -114,13 +114,123 @@ class Serial {
     }
 }
 
+class Socket {
+    #commandLock = false
+    #webSocket
+    #uri
+
+    constructor(uri) {
+        this.#uri = uri
+    }
+
+    async #connect() {
+        if(this.#webSocket != undefined && this.#webSocket.readyState === WebSocket.OPEN)
+            return
+
+        this.#webSocket = new WebSocket(`ws://${window.location.hostname}/${this.#uri}`)
+
+        // Buffer for incoming messages
+        this.incomingMessages = []
+        this.#webSocket.onmessage = event => {
+            if (event.data instanceof Blob) {
+                // Handle binary data as needed
+                event.data.arrayBuffer().then(buffer => this.incomingMessages.push(buffer))
+            } else {
+                this.incomingMessages.push(event.data)
+            }
+        };
+
+        return new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+                reject(new Error("WebSocket connection timed out"));
+            }, 1000);
+
+            this.#webSocket.onopen = () => {
+                clearTimeout(timer);
+                resolve();
+            };
+
+            this.#webSocket.onerror = (error) => {
+                clearTimeout(timer);
+                reject(error);
+            };
+        });
+    }
+
+    async read(numberOfBytes, timeout = 1000) {
+        await this.#connect()
+
+        const startTime = Date.now()
+        while (this.incomingMessages.length === 0) {
+            if (Date.now() - startTime > timeout) {
+                throw new Error("Timeout waiting for data.");
+            }
+            await new Promise(r => setTimeout(r, 10))
+        }
+
+        // Extract the first available message
+        const data = this.incomingMessages.shift()
+
+        // Handle partial reads
+        if (data instanceof ArrayBuffer && data.byteLength > numberOfBytes) {
+            const result = data.slice(0, numberOfBytes)
+            const remaining = data.slice(numberOfBytes)
+            this.incomingMessages.unshift(remaining) // Put the remainder back into the queue
+            return result
+        }
+
+        return data
+    }
+
+    async write(sendBytes, timeout = 1000) {
+        await this.#connect()
+
+        if (this.#webSocket.readyState !== WebSocket.OPEN) {
+            throw new Error("WebSocket is not open.")
+        }
+
+        // Wrap the send operation in a promise to handle timeouts
+        const promise = new Promise((resolve, reject) => {
+            this.#webSocket.send(sendBytes);
+            resolve();
+        })
+
+        // Enforce timeout
+        return Promise.race([
+            promise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Write timeout")), timeout))
+        ])
+    }
+    
+    async command(sendBytes, numberOfReceiveBytes, timeout = 1000) {
+        const thisClass = this
+        if(!await waitForFunctionToReturnFalse(function() { return thisClass.#commandLock }))
+            throw `Socket locked`
+        this.#commandLock = true
+        let retBytes
+        try {
+            await this.write(sendBytes, timeout)
+            retBytes = this.read(numberOfReceiveBytes, timeout)
+        } catch(e) {
+            throw e
+        } finally {
+            this.#commandLock = false
+        }
+        return retBytes ?? new ArrayBuffer()
+    }
+
+    close() {
+        this.#webSocket.close()
+    }
+}
+
 class EFIGenieLog { 
     variableMetadata = undefined
     logBytes = new ArrayBuffer()
     loggedVariableValues = []
 
     get saveValue() {
-        var objectArray = pako.gzip(new TextEncoder().encode(JSON.stringify(his.variableMetadata.GetVariableReferenceList()))).buffer
+        var objectArray = base64ToArrayBuffer(lzjs.compressToBase64(stringifyObject(this.variableMetadata.GetVariableReferenceList())))
         return (new Uint32Array([objectArray.byteLength]).buffer).concatArray(objectArray).concatArray(LogBytes)
     }
     set saveValue(saveValue) {
@@ -131,10 +241,11 @@ class EFIGenieLog {
         //TODO: parseBytes
     }
 }
-class EFIGenieSerial extends EFIGenieLog {
-    #serial = new Serial(undefined, [ 
-        { usbVendorId: 1155, usbProductId: 22336 } 
-    ])
+class EFIGenieSocket extends EFIGenieLog {
+    // #serial = new Serial(undefined, [ 
+    //     { usbVendorId: 1155, usbProductId: 22336 } 
+    // ])
+    #serial = new Socket("EFIGenieCommunication")
     
     variableMetadata = undefined
     variablesToPoll = []
@@ -318,7 +429,7 @@ class EFIGenieSerial extends EFIGenieLog {
             if(thisClass.connected)
                 thisClass.connect()
         }).catch(function(e) {
-            alert(e)
+            console.log(e)
             thisClass.variableMetadata = undefined
             thisClass.polling = false
             thisClass.connected = false
@@ -331,4 +442,4 @@ class EFIGenieSerial extends EFIGenieLog {
     }
 }
 
-export let communication = new EFIGenieSerial()
+export let communication = new EFIGenieSocket()
