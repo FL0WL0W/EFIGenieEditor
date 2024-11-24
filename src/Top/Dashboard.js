@@ -6,6 +6,7 @@ import UIGauge from "../UI/UIGauge"
 import UIUnit, { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
+import { objectTester } from "../JavascriptUI/UIUtils"
 class UILoggedVariable extends HTMLTableRowElement {
     #variable
     get variable() { return this.#variable }

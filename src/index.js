@@ -119,7 +119,7 @@ import { communication } from "./communication.js"
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
     window.buildConfig = buildConfig
-    let b = new TopExpander()
+    window.b = new TopExpander()
     let workspace = document.querySelector(`#workspace`)
     workspace.innerHtml = ``
     workspace.append(b)
@@ -205,4 +205,5 @@ window.addEventListener(`load`, function() {
     })
 
     communication.connect()
+    window.communication = communication
 })

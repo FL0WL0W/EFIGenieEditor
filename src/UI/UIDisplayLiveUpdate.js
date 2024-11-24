@@ -13,6 +13,7 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
     }
 
     RegisterVariables(reference) {
+        console.log(`register`)
         let variable = VariableRegister.GetVariableByReference(reference)
         variable ??= reference
         if(!variable?.unit && variable?.type?.split(`|`)?.indexOf(`float`) === -1) return
@@ -21,6 +22,7 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
         if(communication.variablesToPoll.indexOf(reference) === -1)
             communication.variablesToPoll.push(reference)
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
+            console.log(`update`)
             if(reference) { 
                 const variableId = variableMetadata?.GetVariableId(reference)
                 if(currentVariableValues?.[variableId] != undefined) {

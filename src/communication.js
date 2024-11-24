@@ -1,3 +1,6 @@
+import pako from "pako"
+import VariableRegistry from "./VariableRegistry"
+
 async function waitForFunctionToReturnFalse(f, timeout = 1000) {
     let trys = 0
     while(f() && trys++ < Math.max(1, timeout / Math.max(timeout / 10, 10)))
@@ -230,7 +233,7 @@ class EFIGenieLog {
     loggedVariableValues = []
 
     get saveValue() {
-        var objectArray = base64ToArrayBuffer(lzjs.compressToBase64(stringifyObject(this.variableMetadata.GetVariableReferenceList())))
+        var objectArray = pako.gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.GetVariableReferenceList()))).buffer
         return (new Uint32Array([objectArray.byteLength]).buffer).concatArray(objectArray).concatArray(LogBytes)
     }
     set saveValue(saveValue) {
@@ -266,16 +269,18 @@ class EFIGenieSocket extends EFIGenieLog {
             if(i === 0) {
                 length = new Uint32Array(retData.slice(0, 4))[0] / 64
                 if(length > 1000)throw `Incorrect length returned when requesting metadata`
-                retData = retData.slice(4)
             }
             metadataData = metadataData.concatArray(retData)
         }
             
-        metadataData = metadataData.slice(0, length * 64)
-        const metadataString = lzjs.decompressFromBase64(arrayBufferToBase64(metadataData))
+        length = new Uint32Array(metadataData.slice(0,4))[0]
+        metadataData = metadataData.slice(4, length + 4)
+        console.log(new Uint8Array(metadataData))
+        const metadataString = pako.ungzip(new Uint8Array(metadataData), { to: 'string' })
+        console.log(metadataString)
 
         this.variableMetadata = new VariableRegistry(JSON.parse(metadataString))
-        registerVariables()
+        b.RegisterVariables()
     }
 
     async pollVariables() {
@@ -369,9 +374,9 @@ class EFIGenieSocket extends EFIGenieLog {
     }
 
     #updateLiveUpdateEvents = function(thisClass) {
-        // Object.entries(thisClass.liveUpdateEvents).filter(function(value, index, self) { return self.indexOf(value) === index }).forEach(([elementname, element]) => {
-        //     element?.(thisClass.variableMetadata, thisClass.loggedVariableValues[thisClass.loggedVariableValues.length - 1])
-        // })
+        Object.entries(thisClass.liveUpdateEvents).filter(function(value, index, self) { return self.indexOf(value) === index }).forEach(([elementname, element]) => {
+            element?.(thisClass.variableMetadata, thisClass.loggedVariableValues[thisClass.loggedVariableValues.length - 1])
+        })
     }
 
     async #sendCommandAndWaitForAck(data, commandName) {
@@ -428,11 +433,11 @@ class EFIGenieSocket extends EFIGenieLog {
             thisClass.polling = false
             if(thisClass.connected)
                 thisClass.connect()
-        }).catch(function(e) {
-            console.log(e)
-            thisClass.variableMetadata = undefined
-            thisClass.polling = false
-            thisClass.connected = false
+        // }).catch(function(e) {
+        //     console.log(e)
+        //     thisClass.variableMetadata = undefined
+        //     thisClass.polling = false
+        //     thisClass.connected = false
         })
     }
     async disconnect() {
