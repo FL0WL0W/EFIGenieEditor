@@ -89,7 +89,7 @@ export default class UIParameterWithUnit extends UITemplate {
     }
 
     get units() { return this.parameterSelection.value?.name != undefined? this.optionUnits[this.parameterSelection.value.name] : undefined }
-    get unit() { return this.units.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.unitSelection.value)) }
+    get unit() { return this.units?.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.unitSelection.value)) }
     get displayUnit() { return this.unitSelection.value }
     set displayUnit(displayUnit) { this.unitSelection.value = displayUnit }
 
@@ -128,9 +128,13 @@ export default class UIParameterWithUnit extends UITemplate {
                     newOptions.push({ ...option, options: flatten(option.options) })
                 } else if(typeof option.value === `object` && option.value.unit !== undefined) {
                     this.optionUnits[option.value.name] ??= []
-                    this.optionUnits[option.value.name].push(option.value.unit)
-                    if(newOptions.filter(x=>x?.value?.name === option.value.name).length < 1)
+                    if(!option.disabled) //TODO show units but greyed out. current interface doesn't allow this
+                        this.optionUnits[option.value.name].push(option.value.unit)
+                    const existing = newOptions.filter(x=>x?.value?.name === option.value.name)
+                    if(existing.length < 1)
                         newOptions.push({ ...option, value: { ...option.value, unit: undefined }, info: undefined})
+                    else
+                        existing[0].disabled &= option.disabled
                 } else {
                     newOptions.push(option)
                 }

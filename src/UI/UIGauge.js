@@ -47,6 +47,8 @@ export default class UIGauge extends UITemplate {
     get displayUnit() { return this.configTemplate.variable.displayUnit }
     set displayUnit(displayUnit) { this.configTemplate.variable.displayUnit = displayUnit }
 
+    get valueUnit() { return this.configTemplate.variable.unit }
+
     #value
     get value() { return this.#value }
     set value(value) { 
@@ -118,16 +120,14 @@ export default class UIGauge extends UITemplate {
         super()
         this.style.position = `relative`
         this.configTemplate = new UITemplate({
-            template:  `<span style="display: block;"><label>Variable:</label><div data-element="variable"></div><span>
-                        <span style="display: block;"><label>Min:</label><div data-element="min"></div><span>
-                        <span style="display: block;"><label>Low:</label><div data-element="lowRedline"></div><span>
-                        <span style="display: block;"><label>Step:</label><div data-element="step"></div><span>
-                        <span style="display: block;"><label>High:</label><div data-element="highRedline"></div><span>
-                        <span style="display: block;"><label>Max:</label><div data-element="max"></div><span>
-                        <span style="display: block;"><label>Gauge Template</label><div data-element="editGauge"></div><div data-element="gaugeTemplate"></div><span>`,
-            variable: new UIParameterWithUnit({
-                options: VariableRegister.GetSelections(undefined, defaultFilter(undefined, [ `float` ]))
-            }),
+            template:  `<span style="display: block;"><label>Variable:</label><div data-element="variable"></div></span>
+                        <span style="display: block;"><label>Min:</label><div data-element="min"></div></span>
+                        <span style="display: block;"><label>Low:</label><div data-element="lowRedline"></div></span>
+                        <span style="display: block;"><label>Step:</label><div data-element="step"></div></span>
+                        <span style="display: block;"><label>High:</label><div data-element="highRedline"></div></span>
+                        <span style="display: block;"><label>Max:</label><div data-element="max"></div></span>
+                        <span style="display: block;"><label>Gauge Template</label><div data-element="editGauge"></div><div data-element="gaugeTemplate"></div></span>`,
+            variable: new UIParameterWithUnit(),
             min: new UINumberWithUnit(),
             max: new UINumberWithUnit(),
             step: new UINumberWithUnit({ min: 0.0000001 }),
@@ -214,9 +214,7 @@ export default class UIGauge extends UITemplate {
         this.configTemplate.variable.options = options
 
         const reference = this.configTemplate.variable.value
-        const variable = this.communication?.variableMetadata?.GetVariableByReference(reference) ?? VariableRegister.GetVariableByReference(reference)
         if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-        this.valueUnit = variable?.unit
         if(communication.variablesToPoll.indexOf(reference) === -1)
             communication.variablesToPoll.push(reference)
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {

@@ -284,7 +284,6 @@ function Packagize(definition, val) {
         }
 
         let variableReference = ov.substring(0, ov.indexOf(`(`) > -1? ov.indexOf(`(`) : ov.length)
-        console.log(variableReference)
         return variableReference
     })
     val.inputVariables ??= []
@@ -1245,6 +1244,10 @@ let types = [
 
             //inputs
             { type: `Group`, value: [
+                { type: `Package`, //Package
+                    value: [{ type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.GetTick }], //GetTick factory ID
+                    outputVariables: [ { name: `CurrentTick`, type: `tick` } ]
+                }, 
                 { type: `Inputs`, value: this.Inputs }, 
                 { type: `CAN`, value: this.CAN },
                 { type: `Engine`, value: this.Engine },
@@ -1282,6 +1285,10 @@ let types = [
 
             //main loop execute
             { type: `Group`, value: [
+                { type: `Package`, //Package
+                    value: [{ type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.GetTick }], //GetTick factory ID
+                    outputVariables: [ { name: `CurrentTick`, type: `tick` } ]
+                }, 
                 { type: `Inputs`, value: this.Inputs }, 
                 { type: `CAN`, value: this.CAN },
                 { type: `Outputs`, value: this.Outputs }

@@ -275,9 +275,7 @@ class EFIGenieSocket extends EFIGenieLog {
             
         length = new Uint32Array(metadataData.slice(0,4))[0]
         metadataData = metadataData.slice(4, length + 4)
-        console.log(new Uint8Array(metadataData))
         const metadataString = pako.ungzip(new Uint8Array(metadataData), { to: 'string' })
-        console.log(metadataString)
 
         this.variableMetadata = new VariableRegistry(JSON.parse(metadataString))
         b.RegisterVariables()
@@ -433,11 +431,11 @@ class EFIGenieSocket extends EFIGenieLog {
             thisClass.polling = false
             if(thisClass.connected)
                 thisClass.connect()
-        // }).catch(function(e) {
-        //     console.log(e)
-        //     thisClass.variableMetadata = undefined
-        //     thisClass.polling = false
-        //     thisClass.connected = false
+        }).catch(function(e) {
+            console.log(e)
+            thisClass.variableMetadata = undefined
+            thisClass.polling = false
+            thisClass.connected = false
         })
     }
     async disconnect() {

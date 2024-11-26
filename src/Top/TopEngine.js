@@ -53,7 +53,7 @@ export default class TopEngine extends Top {
 
     RegisterVariables() {
         VariableRegister.Clear()
-        VariableRegister.CurrentTick = { name: `CurrentTick`, type: `tick`, id: VariableRegister.GenerateVariableId() }
+        VariableRegister.CurrentTick = { name: `CurrentTick`, type: `tick` }
         this.Inputs.RegisterVariables()
         this.CAN.RegisterVariables({ name: `CANParameters` })
         this.Engine.RegisterVariables()

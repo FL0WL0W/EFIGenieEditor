@@ -121,7 +121,6 @@ export default class ConfigList extends HTMLDivElement {
             this.lastChild.controlElement.append(this.newItemElement)
         else
             this.parentElement?.insertBefore?.(this.newItemElement, this)
-        this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
     appendNewItem(newItem, before) {
@@ -146,6 +145,7 @@ export default class ConfigList extends HTMLDivElement {
                 return
             this.parentElement.parentElement.previousSibling.before(this.parentElement.parentElement)
             thisClass.updateControls()
+            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
         let deleteElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
@@ -155,6 +155,7 @@ export default class ConfigList extends HTMLDivElement {
                 return
             this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement)
             thisClass.updateControls()
+            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
         let downElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
@@ -164,6 +165,7 @@ export default class ConfigList extends HTMLDivElement {
                 return
             this.parentElement.parentElement.nextSibling.after(this.parentElement.parentElement)
             thisClass.updateControls()
+            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
 
         itemContainer.RegisterVariables = function(reference) { this.item.RegisterVariables?.(reference) }
@@ -181,6 +183,7 @@ export default class ConfigList extends HTMLDivElement {
             this.insertBefore(itemContainer, before)
         }
         this.updateControls()
+        this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
     newItem() {
@@ -209,6 +212,7 @@ export default class ConfigList extends HTMLDivElement {
         }
         this.#addStaticItems();
         this.updateControls()
+        this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
     get value () { return [...this.children].map(e => { return this.staticItems.find(x => x.item === e.item) !== undefined? { [this.staticItems.find(x => x.item === e.item)?.name] : e.item.value } : e.item.value }) }
@@ -234,6 +238,7 @@ export default class ConfigList extends HTMLDivElement {
     }
 
     RegisterVariables(reference) {
+        this.updateControls()
         for(var i = 0; i < this.children.length; i++){
             this.children[i].RegisterVariables(reference)
         }

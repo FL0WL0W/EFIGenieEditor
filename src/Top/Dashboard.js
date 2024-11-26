@@ -7,6 +7,7 @@ import UIUnit, { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 import { objectTester } from "../JavascriptUI/UIUtils"
+import UIPlot from "../UI/UIPlot"
 class UILoggedVariable extends HTMLTableRowElement {
     #variable
     get variable() { return this.#variable }
@@ -63,9 +64,13 @@ export default class Dashboard extends UITemplate {
     <div style="display:inline-block;">
         <div data-element="gauges"></div>
     </div>
+    <div style="display:block;">
+        <div data-element="plots"></div>
+    </div>
 </div>`
 
     gauges = document.createElement(`div`)
+    plots = document.createElement(`div`)
     loggedVariables = document.createElement(`table`)
     loggedVariablesUnitSelection = new UIUnit()
     loggedVariablesRefreshSelection = new UISelection({
@@ -120,6 +125,20 @@ export default class Dashboard extends UITemplate {
             this.RegisterVariables();
         })
         this.RegisterVariables()
+        this.plots.class = `plots`
+        Object.defineProperty(this.plots, 'saveValue', {
+            get: function() { return [...this.children].map(x => x.saveValue) },
+            set: function(saveValue) { 
+                while(this.children.length > saveValue.length) this.removeChild(this.lastChild)
+                for(let i = 0; i < saveValue.length; i++){
+                    if(!this.children[i]) {
+                        this.append(new UIPlot())
+                    }
+                    this.children[i].saveValue = saveValue[i]
+                }
+            }
+        })
+        this.plots.saveValue = new Array(1)
         this.gauges.class = `gauges`
         Object.defineProperty(this.gauges, 'saveValue', {
             get: function() { return [...this.children].map(x => x.saveValue) },
@@ -272,7 +291,8 @@ export default class Dashboard extends UITemplate {
             else 
                 variableElement.hidden = false
         });
-        [...this.gauges.children].forEach(x => x.RegisterVariables())
+        [...this.gauges.children].forEach(x => x.RegisterVariables());
+        [...this.plots.children].forEach(x => x.RegisterVariables());
     }
 }
 customElements.define(`top-dashboard`, Dashboard, { extends: `span` })

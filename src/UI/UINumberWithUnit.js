@@ -61,11 +61,8 @@ export default class UINumberWithUnit extends UITemplate {
             measurement : prop?.measurement,
             value: prop?.displayUnit ?? prop?.valueUnit
         })
-        let oldUnit = this.displayUnit
         this.displayUnitElement.addEventListener(`change`, () => {
-            if(this.displayValue != undefined)
-                this.displayValue = ConvertValueFromUnitToUnit(this.displayValue, oldUnit, this.displayUnit)
-            oldUnit = this.displayUnit
+            this.UpdateDisplayValue()
         })
         this.displayValueElement = new UINumber()
         this.displayValueElement.addEventListener(`change`, () => {
@@ -73,6 +70,16 @@ export default class UINumberWithUnit extends UITemplate {
                 this.#value = ConvertValueFromUnitToUnit(this.displayValue, this.displayUnit, this.valueUnit)
         })
         this.Setup(prop)
+    }
+
+    #unitHidden = false
+    get unitHidden() { return this.#unitHidden }
+    set unitHidden(unitHidden) { 
+        this.#unitHidden = unitHidden
+        if(this.measurement !== undefined)
+            this.displayUnitElement.hidden = unitHidden
+        else 
+            this.displayUnitElement.hidden = true
     }
 
     get saveValue() {
@@ -94,11 +101,12 @@ export default class UINumberWithUnit extends UITemplate {
     UpdateDisplayValue() {
         const displayUnit = this.displayUnit
         const valueUnit = this.valueUnit
-        const valueToDisplayValue = value => { return value == undefined || !displayUnit? value : ConvertValueFromUnitToUnit(value, valueUnit, displayUnit) }
-        this.displayValue               = valueToDisplayValue(this.value)   ?? this.displayValue
+        const valueToDisplayValue = value => { return (value === undefined || !displayUnit)? value : ConvertValueFromUnitToUnit(value, valueUnit, displayUnit) }
+        const value = this.value
         this.displayValueElement.min    = valueToDisplayValue(this.min)     ?? this.displayValueElement.min
         this.displayValueElement.max    = valueToDisplayValue(this.max)     ?? this.displayValueElement.max
         this.displayValueElement.step   = valueToDisplayValue(this.step)    ?? this.displayValueElement.step
+        this.displayValue               = valueToDisplayValue(value)        ?? this.displayValue
     }
 }
 customElements.define(`ui-numberwithunit`, UINumberWithUnit, { extends: `span` })
