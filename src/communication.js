@@ -130,7 +130,7 @@ class Socket {
         if(this.#webSocket != undefined && this.#webSocket.readyState === WebSocket.OPEN)
             return
 
-        this.#webSocket = new WebSocket(`ws://${window.location.hostname}/${this.#uri}`)
+        this.#webSocket = new WebSocket(`ws://${window.location.host}/${this.#uri}`)
 
         // Buffer for incoming messages
         this.incomingMessages = []

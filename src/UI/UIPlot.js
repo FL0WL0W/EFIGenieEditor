@@ -83,8 +83,7 @@ export default class UIPlot extends UITemplate {
                 { 
                     label: "Value",
                     stroke: "blue",
-                    width: 2,
-                    fill: "rgba(0, 0, 255, 1)",
+                    width: 2 
                 },
             ],
             axes: [
@@ -92,7 +91,7 @@ export default class UIPlot extends UITemplate {
                 { stroke: "#fff", grid: { show: true } },
             ]
         },
-        [[], []],
+        [[0,1,2,3], [0,0.25,0.5,0.75]],
         this.plotWorkspace)
 
         this.Setup(prop)

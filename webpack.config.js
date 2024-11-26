@@ -3,10 +3,9 @@ const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
-module.exports = {
-    mode: 'production',
+module.exports = (env, argv) => { return {
     optimization: {
-        minimize: true,
+        minimize: argv.mode === 'production',
         minimizer: [
             new TerserPlugin({
                 parallel: true,
@@ -32,6 +31,26 @@ module.exports = {
         static: {
             directory: path.resolve(__dirname, "dist")
         },
+        proxy: [
+            {
+                context: ['/EFIGenieCommunication'],
+                target: 'ws://192.168.4.1',
+                ws: true, // Enable WebSocket support
+                changeOrigin: true
+            },
+            {
+                context: ['/upload'],
+                target: 'ws://192.168.4.1',
+            },
+            {
+                context: ['/config.bin'],
+                target: 'ws://192.168.4.1',
+            },
+            {
+                context: ['/config.json'],
+                target: 'ws://192.168.4.1',
+            },
+        ],
         port: 3000,
         open: true,
         hot: true,
@@ -69,4 +88,4 @@ module.exports = {
             template: 'src/template.html',
         })
     ]
-}
+}}

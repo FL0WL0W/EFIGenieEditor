@@ -28,6 +28,7 @@ Object.defineProperty(HTMLElement.prototype, 'class', {
 
 import "./JavascriptUI/UI.css"
 import "./styles/style.css"
+import 'uplot/dist/uPlot.min.css';
 
 import { downloadBin, downloadObject } from "./download.js"
 

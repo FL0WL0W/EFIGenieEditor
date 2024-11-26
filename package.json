@@ -4,11 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "webpack",
+    "build": "webpack --mode production",
     "gzip": "find dist -type f -exec sh -c 'gzip -k -c \"$1\" > \"distGZ/$(basename \"$1\").gz\"' sh {} \\; ; rm distGZ/*.map.gz;",
     "postbuild": "npm run gzip",
     "upload": "npm run build; find distGZ -type f -exec sh -c 'curl  --data-binary @\"$1\" http://192.168.4.1/upload/$(basename \"$1\")' sh {} \\;",
-    "dev": "webpack serve"
+    "dev": "webpack serve --mode development"
   },
   "keywords": [],
   "author": "",
