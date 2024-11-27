@@ -8,6 +8,7 @@ import UIParameterWithUnit from "./UIParameterWithUnit"
 import UINumberWithUnit from "./UINumberWithUnit"
 import Dashboard from "../Top/Dashboard"
 import uPlot from "uplot"
+import UIDialog from "../JavascriptUI/UIDialog"
 
 class UIPlot_Variable extends UITemplate {
     static template = `<div data-element="variable"></div><div data-element="min"></div><div data-element="max"></div>`
@@ -59,7 +60,7 @@ class UIPlot_Variable extends UITemplate {
 }
 customElements.define(`ui-plot-variable`, UIPlot_Variable, { extends: `span` })
 export default class UIPlot extends UITemplate {
-    static template = `<div data-element="plotWorkspace"></div><div data-element="variablesToPlot"></div>`
+    static template = `<div data-element="plotWorkspace"></div>`
     variablesToPlot = new ConfigList({
         itemConstructor: UIPlot_Variable,
         // saveValue: [{}]
@@ -75,8 +76,7 @@ export default class UIPlot extends UITemplate {
             width: 800,
             height: 400,
             scales: {
-                x: { },
-                y: { range: [0, 1] },  // Set y-axis range
+                x: { }
             },
             series: [
                 {},
@@ -93,6 +93,39 @@ export default class UIPlot extends UITemplate {
         },
         [[0,1,2,3], [0,0.25,0.5,0.75]],
         this.plotWorkspace)
+
+        this.configDialog = new UIDialog({ title: `Edit Plot` })
+        this.configDialog.content.append(this.variablesToPlot)
+
+        this.plotWorkspace.addEventListener(`click`, () => {
+            this.configDialog.show()
+        })
+
+        this.variablesToPlot.addEventListener(`change`, () => {
+            console.log(`change`)
+            this.RegisterVariables()
+            const newSeries = [ {}, ...[...this.variablesToPlot.children].map(uiplotvariable => {
+                const value = uiplotvariable.item.value
+                const variable = value?.variable
+                if(variable === undefined)
+                    return
+                return {
+                    label: variable.name,
+                    stroke: "blue",
+                    width: 2 
+                }
+            }).filter(x => x !== undefined)]
+            while(this.plot.series.length > newSeries.length) {
+                this.plot.delSeries(newSeries.length)
+            }
+            newSeries.forEach((series, idx) => {
+                if(idx < this.plot.series.length) {
+                    this.plot.setSeries(idx, series)
+                } else {
+                    this.plot.addSeries(series, idx)
+                }
+            })
+        })
 
         this.Setup(prop)
     }

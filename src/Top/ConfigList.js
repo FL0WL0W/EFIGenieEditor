@@ -155,7 +155,7 @@ export default class ConfigList extends HTMLDivElement {
                 return
             this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement)
             thisClass.updateControls()
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
+            thisClass.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
         let downElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
