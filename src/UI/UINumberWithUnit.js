@@ -106,7 +106,7 @@ export default class UINumberWithUnit extends UITemplate {
         this.displayValueElement.min    = valueToDisplayValue(this.min)     ?? this.displayValueElement.min
         this.displayValueElement.max    = valueToDisplayValue(this.max)     ?? this.displayValueElement.max
         this.displayValueElement.step   = valueToDisplayValue(this.step)    ?? this.displayValueElement.step
-        this.displayValue               = valueToDisplayValue(value)        ?? this.displayValue
+        this.displayValue               = valueToDisplayValue(value)
     }
 }
 customElements.define(`ui-numberwithunit`, UINumberWithUnit, { extends: `span` })

@@ -9,6 +9,7 @@ import UINumberWithUnit from "./UINumberWithUnit"
 import Dashboard from "../Top/Dashboard"
 import uPlot from "uplot"
 import UIDialog from "../JavascriptUI/UIDialog"
+import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit } from "./UIUnit"
 
 class UIPlot_Variable extends UITemplate {
     static template = `<div data-element="variable"></div><div data-element="min"></div><div data-element="max"></div>`
@@ -16,12 +17,9 @@ class UIPlot_Variable extends UITemplate {
     min = new UINumberWithUnit()
     max = new UINumberWithUnit()
 
+    get valueUnit() { return this.variable.unit }
     get displayUnit() { return this.variable.displayUnit }
     set displayUnit(displayUnit) { this.variable.displayUnit = displayUnit }
-    get min() { return this.configTemplate.min.value }
-    set min(min) { this.configTemplate.min.value = min }
-    get max() { return this.configTemplate.max.value }
-    set max(max) { this.configTemplate.max.value = max }
 
     constructor(prop) {
         super()
@@ -33,20 +31,19 @@ class UIPlot_Variable extends UITemplate {
         let previousValueUnit
         this.variable.addEventListener(`change`, () => {
             if(previousDisplayUnit != this.displayUnit) {
-                const pdu = previousDisplayUnit
                 previousDisplayUnit = this.displayUnit
-                if(pdu === this.min.displayUnit) this.min.displayUnit = this.displayUnit
-                if(pdu === this.max.displayUnit) this.max.displayUnit = this.displayUnit
+                this.min.displayUnit = this.displayUnit
+                this.max.displayUnit = this.displayUnit
             }
             this.RegisterVariables()
             if(previousValueUnit != this.valueUnit) {
                 previousValueUnit = this.valueUnit
-                this.configTemplate.min.valueUnit = this.valueUnit
-                this.configTemplate.max.valueUnit = this.valueUnit
+                this.min.valueUnit = this.valueUnit
+                this.max.valueUnit = this.valueUnit
 
                 let unitDefaultOptions = GetDefaultMinMaxStepRedlineFromUnit(this.valueUnit)
-                this.min = unitDefaultOptions?.min ?? this.min
-                this.max = unitDefaultOptions?.max ?? this.max
+                this.min.value = unitDefaultOptions?.min ?? this.min.value
+                this.max.value = unitDefaultOptions?.max ?? this.max.value
             }
         })
 
@@ -70,7 +67,7 @@ export default class UIPlot extends UITemplate {
         super()
         
         this.plotWorkspace = document.createElement(`div`)
-        this.plot = new uPlot({
+        const options = {
             title: "Real-Time Data",
             id: "realtimeChart",
             width: 800,
@@ -80,19 +77,14 @@ export default class UIPlot extends UITemplate {
             },
             series: [
                 {},
-                { 
-                    label: "Value",
-                    stroke: "blue",
-                    width: 2 
-                },
             ],
             axes: [
                 { stroke: "#fff", grid: { show: true } },
                 { stroke: "#fff", grid: { show: true } },
             ]
-        },
-        [[0,1,2,3], [0,0.25,0.5,0.75]],
-        this.plotWorkspace)
+        }
+        this.plot = new uPlot(options, [], this.plotWorkspace)
+        this.plot.options = options
 
         this.configDialog = new UIDialog({ title: `Edit Plot` })
         this.configDialog.content.append(this.variablesToPlot)
@@ -102,8 +94,26 @@ export default class UIPlot extends UITemplate {
         })
 
         this.variablesToPlot.addEventListener(`change`, () => {
-            console.log(`change`)
             this.RegisterVariables()
+            const newScales = [...this.variablesToPlot.children].map(uiplotvariable => {
+                return { 
+                    name: `${uiplotvariable.item.variable.displayUnit}`,
+                    valueUnit: uiplotvariable.item.variable.valueUnit,
+                    displayUnit: uiplotvariable.item.variable.displayUnit,
+                    min: uiplotvariable.item.min.displayValue, 
+                    max: uiplotvariable.item.max.displayValue
+                }
+            }).reduce((scales, value) => {
+                scales[value.name] = { 
+                    auto: false,
+                    range: [ 
+                        Math.min(ConvertValueFromUnitToUnit(value.min, value.valueUnit, value.displayUnit) ?? Infinity, scales[value.name]?.range?.[0] ?? Infinity), 
+                        Math.max(ConvertValueFromUnitToUnit(value.max, value.valueUnit, value.displayUnit) ?? -Infinity, scales[value.name]?.range?.[1] ?? -Infinity) 
+                    ],
+                }
+
+                return scales
+            }, {})
             const newSeries = [ {}, ...[...this.variablesToPlot.children].map(uiplotvariable => {
                 const value = uiplotvariable.item.value
                 const variable = value?.variable
@@ -111,20 +121,17 @@ export default class UIPlot extends UITemplate {
                     return
                 return {
                     label: variable.name,
-                    stroke: "blue",
+                    stroke: `blue`,
+                    scale: `${uiplotvariable.item.variable.displayUnit}`,
                     width: 2 
                 }
             }).filter(x => x !== undefined)]
-            while(this.plot.series.length > newSeries.length) {
-                this.plot.delSeries(newSeries.length)
-            }
-            newSeries.forEach((series, idx) => {
-                if(idx < this.plot.series.length) {
-                    this.plot.setSeries(idx, series)
-                } else {
-                    this.plot.addSeries(series, idx)
-                }
-            })
+            
+            const options = { ...this.plot.options, series: newSeries, scales: { x: {}, ...newScales }, axes: [ { stroke: "#fff", grid: { show: true } }, ...Object.keys(newScales).filter(x => x !== undefined).map(scaleName => { return { scale: `${scaleName}`, stroke: "#fff", grid: { show: true }, values: (self, ticks) => ticks.map(rawValue => rawValue + scaleName), }  } ) ] }
+            this.plot.destroy()
+            delete this.plot
+            this.plot = new uPlot(options, [], this.plotWorkspace)
+            this.plot.options = options
         })
 
         this.Setup(prop)
@@ -134,6 +141,7 @@ export default class UIPlot extends UITemplate {
     RegisterVariables() {
         this.variablesToPlot.RegisterVariables()
 
+        const displayUnits = [ undefined, ...[...this.variablesToPlot.children].map(x => x.variable.displayUnit)]
         const references = [ { name: `CurrentTick` }, ...[...this.variablesToPlot.children].map(x => x.variable.value) ].map( reference => {
             if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
             if(communication.variablesToPoll.indexOf(reference) === -1)
@@ -143,9 +151,9 @@ export default class UIPlot extends UITemplate {
         })
 
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
-            const data = references.map(reference => {
+            const data = references.map((reference, idx) => {
                 const variableId = variableMetadata?.GetVariableId(reference)
-                return communication.loggedVariableValues.map(x => x[variableId])
+                return communication.loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], reference.unit, displayUnits[idx]))
             })
             this.plot.setData(data);
         }
