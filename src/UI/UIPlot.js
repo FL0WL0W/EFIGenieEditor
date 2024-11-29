@@ -153,7 +153,8 @@ export default class UIPlot extends UITemplate {
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
             const data = references.map((reference, idx) => {
                 const variableId = variableMetadata?.GetVariableId(reference)
-                return communication.loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], reference.unit, displayUnits[idx]))
+                if(reference)
+                    return communication.loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], reference.unit, displayUnits[idx]))
             })
             this.plot.setData(data);
         }
