@@ -1,7 +1,7 @@
 export default class VariableRegistry {
     constructor(prop) {
         Object.assign(this, prop)
-        this.CreateIfNotFound = true
+        this.CreateIfNotFound = false
     }
     Clear() {
         Object.entries(this).forEach(([elementname, element]) => {

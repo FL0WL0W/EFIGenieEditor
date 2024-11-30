@@ -1,8 +1,11 @@
 import pako from "pako"
+import VariableRegistry from "./VariableRegistry"
 
 export default function buildConfig(obj) {
     return types.find(x => x.type === obj.type).toArrayBuffer.call(obj)
 }
+
+var BuildRegister
 
 let OperationArchitectureFactoryIDs = {
     Offset: 10000,
@@ -390,7 +393,7 @@ let types = [
     { type: `CompressedObject`, toArrayBuffer() { return pako.gzip(new TextEncoder().encode(JSON.stringify(this.value))).buffer }},
     { type: `VariableId`, toDefinition() { 
         return { type: `definition`, value: [
-            { type: `UINT32`, value: typeof this.value === `number`? this.value : VariableRegister.GetVariableId(this.value) }
+            { type: `UINT32`, value: typeof this.value === `number`? this.value : BuildRegister.GetVariableId(this.value) }
         ]} 
     }},
     { type: `Package`, toDefinition() {
@@ -448,7 +451,7 @@ let types = [
                     if(newValue[newValue.length - 1]?.type !== `definition`) {
                         newValue.push({ type: `definition`, value: [definition[index]] })
                     } else {
-                        newValue[newValue.length - 1].value.push(definition[index])
+                        newValue.push(definition[index])
                     }
                 }
             }
@@ -529,14 +532,14 @@ let types = [
         if(this.calculation) return { ...this, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
         if(!this.selection) return
         const outputUnit = this.outputVariables?.[0]?.unit ?? this.outputUnits?.[0]
-        VariableRegister.RegisterVariable({ 
+        BuildRegister.RegisterVariable({ 
             ...this.selection, 
             ...this.outputVariables?.[0], 
             ...(this.selection?.name != undefined && { id: this.selection.name }),
             ...(outputUnit != undefined && { unit: outputUnit })
         })
-        if(outputUnit != undefined && this.selection.unit != outputUnit && !VariableRegister.GetVariableByReference({ ...this.selection, unit: outputUnit })) {
-            const baseVariableReference = VariableRegister.GetVariableByReference(this.selection)
+        if(outputUnit != undefined && this.selection.unit != outputUnit && !BuildRegister.GetVariableByReference({ ...this.selection, unit: outputUnit })) {
+            const baseVariableReference = BuildRegister.GetVariableByReference(this.selection)
             return { outputVariables: [ { ...baseVariableReference, unit: outputUnit } ], inputVariables: [ baseVariableReference ], type: `Calculation_UnitConversion` }
         }
     }},
@@ -799,7 +802,8 @@ let types = [
             ...this.parseData.map(x => { //parse storage variables
                 const isBool = x.bitLength < 2
                 return { type: `VariableId`, value: { name: `${this.outputVariables?.[0].name }.${x.name}`, type: isBool? `bool` : undefined, unit: isBool? undefined : x.unit } }
-            })
+            }),
+            { type: `UINT32`, value: 0 } //input data from CAN_READ
         ]}
     }},
     { type: `CAN_WriteData`, toDefinition() {
@@ -1239,6 +1243,8 @@ let types = [
         }
     }},
     { type: `TopEngine`, toDefinition() {
+        BuildRegister = new VariableRegistry()
+        BuildRegister.CreateIfNotFound = true;
         return { type: `definition`, value: [
             { type: `UINT32`, value: 0}, //signal last operation
 
@@ -1272,14 +1278,16 @@ let types = [
         let buf = buildConfig({ type:`definition`, value: [ this ], types: types })
         buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
         buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
-
-        let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(VariableRegister.GetVariableReferenceList()))).buffer
+        
+        let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.GetVariableReferenceList()))).buffer
         bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
         bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
 
         return buf.concatArray(bufMeta)
     }},
     { type: `TopExpander`, toDefinition() {
+        BuildRegister = new VariableRegistry()
+        BuildRegister.CreateIfNotFound = true;
         return { type: `definition`, value: [
             { type: `UINT32`, value: 0}, //signal last operation
 
@@ -1299,7 +1307,9 @@ let types = [
         buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
         buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
 
-        let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(VariableRegister.GetVariableReferenceList()))).buffer
+        console.log(BuildRegister.GetVariableReferenceList())
+
+        let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.GetVariableReferenceList()))).buffer
         bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
         bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
 

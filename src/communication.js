@@ -163,6 +163,9 @@ class Socket {
     async read(numberOfBytes, timeout = 1000) {
         await this.#connect()
 
+        if(numberOfBytes === 0)
+            return []
+
         const startTime = Date.now()
         while (this.incomingMessages.length === 0) {
             if (Date.now() - startTime > timeout) {
@@ -357,7 +360,8 @@ class EFIGenieSocket extends EFIGenieLog {
             let value = await this.#serial.read(1)
             if(value.byteLength !== 1) return //throw "Incorrect number of bytes returned when polling variables"
             const tLen = typeLength(new Uint8Array(value)[0])
-            value = value.concatArray(await this.#serial.read(tLen))
+            if(tLen > 0)
+                value = value.concatArray(await this.#serial.read(tLen))
             if(value.byteLength !== tLen + 1) return //throw "Incorrect number of bytes returned when polling variables"
             variableValues[variableIds[i]] = parseVariable(value)
             bytes = bytes.concatArray(value)
