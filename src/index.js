@@ -134,7 +134,7 @@ window.addEventListener(`load`, function() {
     }
     let lastConfig = window.localStorage.getItem(`config`)
     const xhr = new XMLHttpRequest()
-    xhr.open(`GET`, `/config.json`, true)
+    xhr.open(`GET`, `config.json`, true)
     xhr.onreadystatechange = () => {
         if (xhr.status == 200) {
             lastConfig = xhr.responseText
