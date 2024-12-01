@@ -26,6 +26,7 @@ Object.defineProperty(HTMLElement.prototype, 'class', {
     }
 })
 
+import "./config.json"
 import "./JavascriptUI/UI.css"
 import "./styles/style.css"
 import 'uplot/dist/uPlot.min.css';

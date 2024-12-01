@@ -59,6 +59,13 @@ module.exports = (env, argv) => { return {
     module: {
         rules: [
             {
+                test: /config.json$/,
+                type: 'asset/resource',
+                generator: {
+                    filename: '[name][ext]'
+                }
+            },
+            {
                 test: /\.css$/,
                 use:[MiniCssExtractPlugin.loader, 'css-loader']
             },
