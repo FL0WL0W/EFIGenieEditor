@@ -177,7 +177,10 @@ window.addEventListener(`load`, function() {
         xhr.onreadystatechange = () => {
             if (xhr.readyState == 4) {
                 if (xhr.status == 200) {
+                    xhr.open(`POST`, `/command/reset`, true)
+                    xhr.send()
                     alert("Saved Binary to Device")
+                    window.location.reload()
                 }
             }
         };

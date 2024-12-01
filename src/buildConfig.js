@@ -291,7 +291,7 @@ function Packagize(definition, val) {
     })
     val.inputVariables ??= []
     if( (val.outputVariables && val.outputVariables.some(x => x != undefined)) || 
-        (val.intputVariables && val.intputVariables.some(x => x != undefined))) {
+        (val.inputVariables && val.inputVariables.some(x => x != undefined))) {
         definition.type = `Package`
         definition.outputVariables = val.outputVariables
         definition.outputUnits = val.outputUnits
@@ -544,7 +544,8 @@ let types = [
         }
     }},
     { type: `GenericCalculation`, toDefinition() {
-        return { ...this, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `${this.outputVariables?.[0]?.name?? ``}${this.name}`, unit: this.outputUnits?.[0], type: this.outputTypes?.[0] } ] }
+        const name = `${this.outputVariables?.[0]?.name?? ``}${this.name}`
+        return { ...this, type: `CalculationOrVariableSelection`, name, outputVariables: (this.outputUnits?.[0] !== undefined || this.outputTypes?.[0] !== undefined) ? [ { name, unit: this.outputUnits?.[0], type: this.outputTypes?.[0] } ] : undefined }
     }},
     { type: `Calculation_Add`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.Add) }},
     { type: `Calculation_Subtract`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.Subtract) }},
@@ -801,7 +802,7 @@ let types = [
             }),
             ...this.parseData.map(x => { //parse storage variables
                 const isBool = x.bitLength < 2
-                return { type: `VariableId`, value: { name: `${this.outputVariables?.[0].name }.${x.name}`, type: isBool? `bool` : undefined, unit: isBool? undefined : x.unit } }
+                return { type: `VariableId`, value: { name: `${this.name }.${x.name}`, type: isBool? `bool` : undefined, unit: isBool? undefined : x.unit } }
             }),
             { type: `UINT32`, value: 0 } //input data from CAN_READ
         ]}
@@ -907,6 +908,8 @@ let types = [
         this.inputVariables ??= [ undefined, undefined ]
         this.inputVariables[0] = { name: `temp0`, unit: `s` }
         this.inputVariables[1] = { name: `temp1`, unit: `s` }
+
+        debugger;
 
         return { type: `Group`, value: [
             { ...this.period, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },

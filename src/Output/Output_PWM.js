@@ -3,6 +3,7 @@ import UIPinSelection from "../UI/UIPinSelection"
 import FloatOutputConfigs from "./FloatOutputConfigs"
 import CalculationOrVariableSelection from "../Calculation/CalculationOrVariableSelection"
 import GenericConfigs from "../Calculation/GenericConfigs"
+import UINumber from "../JavascriptUI/UINumber"
 export default class Output_PWM extends UITemplate {
     static displayName = `PWM Pin`
     static template =   `<label>Pin:</label><div data-element="pin"></div><div data-element="period"></div><div data-element="pulseWidth"></div>`
@@ -19,6 +20,9 @@ export default class Output_PWM extends UITemplate {
         outputUnits:    [ `s` ],
         displayUnits:   [ `ms` ],
         calculations: GenericConfigs
+    })
+    minFrequency = new UINumber({
+        value: 200
     })
     
     constructor(prop){
