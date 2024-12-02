@@ -772,8 +772,10 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     margin-top: -0.75em;
     display: inline-flex;
     flex-direction: column;
-    margin-bottom: 0.75em;
     position: relative;
+}
+.itemContainer .controlcontainer:not(:has(.controlnew)) {
+    margin-bottom: 0.75em;
 }
 .controladd,
 .controlnew,
