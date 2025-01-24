@@ -901,7 +901,7 @@ let types = [
         return Packagize({ type: `definition`, value: [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.DigitalOutput }, //variable
             { type: `UINT16`, value: this.pin },
-            { type: `UINT8`, value: this.inverted | (this.highZ? 0x02 : 0x00) }
+            { type: `UINT8`, value: (this.inverted? 0x01 : 0x00) | (this.highZ? 0x02 : 0x00) }
         ]}, this)
     }},
     { type: `Output_PWM`, toDefinition() {
