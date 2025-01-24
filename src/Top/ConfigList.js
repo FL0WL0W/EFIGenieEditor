@@ -54,7 +54,8 @@ export default class ConfigList extends HTMLDivElement {
         this.addEventListener(`change`, () => {
             while([...this.children].filter(x => x.item.constructor === Input).length < this.tabListElement.children.length || this.tabListElement?.firstChild?.firstChild === this.tabListNewElement) this.tabListElement.removeChild(this.tabListElement.lastChild)
             for(let i = 0, iL = 0; i < this.children.length; i++){
-                if(!this.children[i].item?.name?.value)
+                const name = this.children[i].item?.name?.value ?? this.children[i].item?.label
+                if(!name)
                     continue
                 let tabElement = this.tabListElement.children[iL++]
                 if(!tabElement) {
@@ -78,7 +79,7 @@ export default class ConfigList extends HTMLDivElement {
                     })
                 }
                 tabElement.childIndex = i
-                tabElement.lastChild.textContent = this.children[i].item.name.value
+                tabElement.lastChild.textContent = name
                 tabElement.class = `w3-bar-subitem w3-button`
             }
             if(this.tabListElement.children.length === 0){
