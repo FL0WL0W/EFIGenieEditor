@@ -936,7 +936,7 @@ let types = [
         ]}
         if(this.mode === 0 || this.mode === 1) 
             universal1X.value.push({ type: `FLOAT`, value: this.risingPosition})
-        if(this.mode === 0 || this.mode === 1) 
+        if(this.mode === 0 || this.mode === 2) 
             universal1X.value.push({ type: `FLOAT`, value: this.fallingPosition})
         return ReluctorTemplate.call(
             this,
