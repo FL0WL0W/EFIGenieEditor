@@ -274,6 +274,9 @@ class EFIGenieCommunication extends EFIGenieLog {
             }
             metadataData = metadataData.concatArray(retData)
         }
+
+        if(length == 0)
+            throw `engine errored`
             
         length = new Uint32Array(metadataData.slice(0,4))[0]
         metadataData = metadataData.slice(4, length + 4)
@@ -359,12 +362,13 @@ class EFIGenieCommunication extends EFIGenieLog {
         let variableValues = {}
         for(let i = 0; i < variableIds.length; i++) {
             let value = await this._serial.read(1)
-            if(value.byteLength !== 1) return //throw "Incorrect number of bytes returned when polling variables"
+            if(value.byteLength !== 1) continue //throw "Incorrect number of bytes returned when polling variables"
             const tLen = typeLength(new Uint8Array(value)[0])
-            if(tLen > 0)
+            if(tLen > 0) {
                 value = value.concatArray(await this._serial.read(tLen))
-            if(value.byteLength !== tLen + 1) return //throw "Incorrect number of bytes returned when polling variables"
-            variableValues[variableIds[i]] = parseVariable(value)
+                if(value.byteLength !== tLen + 1) continue //throw "Incorrect number of bytes returned when polling variables"
+                variableValues[variableIds[i]] = parseVariable(value)
+            }
             bytes = bytes.concatArray(value)
         }
 

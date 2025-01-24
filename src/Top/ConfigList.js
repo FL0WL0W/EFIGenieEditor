@@ -64,7 +64,9 @@ export default class ConfigList extends HTMLDivElement {
                         tabElement.appendChild(new UIDisplayLiveUpdate()).style.float = `right`
                         tabElement.RegisterVariables = function() {
                             const input = thisClass.children[this.childIndex]
-                            this.firstChild.RegisterVariables({ name: `Inputs.${input.name.value}`, unit: input.translationConfig.outputUnits?.[0] ?? input.rawConfig.outputUnits?.[0] })
+                            const unit = input.translationConfig.outputUnits?.[0] ?? input.rawConfig.outputUnits?.[0];
+                            if(unit)
+                                this.firstChild.RegisterVariables({ name: `Inputs.${input.name.value}`, unit: unit })
                         }
                     }
                     tabElement.append(document.createElement(`div`))
