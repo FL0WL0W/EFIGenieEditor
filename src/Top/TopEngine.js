@@ -41,8 +41,17 @@ export default class TopEngine extends Top {
         this.addTab(this.Ignition, `Ignition`)
         this.TargetDevice.addEventListener(`change`, () => { 
             this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
+            if(this.PinOverlay.pinOut.CANBusCount)
+                this.unhideTab(`CAN`)
+            else
+                this.hideTab(`CAN`)
+            this.CAN.hidden = true
         })
         this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
+        if(this.PinOverlay.pinOut.CANBusCount)
+            this.unhideTab(`CAN`)
+        else
+            this.hideTab(`CAN`)
         this.Setup(prop)
     }
 
@@ -51,6 +60,9 @@ export default class TopEngine extends Top {
         super.saveValue = saveValue
         this.RegisterVariables()
     }
+
+    get value() { return { ...super.value, CANAvailable: this.PinOverlay.pinOut.CANBusCount } }
+    set value(value) { super.value = value }
 
     RegisterVariables() {
         VariableRegister.Clear()

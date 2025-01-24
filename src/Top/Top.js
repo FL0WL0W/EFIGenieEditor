@@ -37,6 +37,7 @@ export default class Top extends UITemplate {
             this.activeTab = label
         })
         if(content.tabListElement) {
+            content.tabListElement.setAttribute('data-label', label);
             const expanded = (window.localStorage.getItem(`${label}Expanded`) ?? 'true') === `false`
             const tabExpand = document.createElement(`span`)
             tab.append(tabExpand)
@@ -69,6 +70,14 @@ export default class Top extends UITemplate {
         workspace.label = label
         workspace.append(content)
         this.page.append(workspace)
+    }
+
+    hideTab(label) {
+        this.sidebarSelection.querySelectorAll(`div[data-label="${label}"]`).forEach(x => { x.hidden = true })
+    }
+
+    unhideTab(label) {
+        this.sidebarSelection.querySelectorAll(`div[data-label="${label}"]`).forEach(x => { x.hidden = false })
     }
 
     constructor(prop) { 
