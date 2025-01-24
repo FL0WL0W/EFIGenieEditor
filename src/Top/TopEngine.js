@@ -61,7 +61,7 @@ export default class TopEngine extends Top {
         this.RegisterVariables()
     }
 
-    get value() { return { ...super.value, CANAvailable: this.PinOverlay.pinOut.CANBusCount } }
+    get value() { return { ...super.value, CANAvailable: (this.PinOverlay.pinOut.CANBusCount ?? 0) > 1 } }
     set value(value) { super.value = value }
 
     RegisterVariables() {

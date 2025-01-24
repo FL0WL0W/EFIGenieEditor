@@ -1258,7 +1258,7 @@ let types = [
                     outputVariables: [ { name: `CurrentTick`, type: `tick` } ]
                 }, 
                 { type: `Inputs`, value: this.Inputs }, 
-                { type: `CAN`, value: this.CAN },
+                this.CANAvailable? { type: `CAN`, value: this.CAN } : undefined,
                 { type: `Engine`, value: this.Engine },
             ]},
 
