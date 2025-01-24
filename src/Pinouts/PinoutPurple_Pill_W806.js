@@ -1,3 +1,4 @@
+import { BurnW806 } from './BurnW806';
 import Pinouts from "./Pinouts"
 Pinouts.Purple_Pill_W806 = { 
     name: `Purple pill: W806`,
@@ -38,5 +39,9 @@ Pinouts.Purple_Pill_W806 = {
         { name: `PB_15`, value: (32*1 + 15), supportedModes: `digitalin digitalout digitalinterrupt pwm` , overlayX: 577, overlayY: 462, align: `left`},
         { name: `PB_14`, value: (32*1 + 14), supportedModes: `digitalin digitalout digitalinterrupt pwm` , overlayX: 577, overlayY: 484, align: `left`},
         { name: `PB_13`, value: (32*1 + 13), supportedModes: `digitalin digitalout digitalinterrupt pwm` , overlayX: 577, overlayY: 506, align: `left`},
-    ]
+    ],
+    Type: `TopEngine`,
+    Burn: function(cfg) {
+        BurnW806(cfg, this.Type);
+    }
 }

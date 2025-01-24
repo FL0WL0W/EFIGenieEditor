@@ -10,7 +10,7 @@ async function waitForFunctionToReturnFalse(f, timeout = 1000) {
     return true
 }
 
-class Serial {
+export class Serial {
     #options
     #filters
     #serialPort
@@ -117,7 +117,7 @@ class Serial {
     }
 }
 
-class Socket {
+export class Socket {
     #commandLock = false
     #webSocket
     #uri
@@ -247,11 +247,8 @@ class EFIGenieLog {
         //TODO: parseBytes
     }
 }
-class EFIGenieSocket extends EFIGenieLog {
-    // #serial = new Serial(undefined, [ 
-    //     { usbVendorId: 1155, usbProductId: 22336 } 
-    // ])
-    #serial = new Socket("EFIGenieCommunication")
+
+class EFIGenieCommunication extends EFIGenieLog {
     
     variableMetadata = undefined
     variablesToPoll = []
@@ -262,11 +259,13 @@ class EFIGenieSocket extends EFIGenieLog {
         if(this.variableMetadata != undefined)
             return
 
+        await this._serial.read(1000, 10); //flush buffer
+
         let metadataData = new ArrayBuffer()
         let length = 1
         for(let i = 0; i < Math.ceil(length); i++) {
             const data = new Uint8Array([109]).buffer.concatArray(new Uint32Array([i]).buffer) // get metadata
-            let retData = await this.#serial.command(data, 64)
+            let retData = await this._serial.command(data, 64)
             if(retData.byteLength !== 64) throw `Incorrect number of bytes returned when requesting metadata`
             
             if(i === 0) {
@@ -353,15 +352,15 @@ class EFIGenieSocket extends EFIGenieLog {
             data = data.concatArray(new Uint8Array([103]).buffer.concatArray(new Uint32Array([variableIds[i]]).buffer))
         }
 
-        await this.#serial.write(data)
+        await this._serial.write(data)
         let bytes = new ArrayBuffer()
         let variableValues = {}
         for(let i = 0; i < variableIds.length; i++) {
-            let value = await this.#serial.read(1)
+            let value = await this._serial.read(1)
             if(value.byteLength !== 1) return //throw "Incorrect number of bytes returned when polling variables"
             const tLen = typeLength(new Uint8Array(value)[0])
             if(tLen > 0)
-                value = value.concatArray(await this.#serial.read(tLen))
+                value = value.concatArray(await this._serial.read(tLen))
             if(value.byteLength !== tLen + 1) return //throw "Incorrect number of bytes returned when polling variables"
             variableValues[variableIds[i]] = parseVariable(value)
             bytes = bytes.concatArray(value)
@@ -382,7 +381,7 @@ class EFIGenieSocket extends EFIGenieLog {
     }
 
     async #sendCommandAndWaitForAck(data, commandName) {
-        const retData = await this.#serial.command(data, 1)
+        const retData = await this._serial.command(data, 1)
         if(retData.byteLength !== 1)  throw `Incorrect number of bytes returned when ${commandName}`
         if(new Uint8Array(retData)[0] !== 6) throw `Ack not returned when ${commandName}`
     }
@@ -407,7 +406,7 @@ class EFIGenieSocket extends EFIGenieLog {
     }
 
     async getConfigAddress() {
-        const retData = await this.#serial.command(new Uint8Array([99]).buffer, 4)
+        const retData = await this._serial.command(new Uint8Array([99]).buffer, 4)
         if(retData.byteLength !== 4) throw "Incorrect number of bytes returned when requesting config address"
         return new Uint32Array(retData)[0]
     }
@@ -449,4 +448,4 @@ class EFIGenieSocket extends EFIGenieLog {
     }
 }
 
-export let communication = new EFIGenieSocket()
+export let communication = new EFIGenieCommunication()

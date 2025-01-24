@@ -1,3 +1,4 @@
+import { BurnESP32 } from './BurnESP32';
 import overlayURL from './ESP32C6-CAN-Actual-Page.svg';
 import Pinouts from "./Pinouts"
 Pinouts.ESP32C6_Expander = { 
@@ -17,5 +18,9 @@ Pinouts.ESP32C6_Expander = {
         { name: `13`, value: 14, supportedModes: `digitalin digitalout`, overlayX: 450, overlayY: 414, align: `left`},
         { name: `14`, value: 14, supportedModes: `digitalin digitalout`, overlayX: 450, overlayY: 437, align: `left`},
         { name: `16`,  value: 16,  supportedModes: `digitalin digitalout digitalinterrupt analog pwmout`, overlayX: 450, overlayY: 483, align: `left`},
-    ]
+    ],
+    Type: `TopExpander`,
+    Burn: function(cfg) {
+        BurnESP32(cfg, this.Type);
+    }
 }

@@ -3,6 +3,7 @@ import Dashboard from "./Dashboard";
 import UIPinOverlay from "../UI/UIPinOverlay"
 import UISelection from "../JavascriptUI/UISelection";
 import Pinouts from "../Pinouts/Pinouts";
+import ConfigList from "./ConfigList";
 import Engine from "./Engine";
 import Fuel from "./Fuel";
 import Ignition from "./Ignition";
@@ -16,7 +17,7 @@ export default class TopEngine extends Top {
     PinOverlay = new UIPinOverlay()
     TargetDevice = new UISelection({
         options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),
-        value: `ESP32C6_Expander`
+        value: `Purple_Pill_W806`
     })
     Inputs = new ConfigList({
         itemConstructor: Input,

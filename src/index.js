@@ -35,6 +35,7 @@ import { downloadBin, downloadObject } from "./download.js"
 
 import Pinouts from "./Pinouts/Pinouts.js"
 import "./Pinouts/PinoutESP32C6_Expander.js"
+import "./Pinouts/PinoutPurple_Pill_W806.js"
 
 import VariableRegistry from "./VariableRegistry.js"
 window.VariableRegister = new VariableRegistry()
@@ -115,13 +116,22 @@ import TopEngine from "./Top/TopEngine.js"
 import TPS_Linear from "./TPS/TPS_Linear.js"
 
 import pako from "pako"
-import { communication } from "./communication.js"
+import { communication, Serial, EFIGenieCommunication } from "./communication.js"
 
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
+
+    communication._serial = new Serial({ baudRate: 2000000 }, [ 
+            // { usbVendorId: 1155, usbProductId: 22336 } ,
+            { usbVendorId: 0x1a86, usbProductId: 0x7523 } 
+        ])
+    // communication._serial = new Socket("EFIGenieCommunication")
+    window.communication = communication
+    window.Pinouts = Pinouts
+
     window.buildConfig = buildConfig
-    window.b = new TopExpander()
+    window.b = new TopEngine()
     let workspace = document.querySelector(`#workspace`)
     workspace.innerHtml = ``
     workspace.append(b)
@@ -134,57 +144,24 @@ window.addEventListener(`load`, function() {
         } catch { }
     }
     let lastConfig = window.localStorage.getItem(`config`)
-    const xhr = new XMLHttpRequest()
-    xhr.open(`GET`, `config.json`, true)
-    xhr.onreadystatechange = () => {
-        if (xhr.status == 200) {
-            lastConfig = xhr.responseText
-        }
-        if (lastConfig) {
-            loadConfig(lastConfig)
-        } else {
-            b.RegisterVariables()
-        }
-    };
-    xhr.send()
+    loadConfig(lastConfig)
+    // const xhr = new XMLHttpRequest()
+    // xhr.open(`GET`, `config.json`, true)
+    // xhr.onreadystatechange = () => {
+    //     if (xhr.status == 200) {
+    //         lastConfig = xhr.responseText
+    //     }
+    //     if (lastConfig) {
+    //         loadConfig(lastConfig)
+    //     } else {
+    //         b.RegisterVariables()
+    //     }
+    // };
+    // xhr.send()
 
     let configJsonName = `tune.json`
-    document.querySelector(`#btnSave`).addEventListener(`click`, function(){
-        const cfg = JSON.stringify(b.saveValue)
-
-        //save config to browser as backup
-        window.localStorage.setItem(`config`, cfg)
-
-        //save config to ESP32
-        const compressedData = pako.gzip(new TextEncoder().encode(cfg))
-        let xhr = new XMLHttpRequest()
-        xhr.open(`POST`, `/upload/config.json.gz`, true)
-        xhr.setRequestHeader(`Content-Type`, `application/octet-stream`) // Indicating raw binary data
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState == 4) {
-                if (xhr.status == 200) {
-                    alert("Saved Configuration to Device")
-                } else {
-                    alert("Saved Configuration to Browser")
-                }
-            }
-        };
-        xhr.send(compressedData)
-
-        xhr = new XMLHttpRequest()
-        xhr.open(`POST`, `/upload/config.bin`, true)
-        xhr.setRequestHeader(`Content-Type`, `application/octet-stream`) // Indicating raw binary data
-        xhr.onreadystatechange = () => {
-            if (xhr.readyState == 4) {
-                if (xhr.status == 200) {
-                    xhr.open(`POST`, `/command/reset`, true)
-                    xhr.send()
-                    alert("Saved Binary to Device")
-                    window.location.reload()
-                }
-            }
-        };
-        xhr.send(buildConfig({ ...b.value, type: `TopExpander` }))
+    document.querySelector(`#btnBurn`).addEventListener(`click`, function(){
+        Pinouts[b.TargetDevice.value].Burn(b)
     })
     document.querySelector(`#btnDownload`).addEventListener(`click`, function(){
         var cfg = b.saveValue
@@ -209,6 +186,8 @@ window.addEventListener(`load`, function() {
         configJsonName = evt.target.files[0].name
     })
 
-    communication.connect()
-    window.communication = communication
+    let btnConnect = document.querySelector(`#btnConnect`)
+    btnConnect.addEventListener(`click`, function(){
+        communication.connect()
+    })
 })
