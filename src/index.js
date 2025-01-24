@@ -122,7 +122,7 @@ import { communication, Serial, EFIGenieCommunication } from "./communication.js
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
 
-    communication._serial = new Serial({ baudRate: 2000000 }, [ 
+    communication._serial = new Serial({ baudRate: 1000000 }, [ 
             // { usbVendorId: 1155, usbProductId: 22336 } ,
             { usbVendorId: 0x1a86, usbProductId: 0x7523 } 
         ])

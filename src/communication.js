@@ -88,7 +88,7 @@ export class Serial {
         this.#cummulativeValue = numberOfBytes == undefined? new ArrayBuffer() : this.#cummulativeValue.slice(numberOfBytes)
         return retBytes
     }
-    async write(sendBytes, timeout = 1000) {
+    async write(sendBytes) {
         await this.#connect()
 
         const writable = this.#serialPort.writable
@@ -106,7 +106,7 @@ export class Serial {
         this.#commandLock = true
         let retBytes
         try {
-            await this.write(sendBytes, timeout)
+            await this.write(sendBytes)
             retBytes = this.read(numberOfReceiveBytes, timeout)
         } catch(e) {
             throw e
@@ -259,7 +259,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         if(this.variableMetadata != undefined)
             return
 
-        await this._serial.read(1000, 10); //flush buffer
+        await this._serial.read(undefined, 1); //flush buffer
 
         let metadataData = new ArrayBuffer()
         let length = 1
@@ -285,6 +285,8 @@ class EFIGenieCommunication extends EFIGenieLog {
 
     async pollVariables() {
         await this.pollVariableMetadata()
+
+        await this._serial.read(undefined, 1); //flush buffer
 
         var variableIds = []
         const currentTickId = this.variableMetadata.GetVariableId({name: `CurrentTick`, type: `tick`})
