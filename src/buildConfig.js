@@ -909,8 +909,6 @@ let types = [
         this.inputVariables[0] = { name: `temp0`, unit: `s` }
         this.inputVariables[1] = { name: `temp1`, unit: `s` }
 
-        debugger;
-
         return { type: `Group`, value: [
             { ...this.period, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },
             { ...this.pulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[1] ] },
@@ -1181,7 +1179,7 @@ let types = [
                             { type: `UINT32`, value: EngineFactoryIDs.Offset + EngineFactoryIDs.EngineParameters },  //factory id
                         ],
                         outputVariables: [ 
-                            { name: `EngineParameters.Engine Speed` },
+                            { name: `EngineParameters.Engine Speed`, unit: `RPM` },
                             { name: `EngineSequentialId` },
                             { name: `EngineSyncedId` }
                         ],
@@ -1281,7 +1279,7 @@ let types = [
         let buf = buildConfig({ type:`definition`, value: [ this ], types: types })
         buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
         buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
-        
+
         let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.GetVariableReferenceList()))).buffer
         bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
         bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)

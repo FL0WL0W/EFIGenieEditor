@@ -16,6 +16,25 @@ export class Serial {
     #serialPort
     #cummulativeValue = new ArrayBuffer()
     #commandLock
+
+    async #readWithTimeout(stream, timeout) {
+        if(!await waitForFunctionToReturnFalse(function() { return stream.locked }))
+            return { value: undefined, done: false }
+        
+        const readStream = new TransformStream()
+        stream.pipeThrough(readStream, { preventClose: true, preventCancel: true })
+
+        const reader = readStream.readable.getReader();
+        let cancelResult
+        const timer = setTimeout(() => {
+            cancelResult = { value: undefined, done: false }
+            reader.cancel()
+        }, timeout)
+        const result = await reader.read()
+        clearTimeout(timer)
+        reader.cancel()
+        return cancelResult ?? result
+    }
     
     get options() { return this.#options }
     set options(options) { 
@@ -48,31 +67,25 @@ export class Serial {
         await this.#serialPort.open(this.options)
     }
 
+    async flush() {
+        await this.#connect()
+
+        while(true) {
+            const { value, done } = await this.#readWithTimeout(this.#serialPort.readable, 10)
+            if (done)
+                throw "Serial closed"
+            if(!value || (value?.byteLength ?? 0) <= 0) {
+                break;
+            }
+        }
+    }
+
     async read(numberOfBytes, timeout = 1000) {
         await this.#connect()
 
-        async function readWithTimeout(stream, timeout) {
-            if(!await waitForFunctionToReturnFalse(function() { return stream.locked }))
-                return { value: undefined, done: false }
-            
-            const readStream = new TransformStream()
-            stream.pipeThrough(readStream, { preventClose: true, preventCancel: true })
-
-            const reader = readStream.readable.getReader();
-            let cancelResult
-            const timer = setTimeout(() => {
-                cancelResult = { value: undefined, done: false }
-                reader.cancel()
-            }, timeout)
-            const result = await reader.read()
-            clearTimeout(timer)
-            reader.cancel()
-            return cancelResult ?? result
-        }
-
         let trys = 0
         while(numberOfBytes == undefined || this.#cummulativeValue.byteLength < numberOfBytes) {
-            const { value, done } = await readWithTimeout(this.#serialPort.readable, timeout)
+            const { value, done } = await this.#readWithTimeout(this.#serialPort.readable, timeout)
             if (done)
                 throw "Serial closed"
             if (!value && trys++ > 10)
@@ -259,7 +272,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         if(this.variableMetadata != undefined)
             return
 
-        await this._serial.read(undefined, 1); //flush buffer
+        await this._serial.flush();
 
         let metadataData = new ArrayBuffer()
         let length = 1
@@ -289,7 +302,7 @@ class EFIGenieCommunication extends EFIGenieLog {
     async pollVariables() {
         await this.pollVariableMetadata()
 
-        await this._serial.read(undefined, 1); //flush buffer
+        await this._serial.flush();
 
         var variableIds = []
         const currentTickId = this.variableMetadata.GetVariableId({name: `CurrentTick`, type: `tick`})
@@ -389,14 +402,16 @@ class EFIGenieCommunication extends EFIGenieLog {
     async #sendCommandAndWaitForAck(data, commandName) {
         const retData = await this._serial.command(data, 1)
         if(retData.byteLength !== 1)  throw `Incorrect number of bytes returned when ${commandName}`
-        if(new Uint8Array(retData)[0] !== 6) throw `Ack not returned when ${commandName}`
+        if(new Uint8Array(retData)[0] !== 6) throw `Ack not returned when ${commandName}, ${new Uint8Array(retData)[0]}`
     }
 
     async stopExecution() {
+        await this._serial.flush();
         await this.#sendCommandAndWaitForAck(new Uint8Array([113]).buffer, `stopping execution`)
     }
 
     async startExecution() {
+        await this._serial.flush();
         await this.#sendCommandAndWaitForAck(new Uint8Array([115]).buffer, `starting execution`)
     }
 
