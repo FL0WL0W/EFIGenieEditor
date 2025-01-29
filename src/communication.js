@@ -68,6 +68,7 @@ export class Serial {
     }
 
     async flush() {
+        this.#cummulativeValue = new ArrayBuffer()
         await this.#connect()
 
         while(true) {

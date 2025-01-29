@@ -907,8 +907,8 @@ let types = [
     }},
     { type: `Output_PWM`, toDefinition() {
         this.inputVariables ??= [ undefined, undefined ]
-        this.inputVariables[0] = { name: `temp0`, unit: `s` }
-        this.inputVariables[1] = { name: `temp1`, unit: `s` }
+        this.inputVariables[0] = { name: `temp0` }
+        this.inputVariables[1] = { name: `temp1` }
 
         return { type: `Group`, value: [
             { ...this.period, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },
@@ -999,9 +999,9 @@ let types = [
     }},
     { type: `CylinderAirmass_SpeedDensity`, outputUnits: [`g`], toDefinition() {
         this.inputVariables = [ 
-            { name: `EngineParameters.Cylinder Air Temperature` },
-            { name: `EngineParameters.Manifold Absolute Pressure` },
-            { name: `EngineParameters.Volumetric Efficiency` }
+            { name: `EngineParameters.Cylinder Air Temperature`, unit: `C` },
+            { name: `EngineParameters.Manifold Absolute Pressure`, unit: `Bar` },
+            { name: `EngineParameters.Volumetric Efficiency`, unit: `[0.0-1.0]` }
         ]
         return Packagize({ type: `definition`, value: [ 
             { type: `UINT32`, value: EngineFactoryIDs.Offset + EngineFactoryIDs.CylinderAirMass_SD },  //factory id
@@ -1010,8 +1010,8 @@ let types = [
     }},
     { type: `InjectorPulseWidth_DeadTime`, outputUnits: [`s`], toDefinition() {
         return { type: `Group`, value: [
-            { ...this.FlowRate, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Flow Rate` } ] },
-            { ...this.DeadTime, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Dead Time` } ] },
+            { ...this.FlowRate, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Flow Rate`, unit: `g/s` } ] },
+            { ...this.DeadTime, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Dead Time`, unit: `s` } ] },
             //Store a value of 2 into the temporary variable which will be used for SquirtsPerCycle (2 squirts per cycle default)
             { type: `Calculation_Static`, value: 2, outputVariables: [ { name: `SquirtsPerCycle` } ] },//static value of 2
             //Subtract 1 to temporary variable if Engine is running sequentially. This will be used for SquirtsPerCycle (1 squirts per cycle when sequential)
@@ -1020,7 +1020,7 @@ let types = [
                 outputVariables: [ { name: `SquirtsPerCycle` } ], //Return
                 inputVariables: [
                     { name: `SquirtsPerCycle` },
-                    { name: `EngineSequentialId` }
+                    { name: `EngineSequentialId`, type: `bool` }
                 ]
             },
             Packagize({ type: `definition`, value: [ 
@@ -1030,9 +1030,9 @@ let types = [
                 ...this,
                 inputVariables: [ 
                     { name: `SquirtsPerCycle` },
-                    { name: `FuelParameters.Cylinder Fuel Mass` },
-                    { name: `FuelParameters.Injector Flow Rate` },
-                    { name: `FuelParameters.Injector Dead Time` }
+                    { name: `FuelParameters.Cylinder Fuel Mass`, unit: `g` },
+                    { name: `FuelParameters.Injector Flow Rate`, unit: `g/s` },
+                    { name: `FuelParameters.Injector Dead Time`, unit: `s` }
                 ]
             })
         ]}
@@ -1065,10 +1065,10 @@ let types = [
                         { name: `temp` } //store in temp variable
                     ],
                     inputVariables: [
-                        { name: `EnginePositionId` },
-                        { name: `FuelParameters.Injector Enable` },
-                        { name: `FuelParameters.Injector Pulse Width` },
-                        { name: `FuelParameters.Injector Position` }
+                        { name: `EnginePositionId`, type: `EnginePosition` },
+                        { name: `FuelParameters.Injector Enable`, type: `bool` },
+                        { name: `FuelParameters.Injector Pulse Width`, unit: `s` },
+                        { name: `FuelParameters.Injector Position`, unit: `°` }
                     ]
                 }]}
             }},
@@ -1077,19 +1077,19 @@ let types = [
                     { ...this, type: `Fuel_GenericCalculation` },
                     { 
                         type: `Calculation_Divide`,
-                        outputVariables: [ { name: `FuelParameters.Cylinder Fuel Mass` } ],
+                        outputVariables: [ { name: `FuelParameters.Cylinder Fuel Mass`, unit: `g` } ],
                         inputVariables: [
-                            { name: `EngineParameters.Cylinder Air Mass` },
-                            { name: `FuelParameters.Air Fuel Ratio` }
+                            { name: `EngineParameters.Cylinder Air Mass`, unit: `g` },
+                            { name: `FuelParameters.Air Fuel Ratio`, unit: `:1` }
                         ]
                     }
                 ] }
             }}, 
             { type: `Fuel_InjectorProperties`, toDefinition() {
                 return { type: `Group`, value: [
-                    { ...this.InjectorEnable, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Enable` } ] }, 
-                    { ...this.InjectorPulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Pulse Width` } ] }, 
-                    { ...this.InjectorPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Position` } ] }, 
+                    { ...this.InjectorEnable, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Enable`, type: `bool` } ] }, 
+                    { ...this.InjectorPulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Pulse Width`, unit: `s` } ] }, 
+                    { ...this.InjectorPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Position`, unit: `°` } ] }, 
                 ]}
             }}, 
             { type: `Fuel_InjectorOutputs`, toDefinition() {
@@ -1123,20 +1123,20 @@ let types = [
                         { name: `temp` } //store in temp variable
                     ],
                     inputVariables: [
-                        { name: `EnginePositionId` },
-                        { name: `IgnitionParameters.Ignition Enable` },
-                        { name: `IgnitionParameters.Ignition Dwell` },
-                        { name: `IgnitionParameters.Ignition Advance` },
-                        { name: `IgnitionParameters.Ignition Dwell Deviation` }
+                        { name: `EnginePositionId`, type: `EnginePosition` },
+                        { name: `IgnitionParameters.Ignition Enable`, type: `bool` },
+                        { name: `IgnitionParameters.Ignition Dwell`, unit: `s` },
+                        { name: `IgnitionParameters.Ignition Advance`, unit: `°` },
+                        { name: `IgnitionParameters.Ignition Dwell Deviation`, unit: `s` }
                     ]
                 }]}
             }},
             { type: `Ignition_IgnitionProperties`, toDefinition() {
                 return { type: `Group`, value: [
-                    { ...this.IgnitionEnable, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Enable` } ] }, 
-                    { ...this.IgnitionAdvance, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Advance` } ] },
-                    { ...this.IgnitionDwell, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Dwell` } ] },
-                    { ...this.IgnitionDwellDeviation, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Dwell Deviation` } ] },
+                    { ...this.IgnitionEnable, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Enable`, type: `bool` } ] }, 
+                    { ...this.IgnitionAdvance, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Advance`, unit: `°` } ] },
+                    { ...this.IgnitionDwell, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Dwell`, unit: `s` } ] },
+                    { ...this.IgnitionDwellDeviation, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `IgnitionParameters.Ignition Dwell Deviation`, unit: `s` } ] },
                 ]}
             }},
             { type: `Ignition_IgnitionOutputs`, toDefinition() {
@@ -1158,8 +1158,8 @@ let types = [
         return { 
             types : [{ type: `Engine_EngineSensors`, toDefinition() {
                 let group = { type: `Group`, value: [
-                    { ...this.CrankPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Crank Position` } ] },
-                    { ...this.CamPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Cam Position` } ] },
+                    { ...this.CrankPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Crank Position`, type: `ReluctorResult` } ] },
+                    { ...this.CamPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Cam Position`, type: `ReluctorResult` } ] },
         
                     //CalculateEnginePosition
                     { 
@@ -1167,10 +1167,10 @@ let types = [
                         value: [ 
                             { type: `UINT32`, value: EngineFactoryIDs.Offset + ( this.CrankPriority? EngineFactoryIDs.PositionCrankPriority : EngineFactoryIDs.PositionCamPriority) },  //factory id
                         ],
-                        outputVariables: [ { name: `EnginePositionId` } ],
+                        outputVariables: [ { name: `EnginePositionId`, type: `EnginePosition` } ],
                         inputVariables: [
-                            { name: `EngineParameters.Crank Position` },
-                            { name: `EngineParameters.Cam Position` }
+                            { name: `EngineParameters.Crank Position`, type: `ReluctorResult` },
+                            { name: `EngineParameters.Cam Position`, type: `ReluctorResult` }
                         ]
                     },
         
@@ -1182,23 +1182,23 @@ let types = [
                         ],
                         outputVariables: [ 
                             { name: `EngineParameters.Engine Speed`, unit: `RPM` },
-                            { name: `EngineSequentialId` },
-                            { name: `EngineSyncedId` }
+                            { name: `EngineSequentialId`, type: `bool` },
+                            { name: `EngineSyncedId`, type: `bool` }
                         ],
-                        inputVariables: [ { name: `EnginePositionId` } ]
+                        inputVariables: [ { name: `EnginePositionId`, type: `EnginePosition` } ]
                     }
                 ]}
         
                 if(this.ManifoldAbsolutePressure !== undefined) {
-                    group.value.push({ ...this.ManifoldAbsolutePressure, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Manifold Absolute Pressure` } ] })
+                    group.value.push({ ...this.ManifoldAbsolutePressure, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Manifold Absolute Pressure`, unit: `Bar` } ] })
                 }
                 
                 if(this.ThrottlePosition !== undefined) {
-                    group.value.push({ ...this.ThrottlePosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Throttle Position` } ] })
+                    group.value.push({ ...this.ThrottlePosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Throttle Position`, unit: `[0.0-1.0]` } ] })
                 }
 
                 if(this.CylinderAirTemperature !== undefined) {
-                    group.value.push({ ...this.CylinderAirTemperature, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Cylinder Air Temperature` } ] })
+                    group.value.push({ ...this.CylinderAirTemperature, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Cylinder Air Temperature`, unit: `C` } ] })
                 }
                 return group
             }},
@@ -1206,10 +1206,10 @@ let types = [
                 let group = { type: `Group`, value: []}
         
                 if(this.VolumetricEfficiency !== undefined) {
-                    group.value.push({ ...this.VolumetricEfficiency, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Volumetric Efficiency` } ] })
+                    group.value.push({ ...this.VolumetricEfficiency, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Volumetric Efficiency`, unit: `[0.0-1.0]` } ] })
                 }
                 
-                group.value.push({ ...this.CylinderAirmass, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Cylinder Air Mass` } ] })
+                group.value.push({ ...this.CylinderAirmass, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `EngineParameters.Cylinder Air Mass`, unit: `g` } ] })
 
                 return group
             }}, 

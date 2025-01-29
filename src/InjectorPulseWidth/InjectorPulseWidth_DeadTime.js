@@ -1,6 +1,9 @@
+import CalculationOrVariableSelection from "../Calculation/CalculationOrVariableSelection"
+import GenericConfigs from "../Calculation/GenericConfigs"
 import UITemplate from "../JavascriptUI/UITemplate"
 import UINumberWithUnit from "../UI/UINumberWithUnit"
 import InjectorPulseWidthConfigs from "./InjectorPulseWidthConfigs"
+
 export default class InjectorPulseWidth_DeadTime extends UITemplate {
     static displayName = `Dead Time`
     static outputUnits = [ `s` ]
