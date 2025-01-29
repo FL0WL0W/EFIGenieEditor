@@ -20,7 +20,7 @@ Pinouts.ESP32C6_Expander = {
         { name: `16`,  value: 16,  supportedModes: `digitalin digitalout digitalinterrupt analog pwmout`, overlayX: 450, overlayY: 483, align: `left`},
     ],
     Type: `TopExpander`,
-    Burn: function(cfg) {
-        BurnESP32(cfg, this.Type);
+    Burn: async function(cfg) {
+        await BurnESP32(cfg, this.Type);
     }
 }

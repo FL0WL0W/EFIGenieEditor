@@ -1310,8 +1310,6 @@ let types = [
         buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
         buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
 
-        console.log(BuildRegister.GetVariableReferenceList())
-
         let bufMeta = pako.gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.GetVariableReferenceList()))).buffer
         bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
         bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)

@@ -144,7 +144,7 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
 .w3-padding-top-64{padding-top:64px!important}.w3-padding-top-48{padding-top:48px!important}
 .w3-padding-top-32{padding-top:32px!important}.w3-padding-top-24{padding-top:24px!important}
 .w3-left{float:left!important}.w3-right{float:right!important}
-.w3-button:hover{background-color: #666!important; border-color: #3590d0!important;}
+.w3-button:hover{background-color: #FFF6; border-color: #3590d0!important;}
 .w3-bar-item.active{background-color: #3590d0; color: #fff;}
 .w3-bar-subitem.active{background-color: #323639; color: #fff;}
 .w3-transparent,.w3-hover-none:hover{background-color:transparent!important}
@@ -630,4 +630,14 @@ select .pinconflict{
 .ui.select.inject-at .ui.context-menu {
     min-width: 70px;
     width: fit-content;
+}
+
+.w3-button.connected {
+    background-color: green;
+}
+.w3-button.connecting {
+    background-color: blue;
+}
+.w3-button.connection-error {
+    background-color: red;
 }

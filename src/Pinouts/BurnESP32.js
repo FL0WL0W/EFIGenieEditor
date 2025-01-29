@@ -1,4 +1,4 @@
-export function BurnESP32(cfg, type){
+export async function BurnESP32(cfg, type){
     const saveValue = JSON.stringify(cfg.saveValue)
     const bin = buildConfig({ ...cfg.value, type: type })
 

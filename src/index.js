@@ -117,6 +117,7 @@ import TPS_Linear from "./TPS/TPS_Linear.js"
 
 import pako from "pako"
 import { communication, Serial, EFIGenieCommunication } from "./communication.js"
+import generateGUID from "./GUID.js"
 
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
@@ -160,8 +161,29 @@ window.addEventListener(`load`, function() {
     // xhr.send()
 
     let configJsonName = `tune.json`
-    document.querySelector(`#btnBurn`).addEventListener(`click`, function(){
-        Pinouts[b.TargetDevice.value].Burn(b)
+    let btnBurnTimeout;
+    const btnBurn = document.querySelector(`#btnBurn`)
+    btnBurn.addEventListener(`click`, function(){
+        clearTimeout(btnBurnTimeout)
+        btnBurn.classList.remove(`connection-error`)
+        btnBurn.classList.remove(`connected`)
+        btnBurn.classList.add(`connecting`)
+        Pinouts[b.TargetDevice.value].Burn(b).then(function() { 
+            btnBurn.classList.remove(`connection-error`)
+            btnBurn.classList.add(`connected`)
+            btnBurn.classList.remove(`connecting`)
+            btnBurnTimeout = setTimeout(() => {
+                btnBurn.classList.remove(`connected`)
+            }, 5000)
+        }).catch(function(e) { 
+            console.log(e)
+            btnBurn.classList.add(`connection-error`)
+            btnBurn.classList.remove(`connected`)
+            btnBurn.classList.remove(`connecting`)
+            btnBurnTimeout = setTimeout(() => {
+                btnBurn.classList.remove(`connection-error`)
+            }, 5000)
+        })
     })
     document.querySelector(`#btnDownload`).addEventListener(`click`, function(){
         var cfg = b.saveValue
@@ -186,8 +208,27 @@ window.addEventListener(`load`, function() {
         configJsonName = evt.target.files[0].name
     })
 
-    let btnConnect = document.querySelector(`#btnConnect`)
+    let connectGUID = generateGUID()
+    const btnConnect = document.querySelector(`#btnConnect`)
     btnConnect.addEventListener(`click`, function(){
+        if(communication.connected)
+            return;
+        btnConnect.classList.remove(`connection-error`)
+        btnConnect.classList.remove(`connected`)
+        btnConnect.classList.add(`connecting`)
         communication.connect()
+        communication.liveUpdateEvents[connectGUID] = (variableMetadata, currentVariableValues) => {
+            btnConnect.classList.remove(`connecting`)
+            if(communication.connected)
+            {
+                btnConnect.classList.remove(`connection-error`)
+                btnConnect.classList.add(`connected`)
+            }
+            else
+            {
+                btnConnect.classList.remove(`connected`)
+                btnConnect.classList.add(`connection-error`)
+            }
+        }
     })
 })

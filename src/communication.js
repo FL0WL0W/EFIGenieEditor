@@ -26,6 +26,7 @@ export class Serial {
 
         const reader = readStream.readable.getReader();
         let cancelResult
+        let start = Date.now()
         const timer = setTimeout(() => {
             cancelResult = { value: undefined, done: false }
             reader.cancel()
@@ -86,7 +87,7 @@ export class Serial {
 
         let trys = 0
         while(numberOfBytes == undefined || this.#cummulativeValue.byteLength < numberOfBytes) {
-            const { value, done } = await this.#readWithTimeout(this.#serialPort.readable, timeout)
+            const { value, done } = await this.#readWithTimeout(this.#serialPort.readable, timeout / 10)
             if (done)
                 throw "Serial closed"
             if (!value && trys++ > 10)
@@ -376,11 +377,11 @@ class EFIGenieCommunication extends EFIGenieLog {
         let variableValues = {}
         for(let i = 0; i < variableIds.length; i++) {
             let value = await this._serial.read(1)
-            if(value.byteLength !== 1) continue //throw "Incorrect number of bytes returned when polling variables"
+            if(value.byteLength !== 1) throw "Incorrect number of bytes returned when polling variables"
             const tLen = typeLength(new Uint8Array(value)[0])
             if(tLen > 0) {
                 value = value.concatArray(await this._serial.read(tLen))
-                if(value.byteLength !== tLen + 1) continue //throw "Incorrect number of bytes returned when polling variables"
+                if(value.byteLength !== tLen + 1) throw "Incorrect number of bytes returned when polling variables"
                 variableValues[variableIds[i]] = parseVariable(value)
             }
             bytes = bytes.concatArray(value)
@@ -461,6 +462,8 @@ class EFIGenieCommunication extends EFIGenieLog {
             thisClass.variableMetadata = undefined
             thisClass.polling = false
             thisClass.connected = false
+            let u = async function() { thisClass.#updateLiveUpdateEvents(thisClass) }
+            u()
         })
     }
     async disconnect() {
