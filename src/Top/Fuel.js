@@ -10,40 +10,31 @@ import CalculationOrVariableSelection from "../Calculation/CalculationOrVariable
 import UISelection from "../JavascriptUI/UISelection"
 class InjectorProperties extends ConfigContainer{
     static template = `<div data-element="InjectorEnable"></div><div data-element="InjectorPulseWidth"></div><div data-element="InjectorPosition"></div>`
-    InjectorEnable = new CalculationOrVariableSelection({
-        calculations:   InjectorEnableConfigs,
-        label:          `Injector Enable`,
-        outputTypes:    [ `bool` ],
-    })
-    InjectorPulseWidth = new CalculationOrVariableSelection({
-        calculations:   InjectorPulseWidthConfigs,
-        label:          `Injector Pulse Width`,
-        outputUnits:    [ `s` ],
-        displayUnits:   [ `ms` ]
-    })
-    InjectorPosition = new CalculationOrVariableSelection({
-        calculations:   GenericConfigs,
-        label:          `Injector Position`,
-        outputUnits:    [ `°` ],
-    })
 
     constructor(prop) {
         super()
         this.label = `Injector Properties`
         this.Setup(prop)
     }
-    RegisterVariables() {
-        this.InjectorEnable.RegisterVariables({ name: `FuelParameters.Injector Enable` })
-        this.InjectorPulseWidth.RegisterVariables({ name: `FuelParameters.Injector Pulse Width` })
-        this.InjectorPosition.RegisterVariables({ name: `FuelParameters.Injector Position` })
-    }
-}
-customElements.define(`top-injector-properties`, InjectorProperties, { extends: `span` })
-
-class Output_TDCInjection extends Output_TDC {
 
     Setup(prop) {
-        this.InjectAt = new UISelection({
+        this.InjectorEnable = new CalculationOrVariableSelection({
+            calculations:   InjectorEnableConfigs,
+            label:          `Injector Enable`,
+            outputTypes:    [ `bool` ],
+        })
+        this.InjectorPulseWidth = new CalculationOrVariableSelection({
+            calculations:   InjectorPulseWidthConfigs,
+            label:          `Injector Pulse Width`,
+            outputUnits:    [ `s` ],
+            displayUnits:   [ `ms` ]
+        })
+        this.InjectorPosition = new CalculationOrVariableSelection({
+            calculations:   GenericConfigs,
+            label:          `Injector Position`,
+            outputUnits:    [ `°` ],
+        })
+        this.InjectorPositionAt = new UISelection({
             value:  2,
             options: [
                 { name: `Begin`, value: 0 },
@@ -53,16 +44,23 @@ class Output_TDCInjection extends Output_TDC {
             class: `inject-at`
         })
         let span = document.createElement(`span`)
-        span.append(`\xa0Inject At`)
-        span.append(this.InjectAt)
+        span.append(`\xa0at`)
+        span.append(this.InjectorPositionAt)
         super.Setup(prop)
-        this.labelElement.parentElement.append(span)
+        this.InjectorPosition.labelElement.parentElement.append(span)
+    }
+
+    RegisterVariables() {
+        this.InjectorEnable.RegisterVariables({ name: `FuelParameters.Injector Enable` })
+        this.InjectorPulseWidth.RegisterVariables({ name: `FuelParameters.Injector Pulse Width` })
+        this.InjectorPosition.RegisterVariables({ name: `FuelParameters.Injector Position` })
     }
 }
-customElements.define(`output-tdcinjection`, Output_TDCInjection, { extends: `span` })
+customElements.define(`top-injector-properties`, InjectorProperties, { extends: `span` })
 
 export default class Fuel extends ConfigList {
     constructor(prop) {
+        let injectorProperties = new InjectorProperties()
         prop = { ...prop,
             staticItems: [
                 { name: `AFR`, item: new GenericCalculation({
@@ -71,12 +69,13 @@ export default class Fuel extends ConfigList {
                     nameEditable:   false,
                     outputUnits:    [ `:1` ],
                 })},
-                { name: `InjectorProperties`, item: new InjectorProperties()},
+                { name: `InjectorProperties`, item: injectorProperties},
                 { name: `InjectorOutputs`, item: new OutputList({
                     label: `Injector Outputs`,
                     newOutput(i) {
-                        return new Output_TDCInjection({
-                            label:          `Injector ${i+1}`
+                        return new Output_TDC({
+                            label:          `Injector ${i+1}`,
+                            InjectAt:       injectorProperties.InjectorPositionAt
                         })
                     }
                 })},
