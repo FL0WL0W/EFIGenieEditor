@@ -1,5 +1,6 @@
 import pako from "pako"
 import VariableRegistry from "./VariableRegistry"
+import { GetUnitFromName } from "./UI/UIUnit"
 
 export default function buildConfig(obj) {
     return types.find(x => x.type === obj.type).toArrayBuffer.call(obj)
@@ -529,7 +530,7 @@ let types = [
         ]}, this)
     }},
     { type: `CalculationOrVariableSelection`, toDefinition() {
-        if(this.calculation) return { ...this, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
+        if(this.calculation !== undefined) return { ...this, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
         if(!this.selection) return
         const outputUnit = this.outputVariables?.[0]?.unit ?? this.outputUnits?.[0]
         BuildRegister.RegisterVariable({ 
@@ -1056,6 +1057,7 @@ let types = [
                     value: [ 
                         { type: `UINT32`, value: EngineFactoryIDs.Offset + EngineFactoryIDs.ScheduleInjection }, //factory id
                         { type: `FLOAT`, value: this.TDC }, //tdc
+                        { type: `UINT8`, value: this.InjectAt },
                         { ...this, type: `CalculationOrVariableSelection` },
                     ],
                     outputVariables: [ 
@@ -1066,7 +1068,7 @@ let types = [
                         { name: `EnginePositionId` },
                         { name: `FuelParameters.Injector Enable` },
                         { name: `FuelParameters.Injector Pulse Width` },
-                        { name: `FuelParameters.Injector End Position` }
+                        { name: `FuelParameters.Injector Position` }
                     ]
                 }]}
             }},
@@ -1087,7 +1089,7 @@ let types = [
                 return { type: `Group`, value: [
                     { ...this.InjectorEnable, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Enable` } ] }, 
                     { ...this.InjectorPulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Pulse Width` } ] }, 
-                    { ...this.InjectorEndPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector End Position` } ] }, 
+                    { ...this.InjectorPosition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `FuelParameters.Injector Position` } ] }, 
                 ]}
             }}, 
             { type: `Fuel_InjectorOutputs`, toDefinition() {

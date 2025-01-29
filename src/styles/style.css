@@ -619,3 +619,15 @@ select .pinconflict{
     min-width: 80px;
     width: fit-content;
 }
+
+.ui.number.tdc {
+    width: 3em;
+}
+
+.ui.select.inject-at .ui.selected {
+    min-width: 70px;
+}
+.ui.select.inject-at .ui.context-menu {
+    min-width: 70px;
+    width: fit-content;
+}
