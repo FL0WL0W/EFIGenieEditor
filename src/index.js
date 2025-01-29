@@ -168,20 +168,25 @@ window.addEventListener(`load`, function() {
         btnBurn.classList.remove(`connection-error`)
         btnBurn.classList.remove(`connected`)
         btnBurn.classList.add(`connecting`)
+        btnBurn.value = `Burning`
         Pinouts[b.TargetDevice.value].Burn(b).then(function() { 
             btnBurn.classList.remove(`connection-error`)
             btnBurn.classList.add(`connected`)
             btnBurn.classList.remove(`connecting`)
+            btnBurn.value = `Burned`
             btnBurnTimeout = setTimeout(() => {
                 btnBurn.classList.remove(`connected`)
+                btnBurn.value = `Burn`
             }, 5000)
         }).catch(function(e) { 
             console.log(e)
             btnBurn.classList.add(`connection-error`)
             btnBurn.classList.remove(`connected`)
             btnBurn.classList.remove(`connecting`)
+            btnBurn.value = `Burn Error`
             btnBurnTimeout = setTimeout(() => {
                 btnBurn.classList.remove(`connection-error`)
+                btnBurn.value = `Burn`
             }, 5000)
         })
     })
@@ -211,10 +216,16 @@ window.addEventListener(`load`, function() {
     let connectGUID = generateGUID()
     const btnConnect = document.querySelector(`#btnConnect`)
     btnConnect.addEventListener(`click`, function(){
-        if(communication.connected)
-            return;
         btnConnect.classList.remove(`connection-error`)
         btnConnect.classList.remove(`connected`)
+        btnConnect.classList.remove(`connecting`)
+        if(communication.connected)
+        {
+            delete communication.liveUpdateEvents[connectGUID]
+            communication.disconnect()
+            btnConnect.value = `Connect`
+            return;
+        }
         btnConnect.classList.add(`connecting`)
         communication.connect()
         communication.liveUpdateEvents[connectGUID] = (variableMetadata, currentVariableValues) => {
@@ -223,11 +234,13 @@ window.addEventListener(`load`, function() {
             {
                 btnConnect.classList.remove(`connection-error`)
                 btnConnect.classList.add(`connected`)
+                btnConnect.value = `Connected`
             }
             else
             {
                 btnConnect.classList.remove(`connected`)
                 btnConnect.classList.add(`connection-error`)
+                btnConnect.value = `Connection Error`
             }
         }
     })
