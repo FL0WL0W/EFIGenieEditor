@@ -90,9 +90,10 @@ import UIGraph3D from "./JavascriptUI/UIGraph3D.js"
 import UIGraph2D from "./JavascriptUI/UIGraph2D.js"
 import UIDialog from "./JavascriptUI/UIDialog.js"
 
-import Map_GM1Bar from "./MAP/MAP_GM1Bar.js"
-import Map_GM2Bar from "./MAP/MAP_GM2Bar.js"
-import Map_GM3Bar from "./MAP/MAP_GM3Bar.js"
+import MAP_GM1Bar from "./MAP/MAP_GM1Bar.js"
+import MAP_GM2Bar from "./MAP/MAP_GM2Bar.js"
+import MAP_GM3Bar from "./MAP/MAP_GM3Bar.js"
+import MAP_Linear from "./MAP/MAP_Linear.js"
 
 import Output_Digital from "./Output/Output_Digital.js"
 import Output_TDC from "./Output/Output_TDC.js"
