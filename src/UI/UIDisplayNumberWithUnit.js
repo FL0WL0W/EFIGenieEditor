@@ -26,6 +26,15 @@ export default class UIDisplayNumberWithUnit extends UINumberWithUnit {
         if(this.#value === value)
             return
         this.#value = value
+        if(typeof value === `boolean`)
+        {
+            this.displayUnitElement.hidden = true;
+            if(value)
+                this.displayElement.textContent = `true`;
+            else
+                this.displayElement.textContent = `false`;
+            return;
+        }
         const displayUnit = this.displayUnit
         const valueUnit = this.valueUnit
         const valueToDisplayValue = value => { return value == undefined || !displayUnit? value : ConvertValueFromUnitToUnit(value, valueUnit, displayUnit) }
