@@ -95,6 +95,28 @@ export default class VariableRegistry {
             this[reference.name] = reference
         }
     }
+    UnRegisterVariable(reference) {
+        if(!reference || typeof reference !== `object` || !reference.name) return
+        reference = { ...reference }
+
+        const dotIndex = reference.name.indexOf(`.`)
+        if(dotIndex !== -1) {
+            const listName = reference.name.substring(0, dotIndex)
+            if(this[listName] === undefined)
+                return
+            reference.name = reference.name.substring(dotIndex + 1)
+
+            const existingIndex = this[listName].findIndex(a => 
+                a.name === reference.name && 
+                (reference.unit == undefined || a.unit === reference.unit || (a.unit == undefined && typeof a.id === `string`)) && 
+                (reference.type == undefined || (a.unit != undefined && reference.type.split(`|`).indexOf(`float`) !== -1) || (a.type == undefined && typeof a.id === `string`) || a.type?.split(`|`).some(t => reference.type.split(`|`).indexOf(t) !== -1)))
+            if(existingIndex !== -1) {
+                this[listName].splice(existingIndex, 1)
+            }
+        } else {
+            delete this[reference.name]
+        }
+    }
     GetVariableReferenceList() {
         var variableReferences = {}
         for (var property in this) {
