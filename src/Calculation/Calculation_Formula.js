@@ -6,6 +6,166 @@ import UIUnit from "../UI/UIUnit"
 import GenericConfigs from "./GenericConfigs"
 import CalculationOrVariableSelection from "./CalculationOrVariableSelection"
 export default class Calculation_Formula extends UITemplate {
+    static operators = [`!`,`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`=`,`&`,`|`]
+    static parametersFromFormula(formula) {
+        const operators = Calculation_Formula.operators
+        let parameters = formula.replaceAll(` `, ``)
+        for(let operatorIndex in operators) {
+            let operator = operators[operatorIndex]
+            parameters = parameters.split(operator).join(`,`)
+        }
+        let parameterSplit = parameters.split(`,`)
+        let operatorSplit = formula.replaceAll(` `, ``)
+        for(let i = 0; i < parameterSplit.length; i++) {
+            let loc = operatorSplit.indexOf(parameterSplit[i])
+            operatorSplit = operatorSplit.substring(0, loc) + `,` + operatorSplit.substring(loc + parameterSplit[i].length)
+        }
+        operatorSplit = operatorSplit.split(`,`)
+        //allow parenthesis in parameter names
+        parameters = ``
+        for(let i = 0; i < parameterSplit.length; i++) {
+            if(parameters !== ``) parameters += `,`
+            parameters += parameterSplit[i]
+
+            if(parameterSplit[i].match(/[^,][(]/) && parameterSplit[i][parameterSplit[i].length - 1] !== `)`) {
+                while(++i < parameterSplit.length) {
+                    parameters += operatorSplit[i] + parameterSplit[i]
+                    if(parameterSplit[i][parameterSplit[i].length - 1] === `)`) break
+                }
+            }
+        }
+        console.log(parameters)
+        parameters = parameters.split(`,`)
+        //remove parenthesis operator from parameters
+        parameters = parameters.map(s => s[0] === `(` ? s.substring(1) : s)
+        parameters = parameters.map(s => {
+            while(s[s.length-1] === `)` && s.split(`)`).length > s.split(`(`).length)
+                s = s.substring(0, s.length-1)
+            return s
+        })
+        let allParameters = [ ...parameters ]
+        //filter out static values
+        parameters = parameters.filter(s => !s.match(/^[0-9]*$/))
+        //filter out null parameters
+        parameters = parameters.filter(s => s.length !== 0)
+        //filter out self
+        parameters = parameters.filter(s => s !== `self`)
+
+        return parameters
+    }
+    static parseFormula(formula, parameters) {
+        const operators = Calculation_Formula.operators
+        formula = formula.replaceAll(` `, ``)
+        for(let i = 0; i < parameters.length; i++) {
+            formula = formula.replaceAll(parameters[i], `param${i}`)
+        }
+        let operations = []
+        let tempIndex = 0
+
+        //do parenthesis
+        let parenthesisFormulas = formula.split(`)`)
+        if(parenthesisFormulas.length !== formula.split(`(`).length)
+            return `Parenthesis start and end not matching`
+
+        while(formula.split(`)`).flatMap(p => p.split(`(`)).filter(p => operators.some(o => p.indexOf(o) > -1)).length > 1) {
+            tempIndex++
+            let tempFormula = formula.split(`)`).filter(p => operators.some(o => p.split(`(`).pop()?.indexOf(o) > -1))[0].split(`(`).pop()
+            operations.push({
+                resultInto: `$temp${tempIndex}`,
+                parameters: [tempFormula]
+            })
+            formula = formula.replace(`(${tempFormula})`, `$temp${tempIndex}`)
+        }
+        if(formula[0] === `(` && formula[formula.length-1] === `)`)
+            formula = formula.substring(1,formula.length-1)
+        operations.push({
+            resultInto: `return`,
+            parameters: [formula]
+        })
+
+        //do operators
+        function splitOnOperators(s) {
+            for(let operatorIndex in operators) {
+                let operator = operators[operatorIndex]
+                s = s.split(operator).join(`,`)
+            }
+            return s.split(`,`)
+        }
+
+        for(let operatorIndex in operators) {
+            let operator = operators[operatorIndex]
+            let operationIndex
+            while((operationIndex = operations.findIndex(f => f.parameters.find(p => p.indexOf(operator) > -1))) > -1) {
+                const formula = operations[operationIndex]
+                const parameterIndex = formula.parameters.findIndex(p => p.indexOf(operator) > -1)
+                const parameter = formula.parameters[parameterIndex]
+                const firstParameter = splitOnOperators(parameter.split(operator)[0]).pop()
+                const secondParameter = splitOnOperators(parameter.split(operator)[1])[0]
+                if(formula.parameters.length > 1 || splitOnOperators(formula.parameters[0].replace(`${firstParameter}${operator}${secondParameter}`, `temp`)).length > 1) {
+                    tempIndex++
+                    formula.parameters[parameterIndex] = parameter.replace(`${firstParameter}${operator}${secondParameter}`, `$temp${tempIndex}`)
+                    operations.splice(operationIndex, 0, {
+                        operator,
+                        resultInto: `$temp${tempIndex}`,
+                        parameters: [firstParameter, secondParameter]
+                    })
+                } else {
+                    operations[operationIndex].operator = operator
+                    operations[operationIndex].parameters = [firstParameter, secondParameter]
+                }
+            }
+        }
+
+        //statics
+        let operationIndex
+        while((operationIndex = operations.findIndex(f => f.operator !== `s` && f.parameters.find(p => p.match(/^[0-9]+$/)))) > -1) {
+            const formula = operations[operationIndex]
+            const parameterIndex = formula.parameters.findIndex(p => p.match(/^[0-9]+$/))
+            const parameter = formula.parameters[parameterIndex]
+
+            tempIndex++
+            operations[operationIndex].parameters[parameterIndex] = `$temp${tempIndex}`
+            operations.splice(operationIndex, 0, {
+                operator: `s`,
+                resultInto: `$temp${tempIndex}`,
+                parameters: [parameter]
+            })
+        }
+
+        //consolidate temp variables
+        tempIndex = 0
+        for(let operationIndex in operations) {
+            operationIndex = parseInt(operationIndex)
+            let formula = operations[operationIndex]
+            if(formula.resultInto.indexOf(`$temp`) !== 0)
+                continue
+            let nextFormulaParameterIndex
+            if  (operations.filter(f => f.parameters.findIndex(p => p === formula.resultInto) > -1).length < 2 && 
+                (nextFormulaParameterIndex = operations[operationIndex+1]?.parameters?.findIndex(p => p === formula.resultInto)) > -1) {
+                    operations[operationIndex+1].parameters[nextFormulaParameterIndex] = formula.resultInto = `temp`
+            } else {
+                tempIndex++
+                operations.filter(f => f.parameters.findIndex(p => p === formula.resultInto) > -1).forEach(f => { for(let parameterIndex in f.parameters) {
+                    if(f.parameters[parameterIndex] === formula.resultInto) 
+                        f.parameters[parameterIndex] = `temp${tempIndex}`
+                } })
+                formula.resultInto = `temp${tempIndex}`
+            }
+        }
+
+        for(let i = 0; i < operations.length; i++) {
+            operations[i].parameters
+            for(let p = 0; p < operations[i].parameters.length; p++) {
+                if(operations[i].parameters[p].indexOf(`param`) === 0) {
+                    operations[i].parameters[p] = parameters[parseInt(operations[i].parameters[p].substring(5))]
+                }
+            }
+        }
+
+        return operations
+    }
+
+
     static displayName = `Formula`
     static outputTypes = [ `bool|float` ]
     static template = `<div data-element="editFormula"></div><div data-element="editFormulaContent"><div style="display: flex; width: 100%"><div style="margin: auto; margin-right: 1em; width: fit-content; white-space: nowrap;"><div data-element="labelElement"></div> <div data-element="formulaUnit"></div> = </div><div data-element="formula"></div></div><div data-element="parameterElements"></div></div><div data-element="parameterValueElements"></div>`
@@ -23,6 +183,9 @@ export default class Calculation_Formula extends UITemplate {
     parameterValues = {}
     parameterSaveValueCache = {}
     parameterUnits = {}
+    calculateFormula() {
+        this.parameters = Calculation_Formula.parametersFromFormula(this.formula.value)
+    }
     get parameters() {
         return [...this.parameterValueElements.children].map(x => x.name)
     }
@@ -54,6 +217,7 @@ export default class Calculation_Formula extends UITemplate {
                     const subConfig = parameterValue.SubConfig
                     if(subConfig)
                         subConfig.displayUnits = subConfig.outputUnits = [ parameterUnit.value ]
+                    this.calculateFormula();
                 })
                 parameterValue.selection.addEventListener(`change`, () => {
                     const subConfig = parameterValue.SubConfig
@@ -70,6 +234,7 @@ export default class Calculation_Formula extends UITemplate {
                     } else {
                         parameterUnit.hidden = true
                     }
+                    this.calculateFormula();
                 })
                 if(!parameterValue.SubConfig)
                     parameterUnit.hidden = true
@@ -215,47 +380,7 @@ export default class Calculation_Formula extends UITemplate {
         this.parameterElements.style.minHeight = `200px`
         this.parameterValueElements.hidden = true
         this.formula.addEventListener(`change`, () => {
-            let operators = [`!`,`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`=`,`&`,`|`]
-            let parameters = this.formula.value.replaceAll(` `, ``)
-            for(let operatorIndex in operators) {
-                let operator = operators[operatorIndex]
-                parameters = parameters.split(operator).join(`,`)
-            }
-            let parameterSplit = parameters.split(`,`)
-            let operatorSplit = this.formula.value.replaceAll(` `, ``)
-            for(let i = 0; i < parameterSplit.length; i++) {
-                let loc = operatorSplit.indexOf(parameterSplit[i])
-                operatorSplit = operatorSplit.substring(0, loc) + `,` + operatorSplit.substring(loc + parameterSplit[i].length)
-            }
-            operatorSplit = operatorSplit.split(`,`)
-            //allow parenthesis in parameter names
-            parameters = ``
-            for(let i = 0; i < parameterSplit.length; i++) {
-                if(parameters !== ``) parameters += `,`
-                parameters += parameterSplit[i]
-
-                if(parameterSplit[i].match(/[^,][(]/) && parameterSplit[i][parameterSplit[i].length - 1] !== `)`) {
-                    while(++i < parameterSplit.length) {
-                        parameters += operatorSplit[i] + parameterSplit[i]
-                        if(parameterSplit[i][parameterSplit[i].length - 1] === `)`) break
-                    }
-                }
-            }
-            parameters = parameters.split(`,`)
-            //remove parenthesis operator from parameters
-            parameters = parameters.map(s => s[0] === `(` ? s.substring(1) : s)
-            parameters = parameters.map(s => {
-                while(s[s.length-1] === `)` && s.split(`)`).length > s.split(`(`).length)
-                    s = s.substring(0, s.length-1)
-                return s
-            })
-            //filter out static values
-            parameters = parameters.filter(s => !s.match(/^[0-9]*$/))
-            //filter out null parameters
-            parameters = parameters.filter(s => s.length !== 0)
-            //filter out self
-            parameters = parameters.filter(s => s !== `self`)
-            this.parameters = parameters
+            this.calculateFormula();
         })
         this.Setup(prop)
     }
