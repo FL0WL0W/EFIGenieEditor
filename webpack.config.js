@@ -17,7 +17,7 @@ module.exports = (env, argv) => { return {
     },
     entry: path.resolve(__dirname, 'src/index.js'),
     output: {
-        path: path.resolve(__dirname, 'docs'),
+        path: path.resolve(__dirname, 'dist'),
         filename: 'main.js',
         clean: true,
     },
@@ -29,7 +29,7 @@ module.exports = (env, argv) => { return {
     },
     devServer: {
         static: {
-            directory: path.resolve(__dirname, "docs")
+            directory: path.resolve(__dirname, "dist")
         },
         proxy: [
             {
