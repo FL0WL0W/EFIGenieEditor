@@ -21,20 +21,25 @@ export let IgnitionAdvanceConfigs = []
 IgnitionAdvanceConfigs.push(Calculation_Static)
 IgnitionAdvanceConfigs.push(Calculation_LookupTable)
 IgnitionAdvanceConfigs.push(Calculation_2AxisTable)
+IgnitionAdvanceConfigs.push(Calculation_Formula)
 
 export let IgnitionDwellConfigs = []
 IgnitionDwellConfigs.push(Calculation_Static)
 IgnitionDwellConfigs.push(Calculation_LookupTable)
 IgnitionDwellConfigs.push(Calculation_2AxisTable)
+IgnitionDwellConfigs.push(Calculation_Formula)
 
 export let CylinderAirTemperatureConfigs = []
 CylinderAirTemperatureConfigs.push(Calculation_Static)
+CylinderAirTemperatureConfigs.push(Calculation_Formula)
 
 export let ManifoldAbsolutePressureConfigs = []
 ManifoldAbsolutePressureConfigs.push(Calculation_Static)
+ManifoldAbsolutePressureConfigs.push(Calculation_Formula)
 
 export let ThrottlePositionConfigs = []
 ThrottlePositionConfigs.push(Calculation_Static)
+ThrottlePositionConfigs.push(Calculation_Formula)
 
 export let VolumetricEfficiencyConfigs = []
 VolumetricEfficiencyConfigs.push(Calculation_Static)
