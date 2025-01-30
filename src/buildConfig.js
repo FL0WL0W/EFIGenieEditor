@@ -534,6 +534,12 @@ let types = [
         if(this.calculation !== undefined) return { ...this, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
         if(!this.selection) return
         const outputUnit = this.outputVariables?.[0]?.unit ?? this.outputUnits?.[0]
+        BuildRegister.RegisterVariable({ 
+            ...this.selection, 
+            ...this.outputVariables?.[0], 
+            ...(this.selection?.name != undefined && { id: this.selection.name }),
+            ...(outputUnit != undefined && { unit: outputUnit })
+        })
         if(outputUnit != undefined && this.selection.unit != outputUnit && !BuildRegister.GetVariableByReference({ ...this.selection, unit: outputUnit })) {
             return { outputVariables: [ { ...this.selection, unit: outputUnit } ], inputVariables: [ this.selection ], type: `Calculation_UnitConversion` }
         }
