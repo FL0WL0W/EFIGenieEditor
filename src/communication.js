@@ -443,6 +443,8 @@ class EFIGenieCommunication extends EFIGenieLog {
         await this.writeToAddress(configAddress, bin)
         await this.startExecution()
 
+        this.variableMetadata = undefined
+
         if(reconnect)
             this.connect()
     }
@@ -452,6 +454,7 @@ class EFIGenieCommunication extends EFIGenieLog {
             return
         this.polling = true
         this.connected = true
+        this.connectionError = false;
         const thisClass = this
         this.pollVariables().then(function() {
             thisClass.polling = false
@@ -462,6 +465,7 @@ class EFIGenieCommunication extends EFIGenieLog {
             thisClass.variableMetadata = undefined
             thisClass.polling = false
             thisClass.connected = false
+            thisClass.connectionError = true;
             let u = async function() { thisClass.#updateLiveUpdateEvents(thisClass) }
             u()
         })
