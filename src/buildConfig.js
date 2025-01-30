@@ -294,6 +294,7 @@ function Packagize(definition, val) {
     if( (val.outputVariables && val.outputVariables.some(x => x != undefined)) || 
         (val.inputVariables && val.inputVariables.some(x => x != undefined))) {
         definition.type = `Package`
+        val.outputVariables.forEach(x => { BuildRegister.RegisterVariable(x) })
         definition.outputVariables = val.outputVariables
         definition.outputUnits = val.outputUnits
         definition.inputVariables = val.inputVariables
@@ -967,6 +968,10 @@ let types = [
         return this
     }},
     { type: `MAP_GM3Bar`, toDefinition() {
+        this.type = `Input_AnalogPolynomial`
+        return this
+    }},
+    { type: `MAP_Linear`, toDefinition() {
         this.type = `Input_AnalogPolynomial`
         return this
     }},
