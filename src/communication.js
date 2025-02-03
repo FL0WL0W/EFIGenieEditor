@@ -453,6 +453,8 @@ class EFIGenieCommunication extends EFIGenieLog {
         if(this.polling)
             return
         this.polling = true
+        if(!this.connected)
+            this.startedLoggingTime = Date.now()
         this.connected = true
         this.connectionError = false;
         const thisClass = this

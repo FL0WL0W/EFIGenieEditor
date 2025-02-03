@@ -70,6 +70,7 @@ export default class UIPlot extends UITemplate {
         const options = {
             title: "Real-Time Data",
             id: "realtimeChart",
+            ms: 1,
             width: 800,
             height: 400,
             scales: {
@@ -153,8 +154,15 @@ export default class UIPlot extends UITemplate {
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
             const data = references.map((reference, idx) => {
                 const variableId = variableMetadata?.GetVariableId(reference)
-                if(reference)
+                if(reference) {
+                    if(reference.name === `CurrentTick`) {
+                        const UINT32_MAX = 0xFFFFFFFF
+                        const ticks = communication.loggedVariableValues.map(x => x[variableId] / 1000)
+                        let previousTick = 0
+                        return ticks.map((tick, idx) => communication.startedLoggingTime + (previousTick += (idx > 0? (tick - ticks[idx - 1] + (tick > ticks[idx-1]? 0 : UINT32_MAX)) : 0)))
+                    }
                     return communication.loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], reference.unit, displayUnits[idx]))
+                }
             })
             this.plot.setData(data);
         }

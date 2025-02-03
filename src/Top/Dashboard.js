@@ -320,7 +320,7 @@ export default class Dashboard extends UITemplate {
                     communication.variablesToPoll.push(variableElement.variable)
                 communication.liveUpdateEvents[variableElement.GUID] = (variableMetadata, currentVariableValues) => {
                     const variableId = variableMetadata?.GetVariableId(variableElement.variable)
-                    if(currentVariableValues?.[variableId] != undefined) {
+                    if(currentVariableValues?.[variableId] !== undefined) {
                         variableElement.value = currentVariableValues[variableId]
                     }
                 }

@@ -220,7 +220,7 @@ export default class UIGauge extends UITemplate {
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
             if(reference) { 
                 const variableId = variableMetadata?.GetVariableId(reference)
-                if(currentVariableValues?.[variableId] != undefined) {
+                if(currentVariableValues?.[variableId] !== undefined) {
                     this.value = currentVariableValues[variableId]
                 }
             }
