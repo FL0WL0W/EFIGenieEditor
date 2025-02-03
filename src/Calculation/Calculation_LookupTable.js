@@ -173,8 +173,8 @@ export default class Calculation_LookupTable extends UITemplate {
 
     RegisterVariables() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        if(communication.variablesToPoll.indexOf(this.parameterSelection?.value) === -1)
-            communication.variablesToPoll.push(this.parameterSelection?.value)
+        // if(communication.variablesToPoll.indexOf(this.parameterSelection?.value) === -1)
+        //     communication.variablesToPoll.push(this.parameterSelection?.value)
         
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
             if(this.parameterSelection?.value) { 

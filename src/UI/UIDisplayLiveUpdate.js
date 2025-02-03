@@ -18,8 +18,8 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
         if(!variable?.unit && variable?.type?.split(`|`)?.indexOf(`float`) === -1) return
         this.measurement = GetMeasurementNameFromUnitName(variable.unit)
         this.valueUnit = variable.unit
-        if(communication.variablesToPoll.indexOf(reference) === -1)
-            communication.variablesToPoll.push(reference)
+        // if(communication.variablesToPoll.indexOf(reference) === -1)
+        //     communication.variablesToPoll.push(reference)
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
             if(reference) { 
                 const variableId = variableMetadata?.GetVariableId(reference)

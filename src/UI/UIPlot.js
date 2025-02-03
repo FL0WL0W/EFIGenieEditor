@@ -144,8 +144,8 @@ export default class UIPlot extends UITemplate {
         const displayUnits = [ undefined, ...[...this.variablesToPlot.children].map(x => x.variable.displayUnit)]
         const references = [ { name: `CurrentTick` }, ...[...this.variablesToPlot.children].map(x => x.variable.value) ].map( reference => {
             if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-            if(communication.variablesToPoll.indexOf(reference) === -1)
-                communication.variablesToPoll.push(reference)
+            // if(communication.variablesToPoll.indexOf(reference) === -1)
+            //     communication.variablesToPoll.push(reference)
 
             return reference;
         })

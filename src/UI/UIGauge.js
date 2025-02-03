@@ -215,8 +215,8 @@ export default class UIGauge extends UITemplate {
 
         const reference = this.configTemplate.variable.value
         if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-        if(communication.variablesToPoll.indexOf(reference) === -1)
-            communication.variablesToPoll.push(reference)
+        // if(communication.variablesToPoll.indexOf(reference) === -1)
+        //     communication.variablesToPoll.push(reference)
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
             if(reference) { 
                 const variableId = variableMetadata?.GetVariableId(reference)

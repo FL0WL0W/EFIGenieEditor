@@ -211,11 +211,13 @@ export default class Dashboard extends UITemplate {
                 for(let i = 0; i < variables.length; i++){
                     if(!this.children[i+1]) {
                         const row = this.appendChild(new UILoggedVariable())
+                        communication.variablesToPoll = []
                         let btnDelete
                         row.children[4].replaceChildren(btnDelete = document.createElement(`div`))
                         btnDelete.class = `controldelete`
                         btnDelete.addEventListener(`click`, event => {
                             this.removeChild(row)
+                            communication.variablesToPoll = []
                             thisClass.RegisterVariables()
                         })
                         row.addEventListener(`click`, event => {

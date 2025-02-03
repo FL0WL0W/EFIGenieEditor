@@ -235,10 +235,10 @@ export default class Calculation_2AxisTable extends UITemplate {
     RegisterVariables() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
         this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        if(communication.variablesToPoll.indexOf(this.XSelection?.value) === -1)
-            communication.variablesToPoll.push(this.XSelection?.value)
-        if(communication.variablesToPoll.indexOf(this.YSelection?.value) === -1)
-            communication.variablesToPoll.push(this.YSelection?.value)
+        // if(communication.variablesToPoll.indexOf(this.XSelection?.value) === -1)
+        //     communication.variablesToPoll.push(this.XSelection?.value)
+        // if(communication.variablesToPoll.indexOf(this.YSelection?.value) === -1)
+        //     communication.variablesToPoll.push(this.YSelection?.value)
         communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
             if(this.XSelection?.value && this.YSelection?.value) { 
                 const xVariableId = variableMetadata?.GetVariableId(this.XSelection?.value)
