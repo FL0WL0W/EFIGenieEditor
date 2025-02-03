@@ -8,6 +8,7 @@ import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UIPlot from "../UI/UIPlot"
+import generateGUID from "../GUID"
 class UILoggedVariable extends HTMLTableRowElement {
     #variable
     get variable() { return this.#variable }
@@ -35,7 +36,28 @@ class UILoggedVariable extends HTMLTableRowElement {
     get value() { return this.#value }
     set value(value) {
         this.#value = value
-        this.children[1].textContent = value ?? `--`
+
+        let displayValue = `--`
+        if(typeof value === `number`) {
+            displayValue = `${parseFloat(parseFloat(parseFloat(value).toFixed(5)).toPrecision(6))}`
+            const indexOfPoint = displayValue.indexOf(`.`)
+            let zeroesToAdd = Math.max(0, 6-(displayValue.length - indexOfPoint))
+            if(indexOfPoint === -1) zeroesToAdd = 6
+            if(zeroesToAdd < this.ZeroesToAdd) this.ZeroesToAdd = zeroesToAdd
+            zeroesToAdd -= this.ZeroesToAdd
+            if(zeroesToAdd > 0 && indexOfPoint < 0) displayValue += `.`
+            for(let i = 0; i < zeroesToAdd; i++) displayValue += `0`
+        } else if(typeof value === `boolean`) {
+            if(value)
+                displayValue = `true`
+            else
+                displayValue = `false`
+        }
+
+        this.children[1].minWidth = Math.max(this.children[1].minWidth ?? 0, `${displayValue}`.length)
+        this.children[1].style.minWidth = `${this.children[1].minWidth}ch`
+
+        this.children[1].textContent = displayValue ?? `--`
     }
 
     constructor() {
@@ -286,10 +308,21 @@ export default class Dashboard extends UITemplate {
         }); return z})
         this.options = options;
         [...this.loggedVariables.children].forEach(variableElement => {
-            if(variableElement.variable != undefined && -1 === options.findIndex(x => x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)))
+            variableElement.GUID ??= generateGUID();
+            if(variableElement.variable != undefined && -1 === options.findIndex(x => x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable))) {
                 variableElement.hidden = true
-            else 
+                communication.liveUpdateEvents[variableElement.GUID] = undefined;
+            } else {
                 variableElement.hidden = false
+                if(communication.variablesToPoll.indexOf(variableElement.variable) === -1)
+                    communication.variablesToPoll.push(variableElement.variable)
+                communication.liveUpdateEvents[variableElement.GUID] = (variableMetadata, currentVariableValues) => {
+                    const variableId = variableMetadata?.GetVariableId(variableElement.variable)
+                    if(currentVariableValues?.[variableId] != undefined) {
+                        variableElement.value = currentVariableValues[variableId]
+                    }
+                }
+            }
         });
         [...this.gauges.children].forEach(x => x.RegisterVariables());
         [...this.plots.children].forEach(x => x.RegisterVariables());

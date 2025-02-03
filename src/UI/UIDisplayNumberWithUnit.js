@@ -28,11 +28,11 @@ export default class UIDisplayNumberWithUnit extends UINumberWithUnit {
         this.#value = value
         if(typeof value === `boolean`)
         {
-            this.displayUnitElement.hidden = true;
+            this.displayUnitElement.hidden = true
             if(value)
-                this.displayElement.textContent = `true`;
+                this.displayElement.textContent = `true`
             else
-                this.displayElement.textContent = `false`;
+                this.displayElement.textContent = `false`
             return;
         }
         const displayUnit = this.displayUnit

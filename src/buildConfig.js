@@ -534,7 +534,7 @@ let types = [
     { type: `CalculationOrVariableSelection`, toDefinition() {
         if(this.calculation !== undefined) return { ...this, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
         if(!this.selection 
-            || this.selection.unit == undefined) // temporary fix for formulas that don't have units
+            || (this.selection.unit == undefined && this.selection.type == undefined)) // temporary fix for formulas that don't have units
             return
         const outputUnit = this.outputVariables?.[0]?.unit ?? this.outputUnits?.[0]
         BuildRegister.RegisterVariable({ 
