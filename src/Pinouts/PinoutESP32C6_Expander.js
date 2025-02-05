@@ -1,3 +1,4 @@
+import { communication, Socket } from '../communication';
 import { BurnESP32 } from './BurnESP32';
 import overlayURL from './ESP32C6-CAN-Actual-Page.svg';
 import Pinouts from "./Pinouts"
@@ -22,5 +23,9 @@ Pinouts.ESP32C6_Expander = {
     Type: `TopExpander`,
     Burn: async function(cfg) {
         await BurnESP32(cfg, this.Type);
+    },
+    Connect: function() {
+        communication._serial = new Socket("EFIGenieCommunication")
+        communication.connect()
     }
 }

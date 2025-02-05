@@ -124,13 +124,19 @@ import generateGUID from "./GUID.js"
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
 
-    communication._serial = new Serial({ baudRate: 1000000 }, [ 
-            // { usbVendorId: 1155, usbProductId: 22336 } ,
-            { usbVendorId: 0x1a86, usbProductId: 0x7523 } 
-        ])
-    // communication._serial = new Socket("EFIGenieCommunication")
-    window.communication = communication
-    window.Pinouts = Pinouts
+    // const xhr = new XMLHttpRequest()
+    // xhr.open(`GET`, `config.json`, true)
+    // xhr.onreadystatechange = () => {
+    //     if (xhr.status == 200) {
+    //         lastConfig = xhr.responseText
+    //     }
+    //     if (lastConfig) {
+    //         loadConfig(lastConfig)
+    //     } else {
+    //         b.RegisterVariables()
+    //     }
+    // };
+    // xhr.send()
 
     window.buildConfig = buildConfig
     window.b = new TopEngine()
@@ -228,7 +234,7 @@ window.addEventListener(`load`, function() {
             return;
         }
         btnConnect.classList.add(`connecting`)
-        communication.connect()
+        Pinouts[b.TargetDevice.value].Connect?.()
         communication.liveUpdateEvents[connectGUID] = (variableMetadata, currentVariableValues) => {
             btnConnect.classList.remove(`connecting`)
             if(communication.connectionError)
