@@ -1,10 +1,10 @@
 import { communication, Serial } from '../communication';
 import { BurnW806 } from './BurnW806';
-import overlayURL from './W806-PurplePill.svg';
+import overlayURL from './Purple_Pill_W806.svg';
 import Pinouts from "./Pinouts"
 Pinouts.Purple_Pill_W806 = { 
     name: `Purple pill: W806`,
-    Overlay: ``,//overlayURL,
+    Overlay: overlayURL,
     OverlayWidth: 720,
     OverlayElementHeight: 22,
     Pins: [

@@ -80,7 +80,51 @@ module.exports = (env, argv) => { return {
                             noquotes: true
                         }
                     },
-                    'svgo-loader'
+                    {
+                        loader: 'svgo-loader',
+                        options: {
+                            plugins: [
+                                'preset-default',
+                                'mergePaths',
+                                'removeViewBox',
+                                'minifyStyles',
+                                'cleanupAttrs', 
+                                'removeDoctype', 
+                                'removeXMLProcInst', 
+                                'removeComments', 
+                                'removeMetadata', 
+                                'removeTitle', 
+                                'removeDesc',  
+                                'removeEditorsNSData', 
+                                'removeEmptyAttrs', 
+                                'removeHiddenElems', 
+                                'removeEmptyText', 
+                                'removeEmptyContainers', 
+                                'convertStyleToAttrs', 
+                                'convertColors', 
+                                'removeNonInheritableGroupAttrs', 
+                                'cleanupNumericValues', 
+                                'cleanupListOfValues', 
+                                'moveElemsAttrsToGroup', 
+                                'collapseGroups',
+                                'removeUselessDefs',
+                                'convertPathData',
+                                'convertTransform',
+                                'removeUnknownsAndDefaults',
+                                'removeUselessStrokeAndFill',
+                                'removeUnusedNS',
+                                'moveGroupAttrsToElems',
+                                'convertShapeToPath',
+                                {
+                                    name: 'removeAttrs',
+                                    params: {
+                                        attrs: "(id)"
+                                    }
+                                }
+                            ],
+                            "multipass": true
+                        }
+                    }
                 ]
             }
         ]

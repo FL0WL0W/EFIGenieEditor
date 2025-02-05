@@ -1,6 +1,6 @@
 import { communication, Socket } from '../communication';
 import { BurnESP32 } from './BurnESP32';
-import overlayURL from './ESP32C6-CAN-Actual-Page.svg';
+import overlayURL from './ESP32C6_Expander.svg';
 import Pinouts from "./Pinouts"
 Pinouts.ESP32C6_Expander = { 
     name: `ESP32C6 Expander`,
