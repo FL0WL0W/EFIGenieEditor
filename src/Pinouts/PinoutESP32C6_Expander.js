@@ -1,4 +1,5 @@
 import { communication, Socket } from '../communication';
+import TopExpander from '../Top/TopExpander';
 import { BurnESP32 } from './BurnESP32';
 import overlayURL from './ESP32C6_Expander.svg';
 import Pinouts from "./Pinouts"
@@ -20,7 +21,7 @@ Pinouts.ESP32C6_Expander = {
         { name: `14`, value: 14, supportedModes: `digitalin digitalout`, overlayX: 450, overlayY: 437, align: `left`},
         { name: `16`,  value: 16,  supportedModes: `digitalin digitalout digitalinterrupt analog pwmout`, overlayX: 450, overlayY: 483, align: `left`},
     ],
-    Type: `TopExpander`,
+    Top: TopExpander,
     Burn: async function(cfg) {
         await BurnESP32(cfg, this.Type);
     },

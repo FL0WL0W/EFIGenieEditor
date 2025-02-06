@@ -138,12 +138,6 @@ window.addEventListener(`load`, function() {
     // };
     // xhr.send()
 
-    window.buildConfig = buildConfig
-    window.b = new TopEngine()
-    let workspace = document.querySelector(`#workspace`)
-    workspace.innerHtml = ``
-    workspace.append(b)
-    b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
     const loadConfig = (config) => {
         try {
             b.saveValue = JSON.parse(config)
@@ -151,6 +145,44 @@ window.addEventListener(`load`, function() {
             btnLoad.value = ``
         } catch { }
     }
+
+    window.buildConfig = buildConfig
+    let setupTop = () => {
+        if(window.b === undefined)
+            window.b = new TopEngine()
+
+        document.querySelector(`#target`).innerHTML = `Target: `
+        document.querySelector(`#target`).append(b.TargetDevice)
+        b.TargetDevice.addEventListener(`change`, (e) => {
+            const targetDevice = b.TargetDevice.value
+            if(b.constructor !== Pinouts[targetDevice].Top) {
+                window.b = new Pinouts[b.TargetDevice.value].Top
+                b.TargetDevice.value = targetDevice
+                const xhr = new XMLHttpRequest()
+                xhr.open(`GET`, `config.json`, true)
+                xhr.onreadystatechange = () => {
+                    if (xhr.status == 200) {
+                        lastConfig = xhr.responseText
+                    }
+                    if (lastConfig) {
+                        if(JSON.parse(lastConfig)?.TargetDevice === targetDevice)
+                            loadConfig(lastConfig)
+                    } else {
+                        b.RegisterVariables()
+                    }
+                };
+                xhr.send()
+                setupTop();
+            }
+        })
+
+        let workspace = document.querySelector(`#workspace`)
+        workspace.innerHTML = ``
+        workspace.append(b)
+        b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
+    }
+    setupTop()
+
     let lastConfig = window.localStorage.getItem(`config`)
     loadConfig(lastConfig)
     // const xhr = new XMLHttpRequest()

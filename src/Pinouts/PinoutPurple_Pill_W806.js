@@ -2,6 +2,7 @@ import { communication, Serial } from '../communication';
 import { BurnW806 } from './BurnW806';
 import overlayURL from './Purple_Pill_W806.svg';
 import Pinouts from "./Pinouts"
+import TopEngine from '../Top/TopEngine';
 Pinouts.Purple_Pill_W806 = { 
     name: `Purple pill: W806`,
     Overlay: overlayURL,
@@ -53,7 +54,7 @@ Pinouts.Purple_Pill_W806 = {
         { name: `PB_19`, value: (32*1 + 15), supportedModes: `digitalin digitalout digitalinterrupt pwm` , overlayX: 555, overlayY: 537, align: `right`},
 
     ],
-    Type: `TopEngine`,
+    Top: TopEngine,
     Burn: async function(cfg) {
         await BurnW806(cfg, this.Type);
     },
