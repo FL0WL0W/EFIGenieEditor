@@ -158,20 +158,26 @@ window.addEventListener(`load`, function() {
             if(b.constructor !== Pinouts[targetDevice].Top) {
                 window.b = new Pinouts[b.TargetDevice.value].Top
                 b.TargetDevice.value = targetDevice
-                const xhr = new XMLHttpRequest()
-                xhr.open(`GET`, `config.json`, true)
-                xhr.onreadystatechange = () => {
-                    if (xhr.status == 200) {
-                        lastConfig = xhr.responseText
+
+                let lastConfig = window.localStorage.getItem(`config`)
+                if(JSON.parse(lastConfig)?.TargetDevice === targetDevice)
+                    loadConfig(lastConfig)
+                else {
+                    const xhr = new XMLHttpRequest()
+                    xhr.open(`GET`, `config.json`, true)
+                    xhr.onreadystatechange = () => {
+                        if (xhr.status == 200) {
+                            lastConfig = xhr.responseText
+                        }
+                        if (lastConfig) {
+                            if(JSON.parse(lastConfig)?.TargetDevice === targetDevice)
+                                loadConfig(lastConfig)
+                        } else {
+                            b.RegisterVariables()
+                        }
                     }
-                    if (lastConfig) {
-                        if(JSON.parse(lastConfig)?.TargetDevice === targetDevice)
-                            loadConfig(lastConfig)
-                    } else {
-                        b.RegisterVariables()
-                    }
-                };
-                xhr.send()
+                    xhr.send()
+                }
                 setupTop();
             }
         })
