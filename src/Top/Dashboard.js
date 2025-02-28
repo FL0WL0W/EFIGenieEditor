@@ -311,15 +311,19 @@ export default class Dashboard extends UITemplate {
         this.options = options;
         [...this.loggedVariables.children].forEach(variableElement => {
             variableElement.GUID ??= generateGUID();
-            if(variableElement.variable != undefined && -1 === options.findIndex(x => x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable))) {
+            let option = options.find(x => (x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)) && x.disabled)
+            if(option?.group && option?.options)
+                option = option.options.find(x => match(x?.value, variableElement.variable) && x.disabled)
+
+            if(!option) {
                 variableElement.hidden = true
                 communication.liveUpdateEvents[variableElement.GUID] = undefined;
             } else {
                 variableElement.hidden = false
-                if(communication.variablesToPoll.indexOf(variableElement.variable) === -1)
-                    communication.variablesToPoll.push(variableElement.variable)
+                if(communication.variablesToPoll.indexOf(option.value) === -1)
+                    communication.variablesToPoll.push(option.value)
                 communication.liveUpdateEvents[variableElement.GUID] = (variableMetadata, currentVariableValues) => {
-                    const variableId = variableMetadata?.GetVariableId(variableElement.variable)
+                    const variableId = variableMetadata?.GetVariableId(option.value)
                     if(currentVariableValues?.[variableId] !== undefined) {
                         variableElement.value = currentVariableValues[variableId]
                     }
