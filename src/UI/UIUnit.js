@@ -145,6 +145,7 @@ export default class UIUnit extends UISelection {
         if(this.value == undefined || this.value === `` || this.value === null) this.value = this.default
         if(this.options.length === 0) super.hidden = true
         else if(!this.hidden) super.hidden = false
+        this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
     get saveValue() {

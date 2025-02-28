@@ -175,6 +175,11 @@ export class Socket {
         });
     }
 
+    async flush() {
+        this.incomingMessages = []
+        await this.#connect()
+    }
+
     async read(numberOfBytes, timeout = 1000) {
         await this.#connect()
 

@@ -74,15 +74,16 @@ export default class UIParameterWithUnit extends UITemplate {
 
     get saveValue() {
         return (typeof this.parameterSelection.saveValue === `object` && this.optionUnits[this.parameterSelection.saveValue.name] !== undefined)? 
-            { ...this.parameterSelection.saveValue, unit: this.unit } : this.parameterSelection.saveValue
+            { ...this.parameterSelection.saveValue, unit: this.displayUnit } : this.parameterSelection.saveValue
     }
     set saveValue(saveValue) {
         if(typeof saveValue === `object`) {
             saveValue = {...saveValue}
-            if(this.optionUnits[saveValue.name] !== undefined)
-                this.unitSelection.saveValue = saveValue.unit
+            const displayUnit = saveValue.unit
             delete saveValue.unit
             this.parameterSelection.saveValue = saveValue
+            if(displayUnit !== undefined)
+                this.displayUnit = displayUnit
         } else {
             this.parameterSelection.saveValue = saveValue
         }

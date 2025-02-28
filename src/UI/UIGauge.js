@@ -151,9 +151,9 @@ export default class UIGauge extends UITemplate {
             event.preventDefault()
         })
         let previousDisplayUnit
-        let previousValueUnit
+        let previousVariable
         this.configTemplate.variable.addEventListener(`change`, () => {
-            if(previousDisplayUnit != this.displayUnit) {
+            if(previousDisplayUnit !== this.displayUnit) {
                 const pdu = previousDisplayUnit
                 previousDisplayUnit = this.displayUnit
                 if(pdu === this.configTemplate.min.displayUnit) this.configTemplate.min.displayUnit = this.displayUnit
@@ -163,8 +163,8 @@ export default class UIGauge extends UITemplate {
                 if(pdu === this.configTemplate.lowRedline.displayUnit) this.configTemplate.lowRedline.displayUnit = this.displayUnit
             }
             this.RegisterVariables()
-            if(previousValueUnit != this.valueUnit) {
-                previousValueUnit = this.valueUnit
+            if(previousVariable !== this.configTemplate.variable.value?.name) {
+                previousVariable = this.configTemplate.variable.value?.name
                 this.configTemplate.min.valueUnit = this.valueUnit
                 this.configTemplate.max.valueUnit = this.valueUnit
                 this.configTemplate.step.valueUnit = this.valueUnit
@@ -193,7 +193,7 @@ export default class UIGauge extends UITemplate {
                 if(this.lowRedline === pMin)
                     this.lowRedline = this.min
             }
-            if(previousMax != this.min) {
+            if(previousMax != this.max) {
                 const pMax = previousMax
                 previousMax = this.max
                 this.configTemplate.lowRedline.max = this.configTemplate.highRedline.max = this.max
