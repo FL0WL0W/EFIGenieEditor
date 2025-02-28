@@ -102,10 +102,11 @@ export default class UINumberWithUnit extends UITemplate {
         const displayUnit = this.displayUnit
         const valueUnit = this.valueUnit
         const valueToDisplayValue = value => { return (value === undefined || !displayUnit)? value : ConvertValueFromUnitToUnit(value, valueUnit, displayUnit) }
+        const value = this.value
         this.displayValueElement.min    = valueToDisplayValue(this.min)     ?? this.displayValueElement.min
         this.displayValueElement.max    = valueToDisplayValue(this.max)     ?? this.displayValueElement.max
         this.displayValueElement.step   = valueToDisplayValue(this.step)    ?? this.displayValueElement.step
-        this.displayValue               = valueToDisplayValue(this.value) //this was set to the same value before setting min,max,step. but when setting min or max that can change the value to fit within bounds
+        this.displayValue               = valueToDisplayValue(value > this.max? this.max : (value < this.min? this.min : value))
     }
 }
 customElements.define(`ui-numberwithunit`, UINumberWithUnit, { extends: `span` })
