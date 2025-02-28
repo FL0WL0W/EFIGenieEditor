@@ -61,10 +61,11 @@ export default class UITableWithUnit extends UITemplate {
         if(objectTester(this._xUnit, xUnit)) return
 
         const newUnit = Array.isArray(xUnit)? xUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.xDisplayUnit)) : xUnit
-        const newAxis = ConvertValueFromUnitToUnit(this.xAxis, this.xUnit, newUnit)
+        const newAxis = ConvertValueFromUnitToUnit(this.xAxis, this._xUnit, newUnit)
         this._xUnit = xUnit
         this.xDisplayUnit ??= Array.isArray(xUnit)? xUnit[0] : xUnit
         this.xAxis = newAxis
+        this.UpdateDisplayValue()
     }
     #xAxis
     get xAxis() { return this.#xAxis }
@@ -99,10 +100,11 @@ export default class UITableWithUnit extends UITemplate {
         if(objectTester(this._yUnit, yUnit)) return
 
         const newUnit = Array.isArray(yUnit)? yUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.yDisplayUnit)) : yUnit
-        const newAxis = ConvertValueFromUnitToUnit(this.yAxis, this.yUnit, newUnit)
+        const newAxis = ConvertValueFromUnitToUnit(this.yAxis, this._yUnit, newUnit)
         this._yUnit = yUnit
         this.yDisplayUnit ??= Array.isArray(yUnit)? yUnit[0] : yUnit
         this.yAxis = newAxis
+        this.UpdateDisplayValue()
     }
     #yAxis
     get yAxis() { return this.#yAxis }

@@ -54,6 +54,7 @@ Pinouts.Purple_Pill_W806 = {
         { name: `PB_19`, value: (32*1 + 15), supportedModes: `digitalin digitalout digitalinterrupt pwm` , overlayX: 555, overlayY: 537, align: `right`},
 
     ],
+    Type: "TopEngine",
     Top: TopEngine,
     Burn: async function(cfg) {
         await BurnW806(cfg, this.Type);

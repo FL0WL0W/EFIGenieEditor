@@ -43,7 +43,7 @@ export default class Calculation_Formula extends UITemplate {
         })
         let allParameters = [ ...parameters ]
         //filter out static values
-        parameters = parameters.filter(s => !s.match(/^[0-9]*$/))
+        parameters = parameters.filter(s => !s.match(/^[0-9]+(\.[0-9]+)?$/))
         //filter out null parameters
         parameters = parameters.filter(s => s.length !== 0)
         //filter out self

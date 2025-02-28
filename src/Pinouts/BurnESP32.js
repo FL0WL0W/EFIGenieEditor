@@ -1,3 +1,5 @@
+import pako from "pako"
+
 export async function BurnESP32(cfg, type){
     const saveValue = JSON.stringify(cfg.saveValue)
     const bin = buildConfig({ ...cfg.value, type: type })
@@ -27,6 +29,7 @@ export async function BurnESP32(cfg, type){
     xhr.onreadystatechange = () => {
         if (xhr.readyState == 4) {
             if (xhr.status == 200) {
+                xhr = new XMLHttpRequest()
                 xhr.open(`POST`, `/command/reset`, true)
                 xhr.send()
                 alert("Saved Binary to Device")

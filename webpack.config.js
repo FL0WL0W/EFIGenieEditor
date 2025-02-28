@@ -50,6 +50,10 @@ module.exports = (env, argv) => { return {
                 context: ['/config.json'],
                 target: 'ws://192.168.4.1',
             },
+            {
+                context: ['/command/reset'],
+                target: 'ws://192.168.4.1',
+            },
         ],
         port: 3000,
         open: true,
