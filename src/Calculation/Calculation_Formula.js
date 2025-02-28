@@ -115,9 +115,9 @@ export default class Calculation_Formula extends UITemplate {
 
         //statics
         let operationIndex
-        while((operationIndex = operations.findIndex(f => f.operator !== `s` && f.parameters.find(p => p.match(/^[0-9]+$/)))) > -1) {
+        while((operationIndex = operations.findIndex(f => f.operator !== `s` && f.parameters.find(p => p.match(/^[0-9]+(\.[0-9]+)?$/)))) > -1) {
             const formula = operations[operationIndex]
-            const parameterIndex = formula.parameters.findIndex(p => p.match(/^[0-9]+$/))
+            const parameterIndex = formula.parameters.findIndex(p => p.match(/^[0-9]+(\.[0-9]+)?$/))
             const parameter = formula.parameters[parameterIndex]
 
             tempIndex++
