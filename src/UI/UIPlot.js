@@ -10,12 +10,14 @@ import Dashboard from "../Top/Dashboard"
 import uPlot from "uplot"
 import UIDialog from "../JavascriptUI/UIDialog"
 import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit } from "./UIUnit"
+import UIColorPicker from "./UIColorPicker"
 
 class UIPlot_Variable extends UITemplate {
-    static template = `<div data-element="variable"></div><div data-element="min"></div><div data-element="max"></div>`
+    static template = `<div data-element="color"></div><div data-element="variable"></div><div data-element="min"></div><div data-element="max"></div>`
     variable = new UIParameterWithUnit()
     min = new UINumberWithUnit()
     max = new UINumberWithUnit()
+    color = new UIColorPicker()
 
     get valueUnit() { return this.variable.unit }
     get displayUnit() { return this.variable.displayUnit }
@@ -122,7 +124,7 @@ export default class UIPlot extends UITemplate {
                     return
                 return {
                     label: variable.name,
-                    stroke: `blue`,
+                    stroke: value.color,
                     scale: `${uiplotvariable.item.variable.displayUnit}`,
                     width: 2 
                 }
