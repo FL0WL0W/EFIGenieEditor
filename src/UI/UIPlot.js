@@ -31,6 +31,7 @@ class UIPlot_Variable extends UITemplate {
 
         let previousDisplayUnit
         let previousValueUnit
+        let previousVariable
         this.variable.addEventListener(`change`, () => {
             if(previousDisplayUnit != this.displayUnit) {
                 previousDisplayUnit = this.displayUnit
@@ -38,11 +39,13 @@ class UIPlot_Variable extends UITemplate {
                 this.max.displayUnit = this.displayUnit
             }
             this.RegisterVariables()
-            if(previousValueUnit != this.valueUnit) {
+            if(previousValueUnit !== this.valueUnit) {
                 previousValueUnit = this.valueUnit
                 this.min.valueUnit = this.valueUnit
                 this.max.valueUnit = this.valueUnit
-
+            }
+            if(previousVariable !== this.variable.value?.name) {
+                previousVariable = this.variable.value?.name
                 let unitDefaultOptions = GetDefaultMinMaxStepRedlineFromUnit(this.valueUnit)
                 this.min.value = unitDefaultOptions?.min ?? this.min.value
                 this.max.value = unitDefaultOptions?.max ?? this.max.value
