@@ -134,6 +134,7 @@ export default class UIUnit extends UISelection {
                 this.default = GetDefaultUnitFromMeasurement(measurement)
             if(!Array.isArray(measurement))
                 measurement = [measurement]
+            measurement = measurement.filter((value, index, array) => { return array.indexOf(value) === index });
             if(measurement.length > 1)
                 this.options = UIUnit.allMeasurementOptions.filter(x => measurement.indexOf(x.group) !== -1 || measurement.some(y=>x.name?.indexOf(y) === 0))
                     .map(x=> x.group? { group: x.group, options: x.options.map(y=> { return { ...y, selectedName: undefined} } ) } : { ...x, selectedName: x.value === ``? x.selectedName : x.value } )

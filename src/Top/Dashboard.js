@@ -309,7 +309,9 @@ export default class Dashboard extends UITemplate {
             return x
         }); return z})
         this.options = options;
-        [...this.loggedVariables.children].forEach(variableElement => {
+        [...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
+            if(variableIndex === 0)
+                return
             variableElement.GUID ??= generateGUID();
             let option = options.find(x => (x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)) && x.disabled)
             if(option?.group && option?.options)
