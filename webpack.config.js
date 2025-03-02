@@ -40,19 +40,19 @@ module.exports = (env, argv) => { return {
             },
             {
                 context: ['/upload'],
-                target: 'ws://192.168.4.1',
+                target: 'http://192.168.4.1',
             },
             {
                 context: ['/config.bin'],
-                target: 'ws://192.168.4.1',
+                target: 'http://192.168.4.1',
             },
             {
                 context: ['/config.json'],
-                target: 'ws://192.168.4.1',
+                target: 'http://192.168.4.1',
             },
             {
                 context: ['/command/reset'],
-                target: 'ws://192.168.4.1',
+                target: 'http://192.168.4.1',
             },
         ],
         port: 3000,
