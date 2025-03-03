@@ -549,7 +549,7 @@ let types = [
     }},
     { type: `GenericCalculation`, toDefinition() {
         const name = `${this.outputVariables?.[0]?.name?? ``}${this.name}`
-        return { ...this, type: `CalculationOrVariableSelection`, name, outputVariables: (this.outputUnits?.[0] !== undefined || this.outputTypes?.[0] !== undefined) ? [ { name, unit: this.outputUnits?.[0], type: this.outputTypes?.[0] } ] : this.outputVariables }
+        return { ...this, type: `CalculationOrVariableSelection`, name, outputVariables: (this.outputUnits?.[0] !== undefined || this.outputTypes?.[0] !== undefined) ? [ { name, unit: this.outputUnits?.[0], type: this.outputTypes?.[0] } ] : undefined }
     }},
     { type: `Calculation_Add`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.Add) }},
     { type: `Calculation_Subtract`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.Subtract) }},

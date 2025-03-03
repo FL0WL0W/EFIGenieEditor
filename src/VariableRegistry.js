@@ -143,7 +143,7 @@ export default class VariableRegistry {
         }
         return variableReferences
     }
-    GetSelections(calculations, filter) {
+    GetSelections(calculations, filter, ungroupSelections = true) {
         var selections = []
         if (calculations?.length > 0) {
             var configGroups = calculations
@@ -191,7 +191,7 @@ export default class VariableRegistry {
                 selections.push(arrSelections)
         }
     
-        if(selections.length === 1)
+        if(selections.length === 1 && ungroupSelections)
             return selections[0].options
     
         return selections

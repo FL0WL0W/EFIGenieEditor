@@ -276,8 +276,8 @@ export default class Dashboard extends UITemplate {
                     (a?.type == undefined || b?.type == undefined || a?.type === b?.type) &&
                     (a?.unit == undefined || b?.unit == undefined || GetMeasurementNameFromUnitName(a?.unit) === GetMeasurementNameFromUnitName(b?.unit))
         }
-        let options = VariableRegister.GetSelections(undefined, defaultFilter(undefined, [`float|bool`]))
-        let metadataOptions = communication.variableMetadata?.GetSelections(undefined, defaultFilter(undefined, [ `float|bool` ]))
+        let options = VariableRegister.GetSelections(undefined, defaultFilter(undefined, [`float|bool`]), false)
+        let metadataOptions = communication.variableMetadata?.GetSelections(undefined, defaultFilter(undefined, [ `float|bool` ]), false)
         for(const i in metadataOptions) {
             const option = metadataOptions[i]
             if(option.group) {
