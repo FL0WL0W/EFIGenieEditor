@@ -14,8 +14,8 @@ export default class UIPinOverlay extends HTMLDivElement {
                 if(name) return name
             }
         }
-        function getNameFromPinSelectElement(element){
-            return !element? undefined : getNameFromPinSelectChildren(element) ?? getNameFromPinSelectElement(element.parentElement)
+        function getNameFromPinSelectElement(element, depth = 10){
+            return (!element || depth > 20)? undefined : getNameFromPinSelectChildren(element) ?? getNameFromPinSelectElement(element.parentElement, depth++)
         }
 
         let elements = [...document.querySelectorAll(`.pinselect`)]

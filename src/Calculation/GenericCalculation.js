@@ -4,7 +4,7 @@ import GenericConfigs from "./GenericConfigs"
 import { defaultNoVariables } from "../VariableRegistry"
 
 export default class GenericCalculation extends CalculationOrVariableSelection {
-    name = new UIText({ class: `genericCalculationName` })
+    name = new UIText({ class: `genericCalculationName pinselectname` })
 
     get nameEditable() { return !this.name.disabled }
     set nameEditable(nameEditable) { this.name.disabled = !nameEditable }
