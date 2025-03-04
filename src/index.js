@@ -150,30 +150,34 @@ window.addEventListener(`load`, function() {
                 window.b = new Pinouts[b.TargetDevice.value].Top
                 b.TargetDevice.value = targetDevice
 
-                const xhr = new XMLHttpRequest()
-                xhr.open(`GET`, `config.json`, true)
-                xhr.onreadystatechange = () => {
-                    let lastConfig
-                    if (xhr.status == 200) {
-                        lastConfig = xhr.responseText
-                    }
-                    if (lastConfig) {
-                        if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
-                            window.localStorage.setItem(`lastConfigName`, configJsonName = `config`)
-                            loadConfig(lastConfig)
+                let lastConfig = window.localStorage.getItem(configJsonName)
+                if(configJsonName !== `config` && lastConfig) {
+                    loadConfig(lastConfig)
+                } else {
+                    const xhr = new XMLHttpRequest()
+                    xhr.open(`GET`, `config.json`, true)
+                    xhr.onreadystatechange = () => {
+                        if (xhr.status == 200) {
+                            lastConfig = xhr.responseText
                         }
-                        return
+                        if (lastConfig) {
+                            if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
+                                window.localStorage.setItem(`lastConfigName`, configJsonName = `config`)
+                                loadConfig(lastConfig)
+                            }
+                            return
+                        }
+                        lastConfig = window.localStorage.getItem(window.localStorage.getItem(`lastConfigName`))
+                        if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
+                            configJsonName = window.localStorage.getItem(`lastConfigName`)
+                            loadConfig(lastConfig)
+                            return
+                        }
+                        b.RegisterVariables()
+                        window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
                     }
-                    lastConfig = window.localStorage.getItem(window.localStorage.getItem(`lastConfigName`))
-                    if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
-                        configJsonName = window.localStorage.getItem(`lastConfigName`)
-                        loadConfig(lastConfig)
-                        return
-                    }
-                    b.RegisterVariables()
-                    window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
+                    xhr.send()
                 }
-                xhr.send()
                 setupTop();
             }
         })
@@ -186,14 +190,17 @@ window.addEventListener(`load`, function() {
     setupTop()
 
     const lastTarget = window.localStorage.getItem(`lastTarget`)
+    let configJsonName = window.localStorage.getItem(`lastConfigName`) ?? `config`
+    let lastConfig = window.localStorage.getItem(configJsonName)
 
-    if(lastTarget){
+    if(configJsonName !== `config` && lastConfig) {
+        loadConfig(lastConfig)
+    } else if(lastTarget){
         b.TargetDevice.value = lastTarget
-    } else {       
+    } else {      
         const xhr = new XMLHttpRequest()
         xhr.open(`GET`, `config.json`, true)
         xhr.onreadystatechange = () => {
-            let lastConfig
             if (xhr.status == 200) {
                 lastConfig = xhr.responseText
             }
@@ -255,7 +262,6 @@ window.addEventListener(`load`, function() {
         }
     })
 
-    let configJsonName = undefined
     let btnBurnTimeout;
     const btnBurn = document.querySelector(`#btnBurn`)
     btnBurn.addEventListener(`click`, function(){
