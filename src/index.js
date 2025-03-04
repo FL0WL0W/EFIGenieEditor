@@ -119,24 +119,14 @@ import TPS_Linear from "./TPS/TPS_Linear.js"
 import pako from "pako"
 import { communication, Serial, EFIGenieCommunication } from "./communication.js"
 import generateGUID from "./GUID.js"
+import FileBrowser from "./Top/FileBrowser.js"
 
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 window.addEventListener(`load`, function() {
-
-    // const xhr = new XMLHttpRequest()
-    // xhr.open(`GET`, `config.json`, true)
-    // xhr.onreadystatechange = () => {
-    //     if (xhr.status == 200) {
-    //         lastConfig = xhr.responseText
-    //     }
-    //     if (lastConfig) {
-    //         loadConfig(lastConfig)
-    //     } else {
-    //         b.RegisterVariables()
-    //     }
-    // };
-    // xhr.send()
+    window.fileBrowser = new FileBrowser()
+    window.fileBrowserDialog = new UIDialog()
+    window.fileBrowserDialog.content.append(window.fileBrowser)
 
     const loadConfig = (config) => {
         try {
@@ -155,29 +145,35 @@ window.addEventListener(`load`, function() {
         document.querySelector(`#target`).append(b.TargetDevice)
         b.TargetDevice.addEventListener(`change`, (e) => {
             const targetDevice = b.TargetDevice.value
+            window.localStorage.setItem(`lastTarget`, targetDevice)
             if(b.constructor !== Pinouts[targetDevice].Top) {
                 window.b = new Pinouts[b.TargetDevice.value].Top
                 b.TargetDevice.value = targetDevice
 
-                let lastConfig = window.localStorage.getItem(`config`)
-                if(JSON.parse(lastConfig)?.TargetDevice === targetDevice)
-                    loadConfig(lastConfig)
-                else {
-                    const xhr = new XMLHttpRequest()
-                    xhr.open(`GET`, `config.json`, true)
-                    xhr.onreadystatechange = () => {
-                        if (xhr.status == 200) {
-                            lastConfig = xhr.responseText
-                        }
-                        if (lastConfig) {
-                            if(JSON.parse(lastConfig)?.TargetDevice === targetDevice)
-                                loadConfig(lastConfig)
-                        } else {
-                            b.RegisterVariables()
-                        }
+                const xhr = new XMLHttpRequest()
+                xhr.open(`GET`, `config.json`, true)
+                xhr.onreadystatechange = () => {
+                    let lastConfig
+                    if (xhr.status == 200) {
+                        lastConfig = xhr.responseText
                     }
-                    xhr.send()
+                    if (lastConfig) {
+                        if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
+                            window.localStorage.setItem(`lastConfigName`, configJsonName = `config`)
+                            loadConfig(lastConfig)
+                        }
+                        return
+                    }
+                    lastConfig = window.localStorage.getItem(window.localStorage.getItem(`lastConfigName`))
+                    if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
+                        configJsonName = window.localStorage.getItem(`lastConfigName`)
+                        loadConfig(lastConfig)
+                        return
+                    }
+                    b.RegisterVariables()
+                    window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
                 }
+                xhr.send()
                 setupTop();
             }
         })
@@ -189,23 +185,77 @@ window.addEventListener(`load`, function() {
     }
     setupTop()
 
-    let lastConfig = window.localStorage.getItem(`config`)
-    loadConfig(lastConfig)
-    // const xhr = new XMLHttpRequest()
-    // xhr.open(`GET`, `config.json`, true)
-    // xhr.onreadystatechange = () => {
-    //     if (xhr.status == 200) {
-    //         lastConfig = xhr.responseText
-    //     }
-    //     if (lastConfig) {
-    //         loadConfig(lastConfig)
-    //     } else {
-    //         b.RegisterVariables()
-    //     }
-    // };
-    // xhr.send()
+    const lastTarget = window.localStorage.getItem(`lastTarget`)
 
-    let configJsonName = `tune.json`
+    if(lastTarget){
+        b.TargetDevice.value = lastTarget
+    } else {       
+        const xhr = new XMLHttpRequest()
+        xhr.open(`GET`, `config.json`, true)
+        xhr.onreadystatechange = () => {
+            let lastConfig
+            if (xhr.status == 200) {
+                lastConfig = xhr.responseText
+            }
+            if (lastConfig) {
+                loadConfig(lastConfig)
+                window.localStorage.setItem(`lastConfigName`, configJsonName = `config`)
+                return
+            }
+            lastConfig = window.localStorage.getItem(configJsonName = window.localStorage.getItem(`lastConfigName`))
+            if (lastConfig) {
+                loadConfig(lastConfig)
+                return
+            }
+            b.RegisterVariables()
+            window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
+        };
+        xhr.send()
+    }
+
+    const btnOpen = document.querySelector(`#btnOpen`)
+    btnOpen.addEventListener(`click`, function(){
+        window.fileBrowser.value = configJsonName ?? ``
+        window.fileBrowserDialog.title = window.fileBrowser.actionLabel = `Open`
+        window.fileBrowserDialog.show()
+    })
+    const btnSaveAs = document.querySelector(`#btnSaveAs`)
+    btnSaveAs.addEventListener(`click`, function(){
+        window.fileBrowser.value = configJsonName ?? ``
+        window.fileBrowserDialog.title = window.fileBrowser.actionLabel = `Save`
+        window.fileBrowserDialog.show()
+    })
+    const btnSave = document.querySelector(`#btnSave`)
+    btnSave.addEventListener(`click`, function(){
+        if(configJsonName === undefined) {
+            window.fileBrowser.value = configJsonName ?? ``
+            window.fileBrowserDialog.title = window.fileBrowser.actionLabel = `Save`
+            window.fileBrowserDialog.show()
+        }
+        else {
+            window.localStorage.setItem(configJsonName, JSON.stringify(window.b.saveValue))
+            window.fileBrowser.updateOptions()
+        }
+    })
+    window.fileBrowser.actionButton.addEventListener(`click`, function(){
+        window.fileBrowserDialog.close()
+        if(window.fileBrowser.value === undefined)
+            return
+        if(window.fileBrowser.actionLabel == `Open`) {
+            const config = window.localStorage.getItem(window.fileBrowser.value)
+            if(config === undefined)
+                return
+            window.localStorage.setItem(`lastConfigName`, configJsonName = window.fileBrowser.value)
+            loadConfig(config)
+        }
+        if(window.fileBrowser.actionLabel == `Save`) {
+            window.localStorage.setItem(`lastConfigName`, configJsonName = window.fileBrowser.value)
+            window.localStorage.setItem(window.fileBrowser.value, JSON.stringify(window.b.saveValue))
+            window.fileBrowser.updateOptions()
+        }
+    })
+
+    let configJsonName = undefined
     let btnBurnTimeout;
     const btnBurn = document.querySelector(`#btnBurn`)
     btnBurn.addEventListener(`click`, function(){
@@ -237,7 +287,7 @@ window.addEventListener(`load`, function() {
     })
     document.querySelector(`#btnDownload`).addEventListener(`click`, function(){
         var cfg = b.saveValue
-        downloadObject(cfg, configJsonName)
+        downloadObject(cfg, `${configJsonName ?? `tune`}.json`)
     })
     document.querySelector(`#btnLoad`).addEventListener(`change`, function(evt){
         var test = new FileReader()
@@ -255,7 +305,10 @@ window.addEventListener(`load`, function() {
         }
 
         test.readAsText(evt.target.files[0])
-        configJsonName = evt.target.files[0].name
+        let file = evt.target.files[0].name
+        file = file.substr(file.lastIndexOf('\\') + 1).split('.')[0];
+        console.log(file)
+        window.localStorage.setItem(`lastConfigName`, configJsonName = file)
     })
 
     let connectGUID = generateGUID()

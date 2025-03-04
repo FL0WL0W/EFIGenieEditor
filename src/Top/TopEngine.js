@@ -16,8 +16,7 @@ export default class TopEngine extends Top {
     Dashboard = new Dashboard()
     PinOverlay = new UIPinOverlay()
     TargetDevice = new UISelection({
-        options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),
-        value: `Purple_Pill_W806`
+        options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } })
     })
     Inputs = new ConfigList({
         itemConstructor: Input,
@@ -48,7 +47,7 @@ export default class TopEngine extends Top {
             this.CAN.hidden = true
         })
         this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
-        if(this.PinOverlay.pinOut.CANBusCount)
+        if(this.PinOverlay.pinOut?.CANBusCount)
             this.unhideTab(`CAN`)
         else
             this.hideTab(`CAN`)

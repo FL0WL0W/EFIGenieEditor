@@ -4,9 +4,6 @@ export async function BurnESP32(cfg, type){
     const saveValue = JSON.stringify(cfg.saveValue)
     const bin = buildConfig({ ...cfg.value, type: type })
 
-    //save config to browser as backup
-    window.localStorage.setItem(`config`, saveValue)
-
     //save config to ESP32
     const compressedData = pako.gzip(new TextEncoder().encode(saveValue))
     let xhr = new XMLHttpRequest()

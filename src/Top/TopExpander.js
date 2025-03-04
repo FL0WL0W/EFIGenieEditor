@@ -14,8 +14,7 @@ export default class TopExpander extends Top {
     Dashboard = new Dashboard()
     PinOverlay = new UIPinOverlay()
     TargetDevice = new UISelection({
-        options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } }),
-        value: `ESP32C6_Expander`
+        options: Object.entries(Pinouts).map(([key, value]) => { return { name: value.name, value: key } })
     })
     Inputs = new ConfigList({
         itemConstructor: Input,

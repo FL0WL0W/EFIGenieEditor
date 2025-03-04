@@ -679,3 +679,19 @@ select .pinconflict{
 .ui.select.colorpicker .selectoption.selected {
     background-color: var(--value);
 }
+
+.filebrowser {
+}
+.filebrowser .ui.text {
+    width: 100%;
+}
+.fileSelectionMenu {
+    display: flex;
+    padding: 8px;
+    min-height: 20em;
+}
+.fileSelectionActions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
