@@ -52,7 +52,8 @@ export default class FileBrowser extends UITemplate {
                     return collapsingClick = false
                 if(!visible) 
                     return
-                currentTarget?.removeChild?.(this.contextMenuElement)
+                if(currentTarget?.contains?.(this.contextMenuElement))
+                    currentTarget?.removeChild?.(this.contextMenuElement)
                 document.removeEventListener(`click`, clickHandler)
                 visible = false
             }
