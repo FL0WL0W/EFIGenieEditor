@@ -9,11 +9,11 @@ Pinouts.Purple_Pill_W806 = {
     OverlayWidth: 720,
     OverlayElementHeight: 22,
     Pins: [
-        { name: `PA_0`,  value: (32*0 + 0 ), supportedModes: `digitalin digitalout digitalinterrupt analog pwm`, overlayX: 568, overlayY: 560, align: `left`},
+        { name: `PA_0`,  value: (32*0 + 0 ), supportedModes: `digitalin digitalout digitalinterrupt pwm`, overlayX: 568, overlayY: 560, align: `left`},
         { name: `PA_1`,  value: (32*0 + 1 ), supportedModes: `digitalin digitalout digitalinterrupt analog pwm`, overlayX: 568, overlayY: 537, align: `left`},
         { name: `PA_2`,  value: (32*0 + 2 ), supportedModes: `digitalin digitalout digitalinterrupt analog pwm`, overlayX: 568, overlayY: 514, align: `left`},
         { name: `PA_3`,  value: (32*0 + 3 ), supportedModes: `digitalin digitalout digitalinterrupt analog pwm`, overlayX: 568, overlayY: 491, align: `left`},
-        { name: `PA_4`,  value: (32*0 + 4 ), supportedModes: `digitalin digitalout digitalinterrupt pwm`, overlayX: 568, overlayY: 468, align: `left`},
+        { name: `PA_4`,  value: (32*0 + 4 ), supportedModes: `digitalin digitalout digitalinterrupt analog pwm`, overlayX: 568, overlayY: 468, align: `left`},
         { name: `PA_5`,  value: (32*0 + 5 ), supportedModes: `digitalin digitalout digitalinterrupt`, overlayX: 568, overlayY: 445, align: `left`},
         { name: `PA_6`,  value: (32*0 + 6 ), supportedModes: `digitalin digitalout digitalinterrupt`, overlayX: 568, overlayY: 422, align: `left`},
         { name: `PA_7`,  value: (32*0 + 7 ), supportedModes: `digitalin digitalout digitalinterrupt pwm`, overlayX: 568, overlayY: 399, align: `left`},
