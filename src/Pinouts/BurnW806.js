@@ -1,4 +1,4 @@
-import { communication } from "../communication"
+import { communication, Serial } from "../communication"
 
 export async function BurnW806(cfg, type){
     communication._serial = new Serial({ baudRate: 1000000 }, [ 
