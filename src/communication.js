@@ -53,17 +53,19 @@ export class Serial {
     }
 
     async #connect() {
-        if(this.#serialPort != undefined && this.#serialPort.readable && this.#serialPort.writable)
-            return
-
         if(!("serial" in navigator))
             throw `WebSerial not supported. please open in a supported browser`
 
-        let ports = await navigator.serial.getPorts({ filter: this.filters })
-        if(ports.length !== 1)
-            this.#serialPort = await navigator.serial.requestPort({ filter: this.filters })
-        else
-            this.#serialPort = ports[0]
+        if(this.#serialPort === undefined) {
+            let ports = await navigator.serial.getPorts({ filter: this.filters })
+            if(ports.length !== 1)
+                this.#serialPort = await navigator.serial.requestPort({ filter: this.filters })
+            else
+                this.#serialPort = ports[0]
+        }
+
+        if(this.#serialPort.readable && this.#serialPort.writable)
+            return
 
         await this.#serialPort.open(this.options)
     }
