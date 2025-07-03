@@ -11,19 +11,25 @@ export default class Top extends UITemplate {
     <div data-element="sidebarSelection">
     </div>
 </div>
-<div class="w3-container w3-display-container">
-    <span>
+<div>
+    <div style="background-color: #121619;">
         <div data-element="sidebarOpen"></div>
-        <div data-element="pageTitle"></div>
-    </span>
+        <div style="display: inline-block;">
+            <span>
+                <div data-element="btnOpen"></div>
+            </span>
+        </div>
+    </div>
+    <div data-element="pageTitle"></div>
     <hr style="margin: 0px 0px 5px 0px;">
     <div data-element="page"></div>
 </div>`
 
+    btnOpen = new UIButton({ label: `Open` });
     topTitle = document.createElement(`div`)
     pageTitle = document.createElement(`div`)
-    sidebarClose = new UIButton({className: `sidebaropenclose w3-button w3-padding-16 w3-right`})
-    sidebarOpen = new UIButton({className: `sidebaropenclose w3-button w3-padding-16`})
+    sidebarClose = new UIButton({className: `sidebaropenclose w3-button w3-right`})
+    sidebarOpen = new UIButton({className: `sidebaropenclose w3-button`})
     sidebarSelection = document.createElement(`div`)
     page = document.createElement(`div`)
 
@@ -87,11 +93,14 @@ export default class Top extends UITemplate {
 
     Setup(prop){
         this.className = `top`
-        this.topTitle.className = `w3-bar-item w3-padding-16`
-        this.pageTitle.className = `w3-padding-16`
-        this.pageTitle.style.display = `inline-block`
+        this.topTitle.className = `w3-bar-item`
+        this.pageTitle.style.display = `block`
         this.pageTitle.style.margin = `3px`
         this.sidebarSelection.className = `w3-bar-block sidebarSelection`
+        this.sidebarOpen.style.verticalAlign = `top`
+        this.btnOpen.classList.remove(`ui`, `button`)
+        this.btnOpen.classList.add(`w3-button`)
+        this.page.class = `w3-container w3-display-container`
 
         this.sidebarOpen.addEventListener(`click`, () => {
             window.localStorage.setItem(`expanded`, `true`)
@@ -156,12 +165,14 @@ export default class Top extends UITemplate {
             }
         }, 50)
         super.Setup(prop)
+        this.lastChild.style.position = `relative`
     }
 
     get activeTab() { return this.pageTitle.textContent }
     set activeTab(activeTab) {
         window.localStorage.setItem(`lastTab`, activeTab)
         this.pageTitle.textContent = activeTab
+        this.topTitle.textContent = activeTab
         ; [...this.page.children].forEach(element => {
             element.hidden = element.label !== activeTab
         });

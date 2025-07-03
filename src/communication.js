@@ -252,30 +252,97 @@ export class Socket {
     }
 }
 
+function typeLength(type) {
+    switch(type) {
+        case 0: return 0
+        case 1: return 1
+        case 2: return 2
+        case 3: return 4
+        case 4: return 8
+        case 5: return 1
+        case 6: return 2
+        case 7: return 4
+        case 8: return 8
+        case 9: return 4
+        case 10: return 8
+        case 11: return 1
+    }
+}
+function parseVariable(arrayBuffer) {
+    let type = new Uint8Array(arrayBuffer)[0]
+    switch(type) {
+        case 0: return
+        case 1: return new Uint8Array(arrayBuffer.slice(1))[0]
+        case 2: return new Uint16Array(arrayBuffer.slice(1))[0]
+        case 3: return new Uint32Array(arrayBuffer.slice(1))[0]
+        // case 4: return new Uint64Array(arrayBuffer.slice(1))[0]
+        case 5: return new Int8Array(arrayBuffer.slice(1))[0]
+        case 6: return new Int16Array(arrayBuffer.slice(1))[0]
+        case 7: return new Int32Array(arrayBuffer.slice(1))[0]
+        // case 8: return new Int64Array(arrayBuffer.slice(1))[0]
+        case 9: return new Float32Array(arrayBuffer.slice(1))[0]
+        case 10: return new Float64Array(arrayBuffer.slice(1))[0]
+        case 11: return new Uint8Array(arrayBuffer.slice(1))[0] === 1
+    }
+}
+
 class EFIGenieLog { 
     variableMetadata = undefined
     logBytes = new ArrayBuffer()
+    loggedVariableIds = []
     loggedVariableValues = []
 
     get saveValue() {
-        var objectArray = pako.gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.GetVariableReferenceList()))).buffer
-        return (new Uint32Array([objectArray.byteLength]).buffer).concatArray(objectArray).concatArray(LogBytes)
+        let objectArray = pako.gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.GetVariableReferenceList()))).buffer
+        return (new Uint32Array([objectArray.byteLength]).buffer)
+            .concatArray(objectArray)
+            .concatArray(new Uint32Array([this.loggedVariableIds.length]).buffer)
+            .concatArray(new Uint32Array(this.loggedVariableIds).buffer)
+            .concatArray(this.logBytes)
     }
     set saveValue(saveValue) {
-        const referenceLength = new Uint32Array(saveValue.slice(0, 4))[0]
-        this.variableMetadata = new VariableRegistry(JSON.parse(lzjs.decompressFromBase64(arrayBufferToBase64(saveValue.slice(4, referenceLength + 4)))))
-        this.logBytes = saveValue.slice(referenceLength + 4)
+        const variableMetadataLength = new Uint32Array(saveValue.slice(0, 4))[0]
+        this.variableMetadata = new VariableRegistry(JSON.parse(pako.ungzip(new Uint8Array(saveValue.slice(4, variableMetadataLength + 4)), { to: 'string' })))
+        const loggedVariableIdsLength = new Uint32Array(saveValue.slice(variableMetadataLength + 4, variableMetadataLength + 8))[0]
+        this.loggedVariableIds = [ ...(new Uint32Array(saveValue.slice(variableMetadataLength + 8, variableMetadataLength + 8 + loggedVariableIdsLength * 4))) ]
+        this.logBytes = saveValue.slice(variableMetadataLength + 8 + loggedVariableIdsLength * 4)
 
-        //TODO: parseBytes
+        let index = 0
+        this.loggedVariableValues = []
+        while(index < this.logBytes.byteLength) {
+            let variableValues = {}
+            for(let i = 0; i < this.loggedVariableIds.length; i++) {
+                let value = this.logBytes.slice(index, index+1)
+                index++
+                if(value.byteLength !== 1) throw "Incorrect number of bytes returned when polling variables"
+                const tLen = typeLength(new Uint8Array(value)[0])
+                if(tLen > 0) {
+                    value = value.concatArray(this.logBytes.slice(index, index+tLen))
+                    if(value.byteLength !== tLen + 1) throw "Incorrect number of bytes returned when polling variables"
+                    index += tLen
+                    variableValues[this.loggedVariableIds[i]] = parseVariable(value)
+                }
+            }
+            this.loggedVariableValues.push(variableValues)
+        }
     }
 }
 
 class EFIGenieCommunication extends EFIGenieLog {
-    
-    variableMetadata = undefined
+    get saveValue() {
+        return super.saveValue
+    }
+    set saveValue(saveValue) {
+        //need to save this date and recall it when loading saveValue
+        this.startedLoggingTime = Date.now()
+        super.saveValue = saveValue
+        const thisClass = this
+        let u = async function() { thisClass.updateLiveUpdateEvents() }
+        u()
+    }
+
     variablesToPoll = []
     liveUpdateEvents = []
-    previousVariableIds = []
 
     async pollVariableMetadata() {
         if(this.variableMetadata != undefined)
@@ -291,7 +358,7 @@ class EFIGenieCommunication extends EFIGenieLog {
             if(retData.byteLength !== 64) throw `Incorrect number of bytes returned when requesting metadata`
             
             if(i === 0) {
-                length = new Uint32Array(retData.slice(0, 4))[0] / 64
+                length = (new Uint32Array(retData.slice(0, 4))[0] + 4) / 64
                 if(length > 1000)throw `Incorrect length returned when requesting metadata`
             }
             metadataData = metadataData.concatArray(retData)
@@ -313,7 +380,7 @@ class EFIGenieCommunication extends EFIGenieLog {
 
         await this._serial.flush();
 
-        var variableIds = []
+        let variableIds = []
         const currentTickId = this.variableMetadata.GetVariableId({name: `CurrentTick`, type: `tick`})
         if(currentTickId)
             variableIds.push(currentTickId)
@@ -325,52 +392,18 @@ class EFIGenieCommunication extends EFIGenieLog {
         if(variableIds.length < 1)
             return
 
-        if(variableIds.length != this.previousVariableIds?.length) {
+        if(variableIds.length != this.loggedVariableIds?.length) {
             this.logBytes = new ArrayBuffer()
             this.loggedVariableValues = []
-            this.previousVariableIds = variableIds
+            this.loggedVariableIds = variableIds
         } else {
             for(var i = 0; i < variableIds.length; i++){
-                if(variableIds[i] !== this.previousVariableIds[i]){
+                if(variableIds[i] !== this.loggedVariableIds[i]){
                     this.logBytes = new ArrayBuffer()
                     this.loggedVariableValues = []
-                    this.previousVariableIds = variableIds
+                    this.loggedVariableIds = variableIds
                     break
                 }
-            }
-        }
-
-        function typeLength(type) {
-            switch(type) {
-                case 0: return 0
-                case 1: return 1
-                case 2: return 2
-                case 3: return 4
-                case 4: return 8
-                case 5: return 1
-                case 6: return 2
-                case 7: return 4
-                case 8: return 8
-                case 9: return 4
-                case 10: return 8
-                case 11: return 1
-            }
-        }
-        function parseVariable(arrayBuffer) {
-            let type = new Uint8Array(arrayBuffer)[0]
-            switch(type) {
-                case 0: return
-                case 1: return new Uint8Array(arrayBuffer.slice(1))[0]
-                case 2: return new Uint16Array(arrayBuffer.slice(1))[0]
-                case 3: return new Uint32Array(arrayBuffer.slice(1))[0]
-                // case 4: return new Uint64Array(arrayBuffer.slice(1))[0]
-                case 5: return new Int8Array(arrayBuffer.slice(1))[0]
-                case 6: return new Int16Array(arrayBuffer.slice(1))[0]
-                case 7: return new Int32Array(arrayBuffer.slice(1))[0]
-                // case 8: return new Int64Array(arrayBuffer.slice(1))[0]
-                case 9: return new Float32Array(arrayBuffer.slice(1))[0]
-                case 10: return new Float64Array(arrayBuffer.slice(1))[0]
-                case 11: return new Uint8Array(arrayBuffer.slice(1))[0] === 1
             }
         }
 
@@ -398,13 +431,13 @@ class EFIGenieCommunication extends EFIGenieLog {
         this.loggedVariableValues.push(variableValues)
 
         const thisClass = this
-        let u = async function() { thisClass.#updateLiveUpdateEvents(thisClass) }
+        let u = async function() { thisClass.updateLiveUpdateEvents() }
         u()
     }
 
-    #updateLiveUpdateEvents = function(thisClass) {
-        Object.entries(thisClass.liveUpdateEvents).filter(function(value, index, self) { return self.indexOf(value) === index }).forEach(([elementname, element]) => {
-            element?.(thisClass.variableMetadata, thisClass.loggedVariableValues[thisClass.loggedVariableValues.length - 1])
+    updateLiveUpdateEvents() {
+        Object.entries(this.liveUpdateEvents).filter(function(value, index, self) { return self.indexOf(value) === index }).forEach(([elementname, element]) => {
+            element?.(this.variableMetadata, this.loggedVariableValues[this.loggedVariableValues.length - 1])
         })
     }
 
@@ -460,8 +493,12 @@ class EFIGenieCommunication extends EFIGenieLog {
         if(this.polling)
             return
         this.polling = true
-        if(!this.connected)
+        if(!this.connected) {
+            this.variableMetadata = undefined
+            this.logBytes = new ArrayBuffer()
+            this.loggedVariableValues = []
             this.startedLoggingTime = Date.now()
+        }
         this.connected = true
         this.connectionError = false;
         const thisClass = this
@@ -475,7 +512,7 @@ class EFIGenieCommunication extends EFIGenieLog {
             thisClass.polling = false
             thisClass.connected = false
             thisClass.connectionError = true;
-            let u = async function() { thisClass.#updateLiveUpdateEvents(thisClass) }
+            let u = async function() { thisClass.updateLiveUpdateEvents() }
             u()
         })
     }
@@ -483,6 +520,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         this.connected = false
         const thisClass = this
         await waitForFunctionToReturnFalse(function() { return thisClass.polling || thisClass.connected })
+        
     }
 }
 

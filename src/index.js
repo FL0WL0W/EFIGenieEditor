@@ -313,8 +313,27 @@ window.addEventListener(`load`, function() {
         test.readAsText(evt.target.files[0])
         let file = evt.target.files[0].name
         file = file.substr(file.lastIndexOf('\\') + 1).split('.')[0];
-        console.log(file)
         window.localStorage.setItem(`lastConfigName`, configJsonName = file)
+    })
+
+    document.querySelector(`#btnSaveLog`).addEventListener(`click`, function(){
+        downloadBin(communication.saveValue, `${configJsonName ?? `log`}.log`)
+    })
+    document.querySelector(`#btnOpenLog`).addEventListener(`change`, function(evt){
+        var test = new FileReader()
+
+        test.onload = function(evt) {
+            if(evt.target.readyState != 2) return
+            if(evt.target.error) {
+                alert(`Error while reading file`)
+                return
+            }
+
+            const result = evt.target.result
+            communication.saveValue = result;
+        }
+
+        test.readAsArrayBuffer(evt.target.files[0])
     })
 
     let connectGUID = generateGUID()
