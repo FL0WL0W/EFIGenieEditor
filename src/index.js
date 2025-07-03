@@ -156,7 +156,7 @@ window.addEventListener(`load`, function() {
                 } else {
                     const xhr = new XMLHttpRequest()
                     xhr.open(`GET`, `config.json`, true)
-                    xhr.onreadystatechange = () => {
+                    xhr.onload = () => {
                         if (xhr.status == 200) {
                             lastConfig = xhr.responseText
                         }
