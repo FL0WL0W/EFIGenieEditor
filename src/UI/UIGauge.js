@@ -12,6 +12,7 @@ import { BaseGauge } from "canvas-gauges"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 export default class UIGauge extends UITemplate {
+    static type = `gauge`
     static template = 
 `<canvas data-type="radial-gauge"
     data-width="350"
@@ -118,7 +119,7 @@ export default class UIGauge extends UITemplate {
 
     constructor(prop) {
         super()
-        this.style.position = `relative`
+        this.style.display = `inline-block`
         this.configTemplate = new UITemplate({
             template:  `<span style="display: block;"><label>Variable:</label><div data-element="variable"></div></span>
                         <span style="display: block;"><label>Min:</label><div data-element="min"></div></span>

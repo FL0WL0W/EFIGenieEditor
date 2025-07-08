@@ -63,6 +63,7 @@ class UIPlot_Variable extends UITemplate {
 customElements.define(`ui-plot-variable`, UIPlot_Variable, { extends: `span` })
 export default class UIPlot extends UITemplate {
     static template = `<div data-element="plotWorkspace"></div>`
+    static type = `plot`
     variablesToPlot = new ConfigList({
         itemConstructor: UIPlot_Variable,
         // saveValue: [{}]
@@ -70,6 +71,7 @@ export default class UIPlot extends UITemplate {
 
     constructor(prop) {
         super()
+        this.style.display = `inline-block`
         
         this.plotWorkspace = document.createElement(`div`)
         const options = {

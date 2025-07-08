@@ -84,15 +84,11 @@ export default class Dashboard extends UITemplate {
         <div data-element="expandSidebar"></div>
     </div>
     <div style="display:inline-block;">
-        <div data-element="gauges"></div>
-    </div>
-    <div style="display:block;">
-        <div data-element="plots"></div>
+        <div data-element="elements"></div>
     </div>
 </div>`
 
-    gauges = document.createElement(`div`)
-    plots = document.createElement(`div`)
+    elements = document.createElement(`div`)
     loggedVariables = document.createElement(`table`)
     loggedVariablesUnitSelection = new UIUnit()
     loggedVariablesRefreshSelection = new UISelection({
@@ -123,7 +119,7 @@ export default class Dashboard extends UITemplate {
         delete saveValue.loggedVariableVariableSelection
         return saveValue
     }
-    set saveValue(saveValue) { super.saveValue = saveValue }
+    set saveValue(saveValue) { super.saveValue = { ...saveValue, elements: [...(saveValue.elements ?? []), ...(saveValue.gauges?.map(x => {return {...x, type: `gauge`}}) ?? []), ...(saveValue.plots?.map(x => {return {...x, type: `plot`}}) ?? [])], gauges: undefined, plots: undefined } }
 
     get value() {
         let value = super.value
@@ -147,34 +143,35 @@ export default class Dashboard extends UITemplate {
             this.RegisterVariables();
         })
         this.RegisterVariables()
-        this.plots.class = `plots`
-        Object.defineProperty(this.plots, 'saveValue', {
-            get: function() { return [...this.children].map(x => x.saveValue) },
+        Object.defineProperty(this.elements, 'saveValue', {
+            get: function() { return [...this.children].map(x => {return {
+                ...x.saveValue, 
+                type: x.constructor.type,
+                ...(x.style.position === `absolute`? {
+                    left: x.style.left,
+                    top: x.style.top
+                } : undefined)
+            }}) },
             set: function(saveValue) { 
-                while(this.children.length > saveValue.length) this.removeChild(this.lastChild)
+                while(this.children.length > 0) this.removeChild(this.lastChild)
                 for(let i = 0; i < saveValue.length; i++){
-                    if(!this.children[i]) {
-                        this.append(new UIPlot())
-                    }
-                    this.children[i].saveValue = saveValue[i]
-                }
-            }
-        })
-        this.plots.saveValue = new Array(1)
-        this.gauges.class = `gauges`
-        Object.defineProperty(this.gauges, 'saveValue', {
-            get: function() { return [...this.children].map(x => x.saveValue) },
-            set: function(saveValue) { 
-                while(this.children.length > saveValue.length) this.removeChild(this.lastChild)
-                for(let i = 0; i < saveValue.length; i++){
-                    if(!this.children[i]) {
+                    if(saveValue[i].type === `gauge`)
                         this.append(new UIGauge())
+                    else if (saveValue[i].type === `plot`)
+                        this.append(new UIPlot())
+                    if(saveValue[i].left !== undefined) {
+                        this.children[i].style.position = `absolute`
+                        this.children[i].style.left = saveValue[i].left
+                        this.children[i].style.top = saveValue[i].top
                     }
                     this.children[i].saveValue = saveValue[i]
                 }
             }
         })
-        this.gauges.saveValue = new Array(8)
+        this.elements.saveValue = [
+            {type: `gauge`}, 
+            {type: `plot`}, 
+        ]
         const header = this.loggedVariables.appendChild(document.createElement(`tr`))
         const name = header.appendChild(document.createElement(`td`))
         name.textContent = `Name`
@@ -251,6 +248,104 @@ export default class Dashboard extends UITemplate {
             const selectedRow = this.loggedVariables.querySelector(`.selected`)
             if(!selectedRow) return
             selectedRow.unit = this.loggedVariablesUnitSelection.value
+        })
+
+        let currentPage = 0
+        let startX = 0
+        let currentX = 0
+        let isDragging = false
+
+        this.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX
+            isDragging = true
+        })
+
+        this.addEventListener('touchmove', (e) => {
+            if (!isDragging) return
+            currentX = e.touches[0].clientX
+        })
+
+        this.style.position = `relative`
+        this.addEventListener('touchend', () => {
+            if (!isDragging) return
+            const deltaX = currentX - startX
+            if (Math.abs(deltaX) > 50) {
+                if (deltaX < 0) {
+                currentPage++
+                } else if (deltaX > 0 && currentPage > 0) {
+                currentPage--
+                }
+            }
+            this.style.transform = `translateX(-${currentPage * 100}vw)`
+            isDragging = false
+        })
+        this.addEventListener(`contextmenu`, (e) => {
+            if (!('ontouchstart' in window)) return // Only for touch
+            e.preventDefault() // Prevent default context menu
+            isDragging = false
+        })
+
+        let draggingElement = false
+        const dragdownElement = (downEvent) => {
+            let target = downEvent.target
+            while (target && target.parentElement !== this.elements) {
+                target = target.parentElement;
+            }
+
+            const offsetX = (downEvent.touches?.[0]?.clientX ?? downEvent.clientX) - target.offsetLeft
+            const offsetY = (downEvent.touches?.[0]?.clientY ?? downEvent.clientY) - target.offsetTop
+            
+            const mouseMove = moveEvent => {
+                moveEvent.preventDefault()
+                if(draggingElement === false) {
+                    draggingElement = true
+                    target.style.position = `absolute`
+                    target.classList.add(`dragging`)
+                }
+                const gridSize = 50
+                let x = (moveEvent.touches?.[0]?.clientX ?? moveEvent.clientX) - offsetX
+                let y = (moveEvent.touches?.[0]?.clientY ?? moveEvent.clientY) - offsetY
+
+                x = Math.round(x / gridSize) * gridSize
+                y = Math.round(y / gridSize) * gridSize
+
+                target.style.left = `${x}px`
+                target.style.top = `${y}px`
+            }
+            
+            const mouseUp = (upEvent) => {
+                document.removeEventListener(`mousemove`, mouseMove)
+                document.removeEventListener(`mouseup`, mouseUp)
+                document.removeEventListener(`touchmove`, mouseMove)
+                document.removeEventListener(`touchend`, mouseUp)
+                target.classList.remove(`dragging`)
+                if(draggingElement) {
+                    // prevent click on children if dragging occurred
+                    const suppressClick = (clickEvent) => {
+                        clickEvent.stopImmediatePropagation();
+                        clickEvent.preventDefault();
+                        document.removeEventListener('click', suppressClick, true);
+                    };
+                    document.addEventListener('click', suppressClick, true);
+                }
+            }
+        
+            document.addEventListener(`mousemove`, mouseMove)
+            document.addEventListener(`mouseup`, mouseUp)
+            document.addEventListener(`touchmove`, mouseMove, { passive: false })
+            document.addEventListener(`touchend`, mouseUp)
+        }
+        this.elements.addEventListener(`mousedown`, (e) => { 
+            draggingElement = false
+            if (e.button !== 0) return
+            dragdownElement(e)
+        })
+        this.elements.addEventListener(`contextmenu`, (e) => {
+            if (!('ontouchstart' in window)) return // Only for touch
+            e.preventDefault() // Prevent default context menu
+            draggingElement = true
+            this.classList.add(`dragging`)
+            dragdownElement(e)
         })
         this.Setup(prop)
     }
@@ -332,8 +427,7 @@ export default class Dashboard extends UITemplate {
                 }
             }
         });
-        [...this.gauges.children].forEach(x => x.RegisterVariables());
-        [...this.plots.children].forEach(x => x.RegisterVariables());
+        [...this.elements.children].forEach(x => x.RegisterVariables?.());
     }
 }
 customElements.define(`top-dashboard`, Dashboard, { extends: `span` })
