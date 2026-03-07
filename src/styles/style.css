@@ -106,7 +106,7 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
 .w3-round-small{border-radius:2px}.w3-round,.w3-round-medium{border-radius:4px}.w3-round-large{border-radius:8px}.w3-round-xlarge{border-radius:16px}.w3-round-xxlarge{border-radius:32px}
 .w3-row-padding,.w3-row-padding>.w3-half,.w3-row-padding>.w3-third,.w3-row-padding>.w3-twothird,.w3-row-padding>.w3-threequarter,.w3-row-padding>.w3-quarter,.w3-row-padding>.w3-col{padding:0 8px}
 .w3-container,.w3-panel{padding:0.01em 16px}.w3-panel{margin-top:16px;margin-bottom:16px}
-.w3-code,.w3-codespan{font-family:Consolas,"courier new";font-size:16px}
+.w3-code,.w3-codespan{font-family: "Courier New", Courier, "Liberation Mono", monospace;font-size:16px}
 .w3-code{width:auto;background-color:#fff;padding:8px 12px;border-left:4px solid #4CAF50;word-wrap:break-word}
 .w3-codespan{color:crimson;background-color:#f1f1f1;padding-left:4px;padding-right:4px;font-size:110%}
 .w3-card,.w3-card-2{box-shadow:0 2px 5px 0 rgba(0,0,0,0.16),0 2px 10px 0 rgba(0,0,0,0.12)}
@@ -263,13 +263,13 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 .controlnew,
 .controlhamburger,
 .controldummy {
+    font-family: "Courier New", Courier, "Liberation Mono", monospace;
     padding: 0px 0.2em;
-    font-family: 'Courier New', monospace;
     font-weight: bold;
     cursor: pointer;
     height: 1.1em;
     border-radius: 6px;
-    width: 0.75em;
+    width: fit-content;
 }
 .controldummy {
     cursor: default;
@@ -293,29 +293,27 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     background-color: #666;
 }
 .controlnew::after {
+    top: -0.125em;
     content: "+ New";
     position: relative;
-    left: 0.1em;
-    top: -0.15em;
     display: inline-block;
     line-height: 1;
 }
 .configContainer .controlnew::after{
+    top: -0.125em;
     content: "+";
-    width: 0.75em;
 }
 .controladd::after {
+    top: -0.125em;
     content: "+";
     position: relative;
-    left: 0.1em;
-    top: -0.15em;
     display: inline-block;
     line-height: 1;
 }
 .controlhamburger::after {
-    content: "☰";
+    top: -0.125em;
+    content: "≡";
     position: relative;
-    top: -0.25em;
     display: inline-block;
     line-height: 1;
 }
@@ -504,7 +502,7 @@ select .pinconflict{
     background-color:rgb(255, 128, 128);
 }
 .livevalue {
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", Courier, "Liberation Mono", monospace;
     color: #55AA55;
 }
 
@@ -534,7 +532,7 @@ select .pinconflict{
 }
 
 .monospace {
-    font-family: 'Courier New', monospace;
+    font-family: "Courier New", Courier, "Liberation Mono", monospace;
 }
 
 ::-webkit-scrollbar {
@@ -558,19 +556,19 @@ select .pinconflict{
 }
 
 .sidebaropenclose::after {
-    content: "☰"
+    content: "≡"
 }
 
 .tab::before {
-    font-family:monospace;
+    font-family: "Courier New", Courier, "Liberation Mono", monospace;
     content: "\00a0\00a0";
 }
 .tab .expand::before {
-    font-family:monospace;
+    font-family: "Courier New", Courier, "Liberation Mono", monospace;
     content: "►\00a0";
 }
 .tab .despand::before {
-    font-family:monospace;
+    font-family: "Courier New", Courier, "Liberation Mono", monospace;
     content: "▼\00a0";
 }
 .tab::after {

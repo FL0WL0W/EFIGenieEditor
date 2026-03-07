@@ -201,6 +201,7 @@ export default class ConfigList extends HTMLDivElement {
 
             // remove any existing hamburger menus
             document.querySelectorAll('.hamburger-menu').forEach(e => e.remove())
+            document.querySelectorAll('.hamburger-open').forEach(e => e.classList.remove('hamburger-open'))
 
             // build menu
             const menu = document.createElement('div')
