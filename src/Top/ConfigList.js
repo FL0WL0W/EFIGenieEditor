@@ -130,11 +130,17 @@ export default class ConfigList extends HTMLDivElement {
         hamburgerElement.addEventListener(`dragstart`, function(event) {
             this.parentElement.parentElement.children[0].classList.add(`dragging`)
         })
+        let afterElement = undefined
         hamburgerElement.addEventListener(`dragend`, function(event) {
             let none = [...this.parentElement.parentElement.parentElement.children].forEach(x => { x.style.marginTop = `0px`; x.style.marginBottom = `0px`; })
             this.parentElement.parentElement.children[0].classList.remove(`dragging`)
             this.parentElement.parentElement.style.position = "relative"
             this.parentElement.parentElement.style.top = "0px"
+            if(afterElement)
+                thisClass.insertBefore(this.parentElement.parentElement, afterElement)
+            else if(afterElement === null)
+                thisClass.appendChild(this.parentElement.parentElement)
+            thisClass.updateControls()
         })
         this.addEventListener(`dragover`, function(event) {
             event.preventDefault()
@@ -161,7 +167,7 @@ export default class ConfigList extends HTMLDivElement {
             if(dragElementY > this.clientHeight - draggingElement.clientHeight) dragElementY = this.clientHeight - draggingElement.clientHeight
 
             //find element before which draggingElement should be placed
-            let afterElement = [...this.children].filter(x => x !== draggingElement).find(x => {
+            afterElement = [...this.children].filter(x => x !== draggingElement).find(x => {
                 const rect = x.getBoundingClientRect()
                 const top = rect.top - this.getBoundingClientRect().top
                 const bottom = rect.bottom - this.getBoundingClientRect().top
@@ -175,18 +181,16 @@ export default class ConfigList extends HTMLDivElement {
             let none = [...this.children].forEach(x => { x.style.marginTop = `0px`; x.style.marginBottom = `0px`; })
             if(afterElement) {
                 afterElement.style.marginTop = `${draggingElement.getBoundingClientRect().height}px`
-
-                //also move draggingElement before afterElement in dom
-                this.insertBefore(draggingElement, afterElement)
             } else {
                 //second to last child
-                const secondToLast = this.children[this.children.length - 2]
-                if(secondToLast && secondToLast !== draggingElement)
-                    secondToLast.style.marginBottom = `${draggingElement.getBoundingClientRect().height}px`
-                this.appendChild(draggingElement)
+                let lastChild = this.lastChild
+                if(lastChild === draggingElement)
+                    lastChild = lastChild.previousSibling
+                if(lastChild)
+                    lastChild.style.marginBottom = `${draggingElement.getBoundingClientRect().height}px`
+                afterElement = null
             }
 
-            thisClass.updateControls()
             draggingElement.style.position = `absolute`
             draggingElement.style.top = `${dragElementY}px`
         })
