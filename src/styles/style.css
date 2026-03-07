@@ -243,53 +243,80 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 .controldummyfill {
     flex-grow: 1;
 }
+.itemContainer {
+    display: flex;
+}
 .itemContainer .controlcontainer {
-    margin-top: -0.75em;
+    order: 1;
+    margin-top: -0.55em;
     display: inline-flex;
     flex-direction: column;
     position: relative;
 }
+.itemContainer .configContainer .controlcontainer {
+    order: 0;
+}
 .itemContainer .controlcontainer:not(:has(.controlnew)) {
-    margin-bottom: 0.75em;
+    margin-bottom: 0.55em;
 }
 .controladd,
 .controlnew,
-.controldelete,
-.controlup,
-.controldown,
+.controlhamburger,
 .controldummy {
-    padding: 0px 0.4em;
+    padding: 0px 0.2em;
     font-family: 'Courier New', monospace;
     font-weight: bold;
     cursor: pointer;
-    height: 1.5em;
+    height: 1.1em;
     border-radius: 6px;
+    width: 0.75em;
+}
+.controldummy {
+    cursor: default;
+}
+.itemContainer .controlcontainer .controlhamburger {
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+}
+.itemContainer .configContainer .controlcontainer .controlhamburger {
+    border-radius: 6px;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+.controlnew {
     width: fit-content;
 }
 .controladd:hover,
 .controlnew:hover,
-.controldelete:hover,
-.controlup:hover,
-.controldown:hover {
+.controlhamburger:hover {
     background-color: #666;
 }
 .controlnew::after {
     content: "+ New";
+    position: relative;
+    left: 0.1em;
+    top: -0.15em;
+    display: inline-block;
+    line-height: 1;
 }
 .configContainer .controlnew::after{
     content: "+";
+    width: 0.75em;
 }
 .controladd::after {
     content: "+";
+    position: relative;
+    left: 0.1em;
+    top: -0.15em;
+    display: inline-block;
+    line-height: 1;
 }
-.controldelete::after {
-    content: "-";
-}
-.controlup::after {
-    content: "↑";
-}
-.controldown::after {
-    content: "↓";
+.controlhamburger::after {
+    content: "☰";
+    position: relative;
+    top: -0.25em;
+    display: inline-block;
+    line-height: 1;
 }
 .controldummy::after {
     content: "\00a0";
@@ -301,9 +328,13 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     width: 125px;
 }
 .itemContainer .item .configContainer {
-    min-height: 4em;
+    min-height: 3em;
+}
+.itemContainer .configContainer .item {
+    order: 1;
 }
 .itemContainer .item{
+    order: 0;
     min-width: 850px;
     width: fit-content;
     box-sizing: border-box;
@@ -321,7 +352,12 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     box-sizing: border-box;
 }
 .itemList {
-    padding-top: 0.75em;
+    position: relative;
+    padding-top: 0.5em;
+    padding-bottom: 0em;
+    border-style: solid;
+    border-width: 1px;
+    border-color:rgba(0, 0, 0, 0)
 }
 .configContainer .itemContainer .item,
 .configContainer .configContainer {
@@ -332,16 +368,19 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     min-width: auto;
     width: 100%
 }
+.itemContainer:last-child .item .itemContainer .item,
 .itemContainer .item {
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
     border-radius: 6px;
     border-style: solid;
     border-width: 1px;
     border-color: #666;
+    position: relative;
 }
-.itemContainer:last-child .item {
-    margin-bottom: 1.5em;
+.itemContainer:last-child .item .itemContainer:last-child .item,
+.itemContainer:last-child .item{
+    margin-bottom: 0.75em;
 }
 .mathContainer {
     vertical-align:top; 
@@ -381,7 +420,7 @@ label:has(.ui.text.genericCalculationName:disabled)::before {
     width: 250px;
 }
 .ui.text.canParseDataName {
-    width: 150px;
+    width: 230px;
 }
 label:not(.w3-button) {
     font: bold 16px Arial;
@@ -703,7 +742,7 @@ select .pinconflict{
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 120, 255, 0.3); /* Blue semi-transparent */
-  pointer-events: none; /* So it doesn't block dragging */
+  background: rgba(0, 120, 255, 0.3);
+  pointer-events: none;
   z-index: 10;
 }

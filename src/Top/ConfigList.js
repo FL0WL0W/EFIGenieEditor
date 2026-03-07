@@ -93,31 +93,13 @@ export default class ConfigList extends HTMLDivElement {
     }
 
     updateControls() {
-        for(let i = 0; i < this.children.length; i++) {
-            const up = this.children[i].controlElement.children[1]
-            const del = this.children[i].controlElement.children[3]
-            const down = this.children[i].controlElement.children[5]
+        for(let i = 0; i < this.children.length; i++){
+            const hamburger = this.children[i].controlElement.children[2]
             const isStatic = this.staticItems.find(x => x.item === this.children[i].item) !== undefined
-            if(i === 0 || (isStatic && this.staticItems.find(x => x.item === this.children[i-1].item) !== undefined)) {
-                up.className = `controldummy`
-                up.disabled = true
-            } else {
-                up.className = `controlup`
-                up.disabled = false
-            }
             if(isStatic) {
-                del.className = `controldummy`
-                del.disabled = true
+                hamburger.className = 'controldummy'
             } else {
-                del.className = `controldelete`
-                del.disabled = false
-            }
-            if(i === this.children.length-1 || (isStatic && this.staticItems.find(x => x.item === this.children[i+1].item) !== undefined)) {
-                down.className = `controldummy`
-                down.disabled = true
-            } else {
-                down.className = `controldown`
-                down.disabled = false
+                hamburger.className = 'controlhamburger'
             }
         }
         if(this.lastChild)
@@ -141,35 +123,78 @@ export default class ConfigList extends HTMLDivElement {
         addElement.addEventListener(`click`, function() {
             thisClass.appendNewItem(thisClass.newItem(), this.parentElement.parentElement)
         })
-        let upElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
-        upElement.className = `controlup`
-        upElement.addEventListener(`click`, function() {
+        itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
+        let hamburgerElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
+        hamburgerElement.className = `controlhamburger`
+        hamburgerElement.draggable = true
+        hamburgerElement.addEventListener(`dragstart`, function(event) {
+            this.parentElement.parentElement.children[0].classList.add(`dragging`)
+        })
+        hamburgerElement.addEventListener(`dragend`, function(event) {
+            let none = [...this.parentElement.parentElement.parentElement.children].forEach(x => { x.style.marginTop = `0px`; x.style.marginBottom = `0px`; })
+            this.parentElement.parentElement.children[0].classList.remove(`dragging`)
+            this.parentElement.parentElement.style.position = "relative"
+            this.parentElement.parentElement.style.top = "0px"
+        })
+        this.addEventListener(`dragover`, function(event) {
+            event.preventDefault()
+            var dragIcon = new Image();
+            dragIcon.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+
+            // Set the drag image to the transparent icon, positioning it off-screen
+            event.dataTransfer.setDragImage(dragIcon, 0, 0);
+
+            const draggingElement = this.querySelector(`.dragging`)?.parentElement
+            //ensure this is a direct child of this list and not a nested list by checking if draggingElement.parentElement is this
+            if(!draggingElement || draggingElement.parentElement !== this)
+                return;
+
+            
+            const hamburgerElement = draggingElement.children[1].children[2]
+
+            //offset clientY to show dom position instead of mouse position
+            const positionY = event.clientY - this.getBoundingClientRect().top
+
+            //move element to mouse cursor position y
+            let dragElementY = positionY - hamburgerElement.clientHeight / 2 - (hamburgerElement.getBoundingClientRect().top - draggingElement.getBoundingClientRect().top);
+            if(dragElementY < 0) dragElementY = 0
+            if(dragElementY > this.clientHeight - draggingElement.clientHeight) dragElementY = this.clientHeight - draggingElement.clientHeight
+
+            //find element before which draggingElement should be placed
+            let afterElement = [...this.children].filter(x => x !== draggingElement).find(x => {
+                const rect = x.getBoundingClientRect()
+                const top = rect.top - this.getBoundingClientRect().top
+                const bottom = rect.bottom - this.getBoundingClientRect().top
+                if(dragElementY > top)
+                    return dragElementY < top + rect.height / 2
+                return dragElementY + draggingElement.clientHeight < bottom - rect.height / 2
+            })
+
+            //add space after element to show where draggingElement will be placed
+            //do this by adding a margin to the element
+            let none = [...this.children].forEach(x => { x.style.marginTop = `0px`; x.style.marginBottom = `0px`; })
+            if(afterElement) {
+                afterElement.style.marginTop = `${draggingElement.getBoundingClientRect().height}px`
+
+                //also move draggingElement before afterElement in dom
+                this.insertBefore(draggingElement, afterElement)
+            } else {
+                //second to last child
+                const secondToLast = this.children[this.children.length - 2]
+                if(secondToLast && secondToLast !== draggingElement)
+                    secondToLast.style.marginBottom = `${draggingElement.getBoundingClientRect().height}px`
+                this.appendChild(draggingElement)
+            }
+
+            thisClass.updateControls()
+            draggingElement.style.position = `absolute`
+            draggingElement.style.top = `${dragElementY}px`
+        })
+        hamburgerElement.addEventListener(`click`, function() {
             if(this.disabled)
                 return
-            this.parentElement.parentElement.previousSibling.before(this.parentElement.parentElement)
-            thisClass.updateControls()
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
         })
         itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
-        let deleteElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
-        deleteElement.className = `controldelete`
-        deleteElement.addEventListener(`click`, function() {
-            if(this.disabled)
-                return
-            this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement)
-            thisClass.updateControls()
-            thisClass.dispatchEvent(new Event(`change`, {bubbles: true}))
-        })
-        itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
-        let downElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
-        downElement.className = `controldown`
-        downElement.addEventListener(`click`, function() {
-            if(this.disabled)
-                return
-            this.parentElement.parentElement.nextSibling.after(this.parentElement.parentElement)
-            thisClass.updateControls()
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
-        })
 
         itemContainer.RegisterVariables = function(reference) { this.item.RegisterVariables?.(reference) }
         Object.entries(itemContainer.item).forEach(function([elementName, element]) {
