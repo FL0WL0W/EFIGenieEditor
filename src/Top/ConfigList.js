@@ -194,9 +194,46 @@ export default class ConfigList extends HTMLDivElement {
             draggingElement.style.position = `absolute`
             draggingElement.style.top = `${dragElementY}px`
         })
-        hamburgerElement.addEventListener(`click`, function() {
+        hamburgerElement.addEventListener(`click`, function(event) {
             if(this.disabled)
                 return
+            event.stopPropagation()
+
+            // remove any existing hamburger menus
+            document.querySelectorAll('.hamburger-menu').forEach(e => e.remove())
+
+            // build menu
+            const menu = document.createElement('div')
+            menu.className = 'hamburger-menu'
+            const divDelete = document.createElement('div')
+            divDelete.className = 'hamburger-menu-delete'
+            divDelete.addEventListener('click', (e) => {
+                e.stopPropagation()
+                const itemContainer = hamburgerElement.parentElement.parentElement
+                // remove the item container
+                if(itemContainer && itemContainer.parentElement)
+                    itemContainer.parentElement.removeChild(itemContainer)
+                // cleanup menu
+                menu.remove()
+                // refresh controls and emit change
+                thisClass.updateControls()
+                thisClass.dispatchEvent(new Event('change', {bubbles: true}))
+            })
+            menu.appendChild(divDelete)
+            document.body.appendChild(menu)
+
+            // position menu near the hamburger
+            const hamburgerOnLeft = [...thisClass.querySelectorAll('.itemContainer .configContainer .controlcontainer .controlhamburger')].indexOf(this) !== -1
+            const rect = this.getBoundingClientRect()
+            const top =  Math.max(0, rect.top + this.clientHeight / 2 - menu.clientHeight / 2)
+            const left = Math.max(0, Math.min(window.innerWidth-menu.clientWidth, hamburgerOnLeft? rect.right : rect.left-menu.clientWidth))
+            menu.style.left = `${left}px`
+            menu.style.top = `${top}px`
+
+            const hamburger = this;
+            hamburger.classList.add(`hamburger-open`)
+            // close when clicking elsewhere
+            document.addEventListener('click', function() { menu.remove(); document.removeEventListener('click', this); hamburger.classList.remove(`hamburger-open`) })
         })
         itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
 

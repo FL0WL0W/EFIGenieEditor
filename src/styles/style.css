@@ -288,7 +288,8 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .controladd:hover,
 .controlnew:hover,
-.controlhamburger:hover {
+.controlhamburger:hover,
+.controlhamburger.hamburger-open {
     background-color: #666;
 }
 .controlnew::after {
@@ -317,6 +318,20 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     top: -0.25em;
     display: inline-block;
     line-height: 1;
+}
+.hamburger-menu {
+    border-radius: 6px;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+    cursor: default;
+    position: absolute;
+    background-color: #666;
+    overflow-y: auto;
+    white-space: normal;
+    z-index: 10;
+}
+.hamburger-menu-delete::after {
+    content: "🗑 Delete";
 }
 .controldummy::after {
     content: "\00a0";
