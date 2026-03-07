@@ -221,16 +221,15 @@ export default class ConfigList extends HTMLDivElement {
                 thisClass.dispatchEvent(new Event('change', {bubbles: true}))
             })
             menu.appendChild(divDelete)
-            document.body.appendChild(menu)
+            this.appendChild(menu)
 
             // position menu near the hamburger
             const hamburgerOnLeft = [...thisClass.querySelectorAll('.itemContainer .configContainer .controlcontainer .controlhamburger')].indexOf(this) !== -1
             const rect = this.getBoundingClientRect()
-            const top =  Math.max(0, rect.top + this.clientHeight / 2 - menu.clientHeight / 2)
-            const left = Math.max(0, Math.min(window.innerWidth-menu.clientWidth, hamburgerOnLeft? rect.right : rect.left-menu.clientWidth))
+            const top =  this.clientHeight / 2 - menu.clientHeight / 2
+            const left = hamburgerOnLeft? this.clientWidth : -menu.clientWidth
             menu.style.left = `${left}px`
             menu.style.top = `${top}px`
-
             const hamburger = this;
             hamburger.classList.add(`hamburger-open`)
             // close when clicking elsewhere

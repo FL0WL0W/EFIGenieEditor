@@ -263,6 +263,7 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 .controlnew,
 .controlhamburger,
 .controldummy {
+    position: relative;
     font-family: "Courier New", Courier, "Liberation Mono", monospace;
     padding: 0px 0.2em;
     font-weight: bold;
@@ -326,7 +327,9 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     background-color: #666;
     overflow-y: auto;
     white-space: normal;
-    z-index: 10;
+    z-index: 10000;
+    white-space: nowrap;
+    width: fit-content;
 }
 .hamburger-menu-delete::after {
     content: "🗑 Delete";
@@ -516,7 +519,7 @@ select .pinconflict{
     overflow-y: auto;
     white-space: normal;
     inline-size: 200px;
-    z-index: 10;
+    z-index: 100000;
 }
 
 .context-menu ul {
@@ -757,5 +760,5 @@ select .pinconflict{
   height: 100%;
   background: rgba(0, 120, 255, 0.3);
   pointer-events: none;
-  z-index: 10;
+  z-index: 100000;
 }
