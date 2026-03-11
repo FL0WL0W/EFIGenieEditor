@@ -118,7 +118,6 @@ import TPS_Linear from "./TPS/TPS_Linear.js"
 
 import pako from "pako"
 import { communication, Serial, EFIGenieCommunication } from "./communication.js"
-import generateGUID from "./GUID.js"
 import FileBrowser from "./Top/FileBrowser.js"
 
 
@@ -336,7 +335,6 @@ window.addEventListener(`load`, function() {
         test.readAsArrayBuffer(evt.target.files[0])
     })
 
-    let connectGUID = generateGUID()
     const btnConnect = document.querySelector(`#btnConnect`)
     btnConnect.addEventListener(`click`, function(){
         btnConnect.classList.remove(`connection-error`)
@@ -344,14 +342,14 @@ window.addEventListener(`load`, function() {
         btnConnect.classList.remove(`connecting`)
         if(communication.connected)
         {
-            delete communication.liveUpdateEvents[connectGUID]
             communication.disconnect()
             btnConnect.value = `Connect`
             return;
         }
         btnConnect.classList.add(`connecting`)
         Pinouts[b.TargetDevice.value].Connect?.()
-        communication.liveUpdateEvents[connectGUID] = (variableMetadata, currentVariableValues) => {
+
+        document.addEventListener(`communicationnewdata`, () => {
             btnConnect.classList.remove(`connecting`)
             if(communication.connectionError)
             {
@@ -370,6 +368,6 @@ window.addEventListener(`load`, function() {
                 btnConnect.value = `Connection Paused`
                 btnConnect.classList.add(`connecting`)
             }
-        }
+        })
     })
 })

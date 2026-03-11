@@ -7,7 +7,6 @@ import UITextArea from "../JavascriptUI/UITextArea"
 import UIButton from "../JavascriptUI/UIButton"
 import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit } from "./UIUnit"
 import Dashboard from "../Top/Dashboard"
-import generateGUID from "../GUID"
 import { BaseGauge } from "canvas-gauges"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
@@ -212,23 +211,20 @@ export default class UIGauge extends UITemplate {
         this.Setup(prop)
     }
 
-    GUID = generateGUID()
     RegisterVariables() {
         let options = Dashboard.thisDashboard.options.map(x => x.group && x.options? {...x, options: x.options.map(x => { return {...x, disabled: !x.disabled}})} : {...x, disabled: !x.disabled})
         this.configTemplate.variable.options = options
 
         const reference = this.configTemplate.variable.value
         if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-        // if(communication.variablesToPoll.indexOf(reference) === -1)
-        //     communication.variablesToPoll.push(reference)
-        communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
+        document.addEventListener(`communicationnewdata`, () => {
             if(reference) { 
-                const variableId = variableMetadata?.GetVariableId(reference)
-                if(currentVariableValues?.[variableId] !== undefined) {
-                    this.value = currentVariableValues[variableId]
+                const variableId = communication.variableMetadata?.GetVariableId(reference)
+                if(communication.currentVariableValues?.[variableId] !== undefined) {
+                    this.value = communication.currentVariableValues[variableId]
                 }
             }
-        }
+        })
     }
 }
 customElements.define(`ui-gauge`, UIGauge, { extends: `span` })

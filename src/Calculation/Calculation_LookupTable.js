@@ -5,7 +5,6 @@ import UITableWithUnit from "../UI/UITableWithUnit"
 import UIParameterWithUnit from "../UI/UIParameterWithUnit"
 import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import GenericConfigs from "./GenericConfigs"
-import generateGUID from "../GUID"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 export default class Calculation_LookupTable extends UITemplate {
@@ -13,7 +12,6 @@ export default class Calculation_LookupTable extends UITemplate {
     static outputTypes = [ `float` ]
     static inputTypes = [ `float` ]
     static template = `<div data-element="dialog"></div>`
-    GUID = generateGUID()
 
     dialog = new UIDialog({ buttonLabel: `Edit Table`, })
     table = new UITableWithUnit({
@@ -173,17 +171,14 @@ export default class Calculation_LookupTable extends UITemplate {
 
     RegisterVariables() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        // if(communication.variablesToPoll.indexOf(this.parameterSelection?.value) === -1)
-        //     communication.variablesToPoll.push(this.parameterSelection?.value)
-        
-        communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
+        document.addEventListener(`communicationnewdata`, () => {
             if(this.parameterSelection?.value) { 
-                const parameterVariableId = variableMetadata?.GetVariableId(this.parameterSelection?.value)
-                if(currentVariableValues?.[parameterVariableId] != undefined) {
-                    this.table.trail(currentVariableValues[parameterVariableId])
+                const parameterVariableId = communication.variableMetadata?.GetVariableId(this.parameterSelection?.value)
+                if(communication.currentVariableValues?.[parameterVariableId] != undefined) {
+                    this.table.trail(communication.currentVariableValues[parameterVariableId])
                 } 
             }
-        }
+        })
     }
 }
 GenericConfigs.push(Calculation_LookupTable)

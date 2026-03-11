@@ -8,7 +8,7 @@ import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UIPlot from "../UI/UIPlot"
-import generateGUID from "../GUID"
+import { ConvertValueFromUnitToUnit } from "../UI/UIUnit"
 class UILoggedVariable extends HTMLTableRowElement {
     #variable
     get variable() { return this.#variable }
@@ -407,24 +407,25 @@ export default class Dashboard extends UITemplate {
         [...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
             if(variableIndex === 0)
                 return
-            variableElement.GUID ??= generateGUID();
             let option = options.find(x => (x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)) && x.disabled)
             if(option?.group && option?.options)
                 option = option.options.find(x => match(x?.value, variableElement.variable) && x.disabled)
 
             if(!option) {
                 variableElement.hidden = true
-                communication.liveUpdateEvents[variableElement.GUID] = undefined;
             } else {
                 variableElement.hidden = false
                 if(communication.variablesToPoll.indexOf(option.value) === -1)
                     communication.variablesToPoll.push(option.value)
-                communication.liveUpdateEvents[variableElement.GUID] = (variableMetadata, currentVariableValues) => {
-                    const variableId = variableMetadata?.GetVariableId(option.value)
-                    if(currentVariableValues?.[variableId] !== undefined) {
-                        variableElement.value = currentVariableValues[variableId]
+                document.addEventListener(`communicationnewdata`, () => {
+                    const variable = communication.variableMetadata?.GetVariableByReference(option.value)
+                    if(communication.currentVariableValues?.[variable?.id] !== undefined) {
+                        const value = communication.currentVariableValues[variable.id]
+                        const convertedValue = ConvertValueFromUnitToUnit(value, variable.unit, variableElement.unit)
+                        console.log(variable, value, variable.unit, variableElement.unit, convertedValue)
+                        variableElement.value = convertedValue ?? value
                     }
-                }
+                })
             }
         });
         [...this.elements.children].forEach(x => x.RegisterVariables?.());

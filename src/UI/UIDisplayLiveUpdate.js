@@ -1,9 +1,7 @@
 import UIDisplayNumberWithUnit from "./UIDisplayNumberWithUnit"
 import { GetMeasurementNameFromUnitName } from "./UIUnit"
-import generateGUID from "../GUID"
 import { communication } from "../communication"
 export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
-    GUID = generateGUID()
     get superHidden() { return super.hidden }
     set superHidden(hidden) { super.hidden = hidden }
     get hidden() { return this._stickyHidden }
@@ -18,14 +16,13 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
         if(!variable?.unit && variable?.type?.split(`|`)?.indexOf(`float`) === -1) return
         this.measurement = GetMeasurementNameFromUnitName(variable.unit)
         this.valueUnit = variable.unit
-        // if(communication.variablesToPoll.indexOf(reference) === -1)
-        //     communication.variablesToPoll.push(reference)
-        communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
+
+        document.addEventListener(`communicationnewdata`, () => {
             if(reference) { 
-                const variableId = variableMetadata?.GetVariableId(reference)
-                if(currentVariableValues?.[variableId] !== undefined) {
+                const variableId = communication.variableMetadata?.GetVariableId(reference)
+                if(communication.currentVariableValues?.[variableId] !== undefined) {
                     this.superHidden = false
-                    this.value = currentVariableValues[variableId]
+                    this.value = communication.currentVariableValues[variableId]
                     if(!this.superHidden) {
                         if(this.superHidden)
                         this.superHidden = false
@@ -41,7 +38,7 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
                     this.superHidden = true
                 }
             }
-        }
+        })
     }
 
     constructor(prop) {

@@ -5,7 +5,6 @@ import UITableWithUnit from "../UI/UITableWithUnit"
 import UIParameterWithUnit from "../UI/UIParameterWithUnit"
 import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import GenericConfigs from "./GenericConfigs"
-import generateGUID from "../GUID"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 export default class Calculation_2AxisTable extends UITemplate {
@@ -13,7 +12,6 @@ export default class Calculation_2AxisTable extends UITemplate {
     static outputTypes = [ `float` ]
     static inputTypes = [ `float`, `float` ]
     static template = `<div data-element="dialog"></div>`
-    GUID = generateGUID()
 
     dialog = new UIDialog({ buttonLabel: `Edit Table` })
     table = new UITableWithUnit({
@@ -235,19 +233,15 @@ export default class Calculation_2AxisTable extends UITemplate {
     RegisterVariables() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
         this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        // if(communication.variablesToPoll.indexOf(this.XSelection?.value) === -1)
-        //     communication.variablesToPoll.push(this.XSelection?.value)
-        // if(communication.variablesToPoll.indexOf(this.YSelection?.value) === -1)
-        //     communication.variablesToPoll.push(this.YSelection?.value)
-        communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
+        document.addEventListener(`communicationnewdata`, () => {
             if(this.XSelection?.value && this.YSelection?.value) { 
-                const xVariableId = variableMetadata?.GetVariableId(this.XSelection?.value)
-                const yVariableId = variableMetadata?.GetVariableId(this.YSelection?.value)
-                if(currentVariableValues?.[xVariableId] != undefined && currentVariableValues[yVariableId] != undefined) {
-                    this.table.trail(currentVariableValues[xVariableId], currentVariableValues[yVariableId])
+                const xVariableId = communication.variableMetadata?.GetVariableId(this.XSelection?.value)
+                const yVariableId = communication.variableMetadata?.GetVariableId(this.YSelection?.value)
+                if(communication.currentVariableValues?.[xVariableId] != undefined && communication.currentVariableValues[yVariableId] != undefined) {
+                    this.table.trail(communication.currentVariableValues[xVariableId], communication.currentVariableValues[yVariableId])
                 } 
             }
-        }
+        })
     }
 }
 GenericConfigs.push(Calculation_2AxisTable)

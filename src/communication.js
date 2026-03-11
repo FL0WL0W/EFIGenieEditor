@@ -336,13 +336,12 @@ class EFIGenieCommunication extends EFIGenieLog {
         //need to save this date and recall it when loading saveValue
         this.startedLoggingTime = Date.now()
         super.saveValue = saveValue
-        const thisClass = this
-        let u = async function() { thisClass.updateLiveUpdateEvents() }
-        u()
+        this.currentVariableValues = this.loggedVariableValues.length > 0? this.loggedVariableValues[this.loggedVariableValues.length - 1] : {}
+        document.dispatchEvent(new Event(`communicationnewdata`))
     }
 
     variablesToPoll = []
-    liveUpdateEvents = []
+    currentVariableValues = {}
 
     async pollVariableMetadata() {
         if(this.variableMetadata != undefined)
@@ -430,15 +429,8 @@ class EFIGenieCommunication extends EFIGenieLog {
         this.logBytes = this.logBytes.concatArray(bytes)
         this.loggedVariableValues.push(variableValues)
 
-        const thisClass = this
-        let u = async function() { thisClass.updateLiveUpdateEvents() }
-        u()
-    }
-
-    updateLiveUpdateEvents() {
-        Object.entries(this.liveUpdateEvents).filter(function(value, index, self) { return self.indexOf(value) === index }).forEach(([elementname, element]) => {
-            element?.(this.variableMetadata, this.loggedVariableValues[this.loggedVariableValues.length - 1])
-        })
+        this.currentVariableValues = this.loggedVariableValues.length > 0? this.loggedVariableValues[this.loggedVariableValues.length - 1] : {}
+        document.dispatchEvent(new Event(`communicationnewdata`))
     }
 
     async #sendCommandAndWaitForAck(data, commandName) {
@@ -512,8 +504,8 @@ class EFIGenieCommunication extends EFIGenieLog {
             thisClass.polling = false
             thisClass.connected = false
             thisClass.connectionError = true;
-            let u = async function() { thisClass.updateLiveUpdateEvents() }
-            u()
+            thisClass.currentVariableValues = thisClass.loggedVariableValues.length > 0? thisClass.loggedVariableValues[thisClass.loggedVariableValues.length - 1] : {}
+            document.dispatchEvent(new Event(`communicationnewdata`))
         })
     }
     async disconnect() {

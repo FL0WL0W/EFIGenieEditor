@@ -1,6 +1,5 @@
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UITemplate from "../JavascriptUI/UITemplate"
-import generateGUID from "../GUID"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 import ConfigList from "../Top/ConfigList"
@@ -145,7 +144,6 @@ export default class UIPlot extends UITemplate {
         this.Setup(prop)
     }
 
-    GUID = generateGUID()
     RegisterVariables() {
         this.variablesToPlot.RegisterVariables()
 
@@ -158,9 +156,9 @@ export default class UIPlot extends UITemplate {
             return reference;
         })
 
-        communication.liveUpdateEvents[this.GUID] = (variableMetadata, currentVariableValues) => {
+        document.addEventListener(`communicationnewdata`, () => {
             const data = references.map((reference, idx) => {
-                const variableId = variableMetadata?.GetVariableId(reference)
+                const variableId = communication.variableMetadata?.GetVariableId(reference)
                 if(reference) {
                     if(reference.name === `CurrentTick`) {
                         const UINT32_MAX = 0xFFFFFFFF
@@ -172,7 +170,7 @@ export default class UIPlot extends UITemplate {
                 }
             })
             this.plot.setData(data);
-        }
+        })
     }
 }
 customElements.define(`ui-plot`, UIPlot, { extends: `span` })
