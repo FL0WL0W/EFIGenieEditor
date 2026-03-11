@@ -225,9 +225,8 @@ export default class ConfigList extends HTMLDivElement {
 
             // position menu near the hamburger
             const hamburgerOnLeft = [...thisClass.querySelectorAll('.itemContainer .configContainer .controlcontainer .controlhamburger')].indexOf(this) !== -1
-            const rect = this.getBoundingClientRect()
-            const top =  this.clientHeight / 2 - menu.clientHeight / 2
-            const left = hamburgerOnLeft? this.clientWidth : -menu.clientWidth
+            const top =  this.offsetHeight / 2 - menu.offsetHeight / 2
+            const left = hamburgerOnLeft? this.offsetWidth : -menu.offsetWidth
             menu.style.left = `${left}px`
             menu.style.top = `${top}px`
             const hamburger = this;

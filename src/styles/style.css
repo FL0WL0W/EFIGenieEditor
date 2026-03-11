@@ -320,16 +320,22 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .hamburger-menu {
     border-radius: 6px;
-    padding-left: 0.5em;
-    padding-right: 0.5em;
     cursor: default;
     position: absolute;
-    background-color: #666;
+    background-color: #222629;
+    border: #666 solid 2px;
     overflow-y: auto;
     white-space: normal;
     z-index: 10000;
     white-space: nowrap;
     width: fit-content;
+}
+.hamburger-menu div {
+    padding-left: 0.5em;
+    padding-right: 0.5em;
+}
+.hamburger-menu div:hover {
+    background-color: #666;
 }
 .hamburger-menu-delete::after {
     content: "🗑 Delete";
