@@ -54,8 +54,19 @@ export default class TopEngine extends Top {
         this.Setup(prop)
     }
 
-    get saveValue() { return super.saveValue }
+    get saveValue() {
+        const sv = super.saveValue
+        const enums = window.EnumRegister?.saveValue
+        if(enums != null) sv.enums = enums
+        return sv
+    }
     set saveValue(saveValue) {
+        // Restore enum definitions before components re-register variables so
+        // that enum-typed CAN parse entries resolve correctly on load.
+        if(saveValue?.enums !== undefined)
+            window.EnumRegister.saveValue = saveValue.enums
+        else
+            window.EnumRegister.saveValue = {}
         super.saveValue = saveValue
         this.RegisterVariables()
     }

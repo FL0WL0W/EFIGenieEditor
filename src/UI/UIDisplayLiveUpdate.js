@@ -13,16 +13,36 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
     RegisterVariables(reference) {
         let variable = VariableRegister.GetVariableByReference(reference)
         variable ??= reference
-        if(!variable?.unit && variable?.type?.split(`|`)?.indexOf(`float`) === -1) return
-        this.measurement = GetMeasurementNameFromUnitName(variable.unit)
-        this.valueUnit = variable.unit
+
+        // Determine if this variable carries a user-defined enum type.
+        // type === 'enum' is the flag; the specific enum name lives in unit.
+        const enumType = variable?.type === `enum` ? variable.unit : undefined
+
+        if(enumType) {
+            // Enum variable: display the label string, not a numeric value.
+            this._enumType = enumType
+            this.displayUnitElement.hidden = true
+        } else {
+            // Standard float / bool path.
+            if(!variable?.unit && variable?.type?.split(`|`)?.indexOf(`float`) === -1) return
+            this._enumType = undefined
+            this.measurement = GetMeasurementNameFromUnitName(variable.unit)
+            this.valueUnit = variable.unit
+        }
 
         document.addEventListener(`communicationnewdata`, () => {
             if(reference) { 
                 const variableId = communication.variableMetadata?.GetVariableId(reference)
                 if(communication.currentVariableValues?.[variableId] !== undefined) {
                     this.superHidden = false
-                    this.value = communication.currentVariableValues[variableId]
+                    if(this._enumType) {
+                        // Show the human-readable label instead of the raw integer.
+                        const raw = communication.currentVariableValues[variableId]
+                        this.displayElement.textContent = window.EnumRegister.labelForValue(this._enumType, raw) ?? String(raw)
+                        this.displayUnitElement.hidden = true
+                    } else {
+                        this.value = communication.currentVariableValues[variableId]
+                    }
                     if(!this.superHidden) {
                         if(this.superHidden)
                         this.superHidden = false

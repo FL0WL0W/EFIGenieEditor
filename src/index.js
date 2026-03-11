@@ -40,6 +40,9 @@ import "./Pinouts/PinoutPurple_Pill_W806.js"
 import VariableRegistry from "./VariableRegistry.js"
 window.VariableRegister = new VariableRegistry()
 
+import EnumRegistry from "./EnumRegistry.js"
+window.EnumRegister = new EnumRegistry()
+
 import buildConfig from "./buildConfig.js"
 
 import UIDisplayLiveUpdate from "./UI/UIDisplayLiveUpdate.js"

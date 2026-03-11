@@ -47,10 +47,17 @@ export default class CAN_ParseData extends UITemplate {
             this.bitLength.max = 64-this.bitLocation.value
         })
         this.bitLength.addEventListener(`change`, () => {
-            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.unit.hidden = this.bitLength.value < 2
+            const isEnum = window.EnumRegister?.isEnum(this.unit.value)
+            this.unit.hidden = this.bitLength.value < 2
+            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2 || isEnum
         })
         this.unit.addEventListener(`change`, () => {
-            this.liveUpdate.valueUnit = this.bitLength.value < 2? undefined : this.unit.value
+            const isEnum = window.EnumRegister?.isEnum(this.unit.value)
+            // Multiplier/adder are meaningless for enum types
+            if(this.bitLength.value >= 2)
+                this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = isEnum
+            // valueUnit only applies to scalar (non-enum) units
+            this.liveUpdate.valueUnit = (this.bitLength.value < 2 || isEnum) ? undefined : this.unit.value
         })
         this.Setup(prop)
     }
@@ -58,12 +65,19 @@ export default class CAN_ParseData extends UITemplate {
     RegisterVariables(reference) {
         reference = { ...reference, name: `${reference.name}.${this.name.value}` }
 
-        reference.unit = this.unit.value ?? reference.unit
-        if(reference.unit && this.bitLength.value > 1) {
-            delete reference.type
+        const selectedUnit = this.unit.value
+        if(window.EnumRegister?.isEnum(selectedUnit) && this.bitLength.value > 1) {
+            // Enum type: enum name stored as unit, type is the literal string 'enum'.
+            reference.unit = selectedUnit
+            reference.type = `enum`
         } else {
-            delete reference.unit
-            reference.type = this.bitLength.value < 2? `bool` : `float`
+            reference.unit = selectedUnit ?? reference.unit
+            if(reference.unit && this.bitLength.value > 1) {
+                delete reference.type
+            } else {
+                delete reference.unit
+                reference.type = this.bitLength.value < 2? `bool` : `float`
+            }
         }
 
         VariableRegister.RegisterVariable(reference)

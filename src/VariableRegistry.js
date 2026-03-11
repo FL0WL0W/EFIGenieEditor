@@ -214,12 +214,15 @@ export function defaultFilter(outputUnits, outputTypes, inputTypes, inputUnits) 
             if(inputTypes?.length || inputUnits?.length) return false
             if(outputUnits?.[0] != undefined) {
                 if(outputUnits.length !== 1) return false
+                // Each enum is its own measurement group so a simple group equality check is enough
                 if(GetMeasurementNameFromUnitName(calcOrVar.unit) !== GetMeasurementNameFromUnitName(outputUnits[0])) return false
             } else if(outputTypes?.[0] != undefined){
                 if(outputTypes.length !== 1) return false
                 if(calcOrVar.unit == undefined && calcOrVar.type == undefined ) return false
-                if(calcOrVar.unit != undefined && outputTypes[0].split(`|`).indexOf(`float`) === -1) return false
-                if(calcOrVar.type != undefined && !outputTypes[0].split(`|`).some(t => calcOrVar.type.split(`|`).indexOf(t) !== -1)) return false
+                // Enum variables have a unit (the enum name) but are NOT floats — check by type.
+                if(calcOrVar.type === `enum` && outputTypes[0].split(`|`).indexOf(`enum`) === -1) return false
+                if(calcOrVar.type !== `enum` && calcOrVar.unit != undefined && outputTypes[0].split(`|`).indexOf(`float`) === -1) return false
+                if(calcOrVar.type != undefined && calcOrVar.type !== `enum` && !outputTypes[0].split(`|`).some(t => calcOrVar.type.split(`|`).indexOf(t) !== -1)) return false
             }
             return true
         }

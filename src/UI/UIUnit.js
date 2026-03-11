@@ -78,6 +78,8 @@ export function GetMeasurementNameFromUnitName(unit){
                 return measurementName
         }
     }
+    // Each user-defined enum is its own measurement, named after itself
+    if(window.EnumRegister?.isEnum(unit)) return unit
     return `None`
 }
 
@@ -95,6 +97,8 @@ export function ConvertValueFromUnitToUnit(value, fromUnit, toUnit) {
 
 function GetDefaultUnitFromMeasurement(measurement) {
     if(Array.isArray(measurement)) measurement = measurement[0]
+    // For an enum measurement the enum name itself is the sole "unit" value
+    if(window.EnumRegister?.isEnum(measurement)) return measurement
     return Measurements[measurement]?.[0]?.name
 }
 
@@ -107,6 +111,13 @@ export default class UIUnit extends UISelection {
 
         return { group: measurement, options: Measurements[measurement]?.map(unit => { return { selectedName: unit.name, name: `${unit.name}`, value: unit.name } }) } 
     })
+
+    /** Dynamically generated option entries for all registered user enum types.
+     *  Each enum is its own top-level option (no sub-units to choose from). */
+    static get enumOptions() {
+        if (!window.EnumRegister?.names?.length) return []
+        return window.EnumRegister.names.map(name => ({ name, value: name }))
+    }
 
     _hidden = false
     get hidden() { return this._hidden }
@@ -125,28 +136,41 @@ export default class UIUnit extends UISelection {
     get measurement() { return Array.isArray(this._measurement)? this._measurement.find(x => x === GetMeasurementNameFromUnitName(this.value)) : this._measurement }
     set measurement(measurement){
         if(objectTester(this._measurement, measurement)) return
+        this._measurement = measurement
+        this.refreshOptions()
+        this.dispatchEvent(new Event(`change`, {bubbles: true}))
+    }
+
+    refreshOptions() {
+        let measurement = this._measurement
         if(!measurement) {
-            this.options = UIUnit.allMeasurementOptions
-            this.default = ``
+            this.options = [...UIUnit.allMeasurementOptions, ...UIUnit.enumOptions]
         } else {
-            this._measurement = measurement
-            if(GetMeasurementNameFromUnitName(this.default) !== measurement)
-                this.default = GetDefaultUnitFromMeasurement(measurement)
-            if(!Array.isArray(measurement))
-                measurement = [measurement]
-            measurement = measurement.filter((value, index, array) => { return array.indexOf(value) === index });
-            if(measurement.length > 1)
-                this.options = UIUnit.allMeasurementOptions.filter(x => measurement.indexOf(x.group) !== -1 || measurement.some(y=>x.name?.indexOf(y) === 0))
-                    .map(x=> x.group? { group: x.group, options: x.options.map(y=> { return { ...y, selectedName: undefined} } ) } : { ...x, selectedName: x.value === ``? x.selectedName : x.value } )
-            else
-                this.options = Measurements[measurement[0]]?.map(unit => { return { name: unit.name, value: unit.name } })
-            if(this.selectedOption == undefined)
-                this.value = this.default
+            // ── User-defined enum: the enum name is measurement and sole value ──\
+            if(!Array.isArray(measurement) && window.EnumRegister?.isEnum(measurement)) {
+                this.default = measurement
+                this.options = [{ name: measurement, value: measurement }]
+                if(this.selectedOption == undefined)
+                    this.value = this.default
+            } else {
+                // ── Physical unit measurement ───────────────────────────────────
+                if(GetMeasurementNameFromUnitName(this.default) !== measurement)
+                    this.default = GetDefaultUnitFromMeasurement(measurement)
+                if(!Array.isArray(measurement))
+                    measurement = [measurement]
+                measurement = measurement.filter((value, index, array) => { return array.indexOf(value) === index });
+                if(measurement.length > 1)
+                    this.options = UIUnit.allMeasurementOptions.filter(x => measurement.indexOf(x.group) !== -1 || measurement.some(y=>x.name?.indexOf(y) === 0))
+                        .map(x=> x.group? { group: x.group, options: x.options.map(y=> { return { ...y, selectedName: undefined} } ) } : { ...x, selectedName: x.value === ``? x.selectedName : x.value } )
+                else
+                    this.options = Measurements[measurement[0]]?.map(unit => { return { name: unit.name, value: unit.name } })
+                if(this.selectedOption == undefined)
+                    this.value = this.default
+            }
         }
         if(this.value == undefined || this.value === `` || this.value === null) this.value = this.default
         if(this.options.length === 0) super.hidden = true
         else if(!this.hidden) super.hidden = false
-        this.dispatchEvent(new Event(`change`, {bubbles: true}))
     }
 
     get saveValue() {
@@ -160,11 +184,14 @@ export default class UIUnit extends UISelection {
 
     constructor(prop) {
         prop ??= {}
-        prop.options ??= UIUnit.allMeasurementOptions
+        prop.options ??= [...UIUnit.allMeasurementOptions, ...UIUnit.enumOptions]
         super(prop)
         if(prop?.measurement || prop?.value) this.default = this.value
         this.class = `ui unit`
         this.selectHidden = true
+        window.EnumRegister?.addEventListener(`change`, () => {
+            this.refreshOptions()
+        })
     }
 }
 customElements.define(`ui-unit`, UIUnit, { extends: `div` })
