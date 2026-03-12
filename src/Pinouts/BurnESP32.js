@@ -1,11 +1,11 @@
-import pako from "pako"
+import { gzip } from "pako"
 
 export async function BurnESP32(cfg, type){
     const saveValue = JSON.stringify(cfg.saveValue)
     const bin = buildConfig({ ...cfg.value, type: type })
 
     //save config to ESP32
-    const compressedData = pako.gzip(new TextEncoder().encode(saveValue))
+    const compressedData = gzip(new TextEncoder().encode(saveValue))
     let xhr = new XMLHttpRequest()
     xhr.open(`POST`, `/upload/config.json.gz`, true)
     xhr.setRequestHeader(`Content-Type`, `application/octet-stream`) // Indicating raw binary data

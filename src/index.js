@@ -119,7 +119,6 @@ import TopEngine from "./Top/TopEngine.js"
 
 import TPS_Linear from "./TPS/TPS_Linear.js"
 
-import pako from "pako"
 import { communication, Serial, EFIGenieCommunication } from "./communication.js"
 import FileBrowser from "./Top/FileBrowser.js"
 

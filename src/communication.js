@@ -1,4 +1,4 @@
-import pako from "pako"
+import { gzip, ungzip } from "pako"
 import VariableRegistry from "./VariableRegistry"
 
 async function waitForFunctionToReturnFalse(f, timeout = 1000) {
@@ -293,7 +293,7 @@ class EFIGenieLog extends EventTarget {
     loggedVariableValues = []
 
     get saveValue() {
-        let objectArray = pako.gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.GetVariableReferenceList()))).buffer
+        let objectArray = gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.GetVariableReferenceList()))).buffer
         return (new Uint32Array([objectArray.byteLength]).buffer)
             .concatArray(objectArray)
             .concatArray(new Uint32Array([this.loggedVariableIds.length]).buffer)
@@ -302,7 +302,7 @@ class EFIGenieLog extends EventTarget {
     }
     set saveValue(saveValue) {
         const variableMetadataLength = new Uint32Array(saveValue.slice(0, 4))[0]
-        this.variableMetadata = new VariableRegistry(JSON.parse(pako.ungzip(new Uint8Array(saveValue.slice(4, variableMetadataLength + 4)), { to: 'string' })))
+        this.variableMetadata = new VariableRegistry(JSON.parse(ungzip(new Uint8Array(saveValue.slice(4, variableMetadataLength + 4)), { to: 'string' })))
         const loggedVariableIdsLength = new Uint32Array(saveValue.slice(variableMetadataLength + 4, variableMetadataLength + 8))[0]
         this.loggedVariableIds = [ ...(new Uint32Array(saveValue.slice(variableMetadataLength + 8, variableMetadataLength + 8 + loggedVariableIdsLength * 4))) ]
         this.logBytes = saveValue.slice(variableMetadataLength + 8 + loggedVariableIdsLength * 4)
@@ -377,7 +377,7 @@ class EFIGenieCommunication extends EFIGenieLog {
             
         length = new Uint32Array(metadataData.slice(0,4))[0]
         metadataData = metadataData.slice(4, length + 4)
-        const metadataString = pako.ungzip(new Uint8Array(metadataData), { to: 'string' })
+        const metadataString = ungzip(new Uint8Array(metadataData), { to: 'string' })
 
         this.variableMetadata = new VariableRegistry(JSON.parse(metadataString))
         b.RegisterVariables()
