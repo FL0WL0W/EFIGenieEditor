@@ -514,7 +514,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         }).catch(function(e) {
             console.log(e)
             thisClass.variableMetadata.Clear()
-            this.variableMetadataValid = false
+            thisClass.variableMetadataValid = false
             thisClass.polling = false
             thisClass.connected = false
             thisClass.connectionError = true;
