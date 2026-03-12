@@ -41,6 +41,7 @@ export default class VariableRegistry extends EventTarget {
                 return
             delete this[elementname]
         })
+        this.dispatchEvent(new Event(`change`))
     }
     GenerateVariableId() {
         this.VariableIncrement ??= 0
