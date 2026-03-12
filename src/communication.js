@@ -286,7 +286,7 @@ function parseVariable(arrayBuffer) {
     }
 }
 
-class EFIGenieLog { 
+class EFIGenieLog extends EventTarget { 
     variableMetadata = undefined
     logBytes = new ArrayBuffer()
     loggedVariableIds = []
@@ -336,12 +336,21 @@ class EFIGenieCommunication extends EFIGenieLog {
         //need to save this date and recall it when loading saveValue
         this.startedLoggingTime = Date.now()
         super.saveValue = saveValue
-        this.currentVariableValues = this.loggedVariableValues.length > 0? this.loggedVariableValues[this.loggedVariableValues.length - 1] : {}
-        document.dispatchEvent(new Event(`communicationnewdata`))
+        this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
     }
 
     variablesToPoll = []
-    currentVariableValues = {}
+
+    get #changeDetail() {
+        return {
+            currentVariableValues: this.loggedVariableValues.length > 0? this.loggedVariableValues[this.loggedVariableValues.length - 1] : {},
+            variableMetadata: this.variableMetadata,
+            loggedVariableValues: this.loggedVariableValues,
+            startedLoggingTime: this.startedLoggingTime,
+            connectionError: this.connectionError,
+            connected: this.connected
+        }
+    }
 
     async pollVariableMetadata() {
         if(this.variableMetadata != undefined)
@@ -383,8 +392,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         const currentTickId = this.variableMetadata.GetVariableId({name: `CurrentTick`, type: `tick`})
         if(currentTickId)
             variableIds.push(currentTickId)
-        for (let variableReference in this.variablesToPoll) {
-            const variableId = this.variableMetadata.GetVariableId(this.variablesToPoll[variableReference])
+        for (let variableId in this.variablesToPoll) {
             if(variableId != undefined && variableIds.indexOf(variableId) === -1)
                 variableIds.push(variableId)
         }
@@ -429,8 +437,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         this.logBytes = this.logBytes.concatArray(bytes)
         this.loggedVariableValues.push(variableValues)
 
-        this.currentVariableValues = this.loggedVariableValues.length > 0? this.loggedVariableValues[this.loggedVariableValues.length - 1] : {}
-        document.dispatchEvent(new Event(`communicationnewdata`))
+        this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
     }
 
     async #sendCommandAndWaitForAck(data, commandName) {
@@ -504,15 +511,14 @@ class EFIGenieCommunication extends EFIGenieLog {
             thisClass.polling = false
             thisClass.connected = false
             thisClass.connectionError = true;
-            thisClass.currentVariableValues = thisClass.loggedVariableValues.length > 0? thisClass.loggedVariableValues[thisClass.loggedVariableValues.length - 1] : {}
-            document.dispatchEvent(new Event(`communicationnewdata`))
+            thisClass.dispatchEvent(new CustomEvent(`change`, { detail: thisClass.#changeDetail }))
         })
     }
     async disconnect() {
         this.connected = false
         const thisClass = this
         await waitForFunctionToReturnFalse(function() { return thisClass.polling || thisClass.connected })
-        
+        thisClass.dispatchEvent(new CustomEvent(`change`, { detail: thisClass.#changeDetail }))
     }
 }
 

@@ -11,6 +11,7 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
     }
 
     RegisterVariables(reference) {
+        this.reference = reference
         let variable = VariableRegister.GetVariableByReference(reference)
         variable ??= reference
 
@@ -29,19 +30,25 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
             this.measurement = GetMeasurementNameFromUnitName(variable.unit)
             this.valueUnit = variable.unit
         }
+    }
 
-        document.addEventListener(`communicationnewdata`, () => {
-            if(reference) { 
-                const variableId = communication.variableMetadata?.GetVariableId(reference)
-                if(communication.currentVariableValues?.[variableId] !== undefined) {
+    constructor(prop) {
+        super(prop ?? {})
+        this.superHidden = true
+        this.displayElement.class = `livevalue`
+
+        communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
+            if(this.reference) { 
+                const variableId = variableMetadata?.GetVariableId(this.reference)
+                if(currentVariableValues?.[variableId] !== undefined) {
                     this.superHidden = false
                     if(this._enumType) {
                         // Show the human-readable label instead of the raw integer.
-                        const raw = communication.currentVariableValues[variableId]
+                        const raw = currentVariableValues[variableId]
                         this.displayElement.textContent = window.EnumRegister.labelForValue(this._enumType, raw) ?? String(raw)
                         this.displayUnitElement.hidden = true
                     } else {
-                        this.value = communication.currentVariableValues[variableId]
+                        this.value = currentVariableValues[variableId]
                     }
                     if(!this.superHidden) {
                         if(this.superHidden)
@@ -59,12 +66,6 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
                 }
             }
         })
-    }
-
-    constructor(prop) {
-        super(prop ?? {})
-        this.superHidden = true
-        this.displayElement.class = `livevalue`
     }
 }
 customElements.define(`ui-displayliveupdate`, UIDisplayLiveUpdate, { extends: `span` })

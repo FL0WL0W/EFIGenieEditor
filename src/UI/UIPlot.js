@@ -142,35 +142,30 @@ export default class UIPlot extends UITemplate {
         })
 
         this.Setup(prop)
-    }
-
-    RegisterVariables() {
-        this.variablesToPlot.RegisterVariables()
-
-        const displayUnits = [ undefined, ...[...this.variablesToPlot.children].map(x => x.variable.displayUnit)]
-        const references = [ { name: `CurrentTick` }, ...[...this.variablesToPlot.children].map(x => x.variable.value) ].map( reference => {
-            if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-            // if(communication.variablesToPoll.indexOf(reference) === -1)
-            //     communication.variablesToPoll.push(reference)
-
-            return reference;
-        })
-
-        document.addEventListener(`communicationnewdata`, () => {
+        communication.addEventListener(`change`, ({ detail: { variableMetadata, loggedVariableValues, startedLoggingTime } }) => {
+            const displayUnits = [ undefined, ...[...this.variablesToPlot.children].map(x => x.variable.displayUnit)]
+            const references = [ { name: `CurrentTick` }, ...[...this.variablesToPlot.children].map(x => x.variable.value) ].map( reference => {
+                if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
+                return reference;
+            })
             const data = references.map((reference, idx) => {
-                const variableId = communication.variableMetadata?.GetVariableId(reference)
+                const variableId = variableMetadata?.GetVariableId(reference)
                 if(reference) {
                     if(reference.name === `CurrentTick`) {
                         const UINT32_MAX = 0xFFFFFFFF
-                        const ticks = communication.loggedVariableValues.map(x => x[variableId] / 1000)
+                        const ticks = loggedVariableValues.map(x => x[variableId] / 1000)
                         let previousTick = 0
-                        return ticks.map((tick, idx) => communication.startedLoggingTime + (previousTick += (idx > 0? (tick - ticks[idx - 1] + (tick > ticks[idx-1]? 0 : UINT32_MAX)) : 0)))
+                        return ticks.map((tick, idx) => startedLoggingTime + (previousTick += (idx > 0? (tick - ticks[idx - 1] + (tick > ticks[idx-1]? 0 : UINT32_MAX)) : 0)))
                     }
-                    return communication.loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], reference.unit, displayUnits[idx]))
+                    return loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], reference.unit, displayUnits[idx]))
                 }
             })
             this.plot.setData(data);
         })
+    }
+
+    RegisterVariables() {
+        this.variablesToPlot.RegisterVariables()
     }
 }
 customElements.define(`ui-plot`, UIPlot, { extends: `span` })

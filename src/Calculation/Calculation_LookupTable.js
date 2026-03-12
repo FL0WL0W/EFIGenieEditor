@@ -37,6 +37,14 @@ export default class Calculation_LookupTable extends UITemplate {
         this.noParameterSelection = false
         this.label = `Value`
         this.Setup(prop)
+        communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
+            if(this.parameterSelection?.value) { 
+                const parameterVariableId = variableMetadata?.GetVariableId(this.parameterSelection?.value)
+                if(currentVariableValues?.[parameterVariableId] != undefined) {
+                    this.table.trail(currentVariableValues[parameterVariableId])
+                } 
+            }
+        })
     }
 
     get label() { return this.table.zLabel }
@@ -171,14 +179,6 @@ export default class Calculation_LookupTable extends UITemplate {
 
     RegisterVariables() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        document.addEventListener(`communicationnewdata`, () => {
-            if(this.parameterSelection?.value) { 
-                const parameterVariableId = communication.variableMetadata?.GetVariableId(this.parameterSelection?.value)
-                if(communication.currentVariableValues?.[parameterVariableId] != undefined) {
-                    this.table.trail(communication.currentVariableValues[parameterVariableId])
-                } 
-            }
-        })
     }
 }
 GenericConfigs.push(Calculation_LookupTable)

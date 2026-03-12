@@ -9,6 +9,7 @@ import { communication } from "../communication"
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UIPlot from "../UI/UIPlot"
 import { ConvertValueFromUnitToUnit } from "../UI/UIUnit"
+
 class UILoggedVariable extends HTMLTableRowElement {
     #variable
     get variable() { return this.#variable }
@@ -140,9 +141,8 @@ export default class Dashboard extends UITemplate {
         this.loggedVariableVariableSelectionDialog.content.appendChild(this.loggedVariableVariableSelection.contextMenuElement).class = `openned`
         this.loggedVariableVariableSelection.addEventListener(`change`, () => {
             this.loggedVariables.saveValue = [ ...this.loggedVariables.saveValue,  { ...this.loggedVariableVariableSelection.value, refreshRate: 60 } ]
-            this.RegisterVariables();
+            this.UpdateOptions();
         })
-        this.RegisterVariables()
         Object.defineProperty(this.elements, 'saveValue', {
             get: function() { return [...this.children].map(x => {return {
                 ...x.saveValue, 
@@ -194,7 +194,8 @@ export default class Dashboard extends UITemplate {
                 const selectedRow = this.loggedVariables.querySelector(`.selected`)
                 if(!selectedRow) return
                 this.loggedVariables.removeChild(selectedRow)
-                this.RegisterVariables()
+                communication.variablesToPoll = []
+                this.UpdateOptions();
             }
         })
         Object.defineProperty(this.loggedVariables, 'saveValue', {
@@ -215,7 +216,7 @@ export default class Dashboard extends UITemplate {
                         btnDelete.addEventListener(`click`, event => {
                             this.removeChild(row)
                             communication.variablesToPoll = []
-                            thisClass.RegisterVariables()
+                            this.UpdateOptions();
                         })
                         row.addEventListener(`click`, event => {
                             [...this.children].forEach(child => { 
@@ -347,7 +348,24 @@ export default class Dashboard extends UITemplate {
             this.classList.add(`dragging`)
             dragdownElement(e)
         })
-        this.Setup(prop)
+        this.Setup(prop);
+
+        communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
+            [...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
+                if(variableIndex === 0)
+                    return
+                const variable = variableMetadata?.GetVariableByReference(variableElement.variable) ?? 
+                    variableMetadata?.GetVariableByReference({ ...variableElement.variable, unit: undefined, measurement: GetMeasurementNameFromUnitName(variableElement.unit) })
+                if(!variable) return
+                if(communication.variablesToPoll.indexOf(variable.id) === -1)
+                    communication.variablesToPoll.push(variable.id)
+                if(currentVariableValues?.[variable.id] !== undefined) {
+                    const value = currentVariableValues[variable.id]
+                    const convertedValue = ConvertValueFromUnitToUnit(value, variable.unit, variableElement.unit)
+                    variableElement.value = convertedValue ?? value
+                }
+            })
+        })
     }
     Setup(prop) {
         super.Setup(prop)
@@ -365,7 +383,7 @@ export default class Dashboard extends UITemplate {
         this.expandSidebar.label = ` + Logged Variables`
     }
 
-    RegisterVariables() {
+    UpdateOptions() {
         function match(a, b) {
             return  a?.name == b?.name &&
                     (a?.type == undefined || b?.type == undefined || a?.type === b?.type) &&
@@ -407,7 +425,7 @@ export default class Dashboard extends UITemplate {
         [...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
             if(variableIndex === 0)
                 return
-            let option = options.find(x => (x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)) && x.disabled)
+            let option = this.options.find(x => (x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)) && x.disabled)
             if(option?.group && option?.options)
                 option = option.options.find(x => match(x?.value, variableElement.variable) && x.disabled)
 
@@ -415,19 +433,12 @@ export default class Dashboard extends UITemplate {
                 variableElement.hidden = true
             } else {
                 variableElement.hidden = false
-                if(communication.variablesToPoll.indexOf(option.value) === -1)
-                    communication.variablesToPoll.push(option.value)
-                document.addEventListener(`communicationnewdata`, () => {
-                    const variable = communication.variableMetadata?.GetVariableByReference(option.value)
-                    if(communication.currentVariableValues?.[variable?.id] !== undefined) {
-                        const value = communication.currentVariableValues[variable.id]
-                        const convertedValue = ConvertValueFromUnitToUnit(value, variable.unit, variableElement.unit)
-                        console.log(variable, value, variable.unit, variableElement.unit, convertedValue)
-                        variableElement.value = convertedValue ?? value
-                    }
-                })
             }
-        });
+        })
+    }
+
+    RegisterVariables() {
+        this.UpdateOptions();
         [...this.elements.children].forEach(x => x.RegisterVariables?.());
     }
 }

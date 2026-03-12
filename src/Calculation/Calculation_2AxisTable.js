@@ -37,6 +37,15 @@ export default class Calculation_2AxisTable extends UITemplate {
         this.noParameterSelection = false
         this.label = `Value`
         this.Setup(prop)
+        communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
+            if(this.XSelection?.value && this.YSelection?.value) { 
+                const xVariableId = variableMetadata?.GetVariableId(this.XSelection?.value)
+                const yVariableId = variableMetadata?.GetVariableId(this.YSelection?.value)
+                if(currentVariableValues?.[xVariableId] != undefined && currentVariableValues[yVariableId] != undefined) {
+                    this.table.trail(currentVariableValues[xVariableId], currentVariableValues[yVariableId])
+                } 
+            }
+        })
     }
 
     get label() { return this.table.zLabel }
@@ -233,15 +242,6 @@ export default class Calculation_2AxisTable extends UITemplate {
     RegisterVariables() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
         this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        document.addEventListener(`communicationnewdata`, () => {
-            if(this.XSelection?.value && this.YSelection?.value) { 
-                const xVariableId = communication.variableMetadata?.GetVariableId(this.XSelection?.value)
-                const yVariableId = communication.variableMetadata?.GetVariableId(this.YSelection?.value)
-                if(communication.currentVariableValues?.[xVariableId] != undefined && communication.currentVariableValues[yVariableId] != undefined) {
-                    this.table.trail(communication.currentVariableValues[xVariableId], communication.currentVariableValues[yVariableId])
-                } 
-            }
-        })
     }
 }
 GenericConfigs.push(Calculation_2AxisTable)

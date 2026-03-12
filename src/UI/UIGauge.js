@@ -209,22 +209,19 @@ export default class UIGauge extends UITemplate {
         this.configDialog = new UIDialog({ title: `Edit Gauge` })
         this.configDialog.content.append(this.configTemplate)
         this.Setup(prop)
+        communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
+            const reference = this.configTemplate.variable.value
+            if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
+            const variableId = variableMetadata?.GetVariableId(reference)
+            if(currentVariableValues?.[variableId] !== undefined) {
+                this.value = currentVariableValues[variableId]
+            }
+        })
     }
 
     RegisterVariables() {
         let options = Dashboard.thisDashboard.options.map(x => x.group && x.options? {...x, options: x.options.map(x => { return {...x, disabled: !x.disabled}})} : {...x, disabled: !x.disabled})
         this.configTemplate.variable.options = options
-
-        const reference = this.configTemplate.variable.value
-        if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-        document.addEventListener(`communicationnewdata`, () => {
-            if(reference) { 
-                const variableId = communication.variableMetadata?.GetVariableId(reference)
-                if(communication.currentVariableValues?.[variableId] !== undefined) {
-                    this.value = communication.currentVariableValues[variableId]
-                }
-            }
-        })
     }
 }
 customElements.define(`ui-gauge`, UIGauge, { extends: `span` })

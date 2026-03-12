@@ -354,25 +354,25 @@ window.addEventListener(`load`, function() {
         btnConnect.classList.add(`connecting`)
         Pinouts[b.TargetDevice.value].Connect?.()
 
-        document.addEventListener(`communicationnewdata`, () => {
-            btnConnect.classList.remove(`connecting`)
-            if(communication.connectionError)
-            {
-                btnConnect.classList.remove(`connected`)
-                btnConnect.classList.add(`connection-error`)
-                btnConnect.value = `Connection Error`
-            }
-            else if(communication.connected)
-            {
-                btnConnect.classList.remove(`connection-error`)
-                btnConnect.classList.add(`connected`)
-                btnConnect.value = `Connected`
-            }
-            else
-            {
-                btnConnect.value = `Connection Paused`
-                btnConnect.classList.add(`connecting`)
-            }
-        })
+    })
+    communication.addEventListener(`change`, ({ detail: { connectionError, connected } }) => {
+        btnConnect.classList.remove(`connecting`)
+        if(connectionError)
+        {
+            btnConnect.classList.remove(`connected`)
+            btnConnect.classList.add(`connection-error`)
+            btnConnect.value = `Connection Error`
+        }
+        else if(connected)
+        {
+            btnConnect.classList.remove(`connection-error`)
+            btnConnect.classList.add(`connected`)
+            btnConnect.value = `Connected`
+        }
+        else
+        {
+            btnConnect.value = `Connection Paused`
+            btnConnect.classList.add(`connecting`)
+        }
     })
 })
