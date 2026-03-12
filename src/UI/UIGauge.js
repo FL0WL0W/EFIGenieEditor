@@ -10,6 +10,7 @@ import Dashboard from "../Top/Dashboard"
 import { BaseGauge } from "canvas-gauges"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
+import { throttle } from "lodash-es"
 export default class UIGauge extends UITemplate {
     static type = `gauge`
     static template = 
@@ -163,7 +164,6 @@ export default class UIGauge extends UITemplate {
                 if(pdu === this.configTemplate.highRedline.displayUnit) this.configTemplate.highRedline.displayUnit = this.displayUnit
                 if(pdu === this.configTemplate.lowRedline.displayUnit) this.configTemplate.lowRedline.displayUnit = this.displayUnit
             }
-            this.RegisterVariables()
             if(previousValueUnit !== this.valueUnit) {
                 previousValueUnit = this.valueUnit
                 this.configTemplate.min.valueUnit = this.valueUnit
@@ -185,8 +185,6 @@ export default class UIGauge extends UITemplate {
         let previousMin
         let previousMax
         this.configTemplate.addEventListener(`change`, () => {
-            this.RegisterVariables()
-
             this.configTemplate.min.step = this.configTemplate.max.step = this.configTemplate.highRedline.step = this.configTemplate.lowRedline.step = this.step
         
             if(previousMin != this.min) {
@@ -212,16 +210,17 @@ export default class UIGauge extends UITemplate {
         communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
             const reference = this.configTemplate.variable.value
             if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-            const variableId = variableMetadata?.GetVariableId(reference)
+            const variableId = variableMetadata.GetVariableId(reference)
             if(currentVariableValues?.[variableId] !== undefined) {
                 this.value = currentVariableValues[variableId]
             }
         })
+        Dashboard.thisDashboard.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        this.RefreshOptions()
     }
-
-    RegisterVariables() {
-        let options = Dashboard.thisDashboard.options.map(x => x.group && x.options? {...x, options: x.options.map(x => { return {...x, disabled: !x.disabled}})} : {...x, disabled: !x.disabled})
-        this.configTemplate.variable.options = options
+    
+    RefreshOptions() {
+        this.configTemplate.variable.options = Dashboard.thisDashboard.options.map(x => x.group && x.options? {...x, options: x.options.map(x => { return {...x, disabled: !x.disabled}})} : {...x, disabled: !x.disabled})
     }
 }
 customElements.define(`ui-gauge`, UIGauge, { extends: `span` })

@@ -7,6 +7,7 @@ import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import GenericConfigs from "./GenericConfigs"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
+import { throttle } from "lodash-es"
 export default class Calculation_2AxisTable extends UITemplate {
     static displayName = `2 Axis Table`
     static outputTypes = [ `float` ]
@@ -39,13 +40,15 @@ export default class Calculation_2AxisTable extends UITemplate {
         this.Setup(prop)
         communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
             if(this.XSelection?.value && this.YSelection?.value) { 
-                const xVariableId = variableMetadata?.GetVariableId(this.XSelection?.value)
-                const yVariableId = variableMetadata?.GetVariableId(this.YSelection?.value)
+                const xVariableId = variableMetadata.GetVariableId(this.XSelection?.value)
+                const yVariableId = variableMetadata.GetVariableId(this.YSelection?.value)
                 if(currentVariableValues?.[xVariableId] != undefined && currentVariableValues[yVariableId] != undefined) {
                     this.table.trail(currentVariableValues[xVariableId], currentVariableValues[yVariableId])
                 } 
             }
         })
+        VariableRegister.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        this.RefreshOptions()
     }
 
     get label() { return this.table.zLabel }
@@ -131,7 +134,6 @@ export default class Calculation_2AxisTable extends UITemplate {
 
         if(!this.XSelection) {
             this.XSelection = new UIParameterWithUnit({
-                options: VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ])),
                 selectHidden: true
             })
             this.XSelection.unitHidden = true
@@ -149,7 +151,6 @@ export default class Calculation_2AxisTable extends UITemplate {
         }
         if(!this.YSelection) {
             this.YSelection = new UIParameterWithUnit({
-                options: VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[1], [ `float` ])),
                 selectHidden: true
             })
             this.YSelection.unitHidden = true
@@ -165,6 +166,7 @@ export default class Calculation_2AxisTable extends UITemplate {
             if(this._inputUnits?.[1] == undefined)
                 this.yMeasurement = undefined
         }
+        this.RefreshOptions()
     }
 
     get min() { return this.table.min }
@@ -219,8 +221,7 @@ export default class Calculation_2AxisTable extends UITemplate {
     get inputUnits() { return [ this.xUnit, this.yUnit ] }
     set inputUnits(inputUnits) {
         this._inputUnits = inputUnits?.[0]
-        this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[1], [ `float` ]))
+        this.RefreshOptions()
         this.xUnit = inputUnits?.[0]
         this.yUnit = inputUnits?.[1]
         if(inputUnits?.[0] != undefined)
@@ -239,9 +240,9 @@ export default class Calculation_2AxisTable extends UITemplate {
     get displayUnits() { return [ this.displayUnit ] }
     set displayUnits(displayUnits) { this.displayUnit = displayUnits?.[0] }
 
-    RegisterVariables() {
+    RefreshOptions() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
+        this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[1], [ `float` ]))
     }
 }
 GenericConfigs.push(Calculation_2AxisTable)

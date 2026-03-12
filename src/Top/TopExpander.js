@@ -41,18 +41,11 @@ export default class TopExpander extends Top {
         this.Setup(prop)
     }
 
-    get saveValue() { return super.saveValue }
-    set saveValue(saveValue) {
-        super.saveValue = saveValue
-        this.RegisterVariables()
-    }
-
     RegisterVariables() {
         VariableRegister.Clear()
         this.Inputs.RegisterVariables()
         this.CAN.RegisterVariables({ name: `CANParameters` })
         this.Outputs.RegisterVariables({ name: `Outputs` })
-        this.Dashboard.RegisterVariables()
         this.PinOverlay.update();
     }
 }

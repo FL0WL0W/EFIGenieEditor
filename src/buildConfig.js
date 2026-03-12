@@ -1143,7 +1143,7 @@ let types = [
         buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
         buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
 
-        let bufMeta = gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.GetVariableReferenceList()))).buffer
+        let bufMeta = gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.variableReferences))).buffer
         bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
         bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
 
@@ -1171,7 +1171,7 @@ let types = [
         buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
         buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
 
-        let bufMeta = gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.GetVariableReferenceList()))).buffer
+        let bufMeta = gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.variableReferences))).buffer
         bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
         bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
 

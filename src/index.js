@@ -176,7 +176,6 @@ window.addEventListener(`load`, function() {
                             loadConfig(lastConfig)
                             return
                         }
-                        b.RegisterVariables()
                         window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
                     }
                     xhr.send()
@@ -217,7 +216,6 @@ window.addEventListener(`load`, function() {
                 loadConfig(lastConfig)
                 return
             }
-            b.RegisterVariables()
             window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
         };
         xhr.send()

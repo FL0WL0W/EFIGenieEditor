@@ -287,13 +287,14 @@ function parseVariable(arrayBuffer) {
 }
 
 class EFIGenieLog extends EventTarget { 
-    variableMetadata = undefined
+    variableMetadata = new VariableRegistry()
+    variableMetadataValid = false
     logBytes = new ArrayBuffer()
     loggedVariableIds = []
     loggedVariableValues = []
 
     get saveValue() {
-        let objectArray = gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.GetVariableReferenceList()))).buffer
+        let objectArray = gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.variableReferences))).buffer
         return (new Uint32Array([objectArray.byteLength]).buffer)
             .concatArray(objectArray)
             .concatArray(new Uint32Array([this.loggedVariableIds.length]).buffer)
@@ -302,7 +303,9 @@ class EFIGenieLog extends EventTarget {
     }
     set saveValue(saveValue) {
         const variableMetadataLength = new Uint32Array(saveValue.slice(0, 4))[0]
-        this.variableMetadata = new VariableRegistry(JSON.parse(ungzip(new Uint8Array(saveValue.slice(4, variableMetadataLength + 4)), { to: 'string' })))
+        this.variableMetadata.Clear()
+        this.variableMetadata.variableReferences = JSON.parse(ungzip(new Uint8Array(saveValue.slice(4, variableMetadataLength + 4)), { to: 'string' }))
+        this.variableMetadataValid = true
         const loggedVariableIdsLength = new Uint32Array(saveValue.slice(variableMetadataLength + 4, variableMetadataLength + 8))[0]
         this.loggedVariableIds = [ ...(new Uint32Array(saveValue.slice(variableMetadataLength + 8, variableMetadataLength + 8 + loggedVariableIdsLength * 4))) ]
         this.logBytes = saveValue.slice(variableMetadataLength + 8 + loggedVariableIdsLength * 4)
@@ -353,7 +356,7 @@ class EFIGenieCommunication extends EFIGenieLog {
     }
 
     async pollVariableMetadata() {
-        if(this.variableMetadata != undefined)
+        if(this.variableMetadataValid === true)
             return
 
         await this._serial.flush();
@@ -379,8 +382,9 @@ class EFIGenieCommunication extends EFIGenieLog {
         metadataData = metadataData.slice(4, length + 4)
         const metadataString = ungzip(new Uint8Array(metadataData), { to: 'string' })
 
-        this.variableMetadata = new VariableRegistry(JSON.parse(metadataString))
-        b.RegisterVariables()
+        this.variableMetadata.Clear()
+        this.variableMetadata.variableReferences = JSON.parse(metadataString)
+        this.variableMetadataValid = true
     }
 
     async pollVariables() {
@@ -482,7 +486,8 @@ class EFIGenieCommunication extends EFIGenieLog {
         await this.writeToAddress(configAddress, bin)
         await this.startExecution()
 
-        this.variableMetadata = undefined
+        this.variableMetadata.Clear()
+        this.variableMetadataValid = false
 
         if(reconnect)
             this.connect()
@@ -493,7 +498,8 @@ class EFIGenieCommunication extends EFIGenieLog {
             return
         this.polling = true
         if(!this.connected) {
-            this.variableMetadata = undefined
+            this.variableMetadata.Clear()
+            this.variableMetadataValid = false
             this.logBytes = new ArrayBuffer()
             this.loggedVariableValues = []
             this.startedLoggingTime = Date.now()
@@ -507,7 +513,8 @@ class EFIGenieCommunication extends EFIGenieLog {
                 thisClass.connect()
         }).catch(function(e) {
             console.log(e)
-            thisClass.variableMetadata = undefined
+            thisClass.variableMetadata.Clear()
+            this.variableMetadataValid = false
             thisClass.polling = false
             thisClass.connected = false
             thisClass.connectionError = true;

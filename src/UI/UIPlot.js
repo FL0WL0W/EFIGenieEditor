@@ -10,6 +10,7 @@ import uPlot from "uplot"
 import UIDialog from "../JavascriptUI/UIDialog"
 import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit } from "./UIUnit"
 import UIColorPicker from "./UIColorPicker"
+import { throttle } from "lodash-es"
 
 class UIPlot_Variable extends UITemplate {
     static template = `<div data-element="color"></div><div data-element="variable"></div><div data-element="min"></div><div data-element="max"></div>`
@@ -37,7 +38,6 @@ class UIPlot_Variable extends UITemplate {
                 this.min.displayUnit = this.displayUnit
                 this.max.displayUnit = this.displayUnit
             }
-            this.RegisterVariables()
             if(previousValueUnit !== this.valueUnit) {
                 previousValueUnit = this.valueUnit
                 this.min.valueUnit = this.valueUnit
@@ -52,9 +52,11 @@ class UIPlot_Variable extends UITemplate {
         })
 
         this.Setup(prop)
+        Dashboard.thisDashboard.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        this.RefreshOptions()
     }
 
-    RegisterVariables() {
+    RefreshOptions() {
         let options = Dashboard.thisDashboard.options.map(x => x.group && x.options? {...x, options: x.options.map(x => { return {...x, disabled: !x.disabled}})} : {...x, disabled: !x.disabled})
         this.variable.options = options
     }
@@ -101,7 +103,6 @@ export default class UIPlot extends UITemplate {
         })
 
         this.variablesToPlot.addEventListener(`change`, () => {
-            this.RegisterVariables()
             const newScales = [...this.variablesToPlot.children].map(uiplotvariable => {
                 return { 
                     name: `${uiplotvariable.item.variable.displayUnit}`,
@@ -149,7 +150,7 @@ export default class UIPlot extends UITemplate {
                 return reference;
             })
             const data = references.map((reference, idx) => {
-                const variableId = variableMetadata?.GetVariableId(reference)
+                const variableId = variableMetadata.GetVariableId(reference)
                 if(reference) {
                     if(reference.name === `CurrentTick`) {
                         const UINT32_MAX = 0xFFFFFFFF
@@ -162,10 +163,6 @@ export default class UIPlot extends UITemplate {
             })
             this.plot.setData(data);
         })
-    }
-
-    RegisterVariables() {
-        this.variablesToPlot.RegisterVariables()
     }
 }
 customElements.define(`ui-plot`, UIPlot, { extends: `span` })

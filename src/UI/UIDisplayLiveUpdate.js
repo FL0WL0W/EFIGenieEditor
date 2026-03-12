@@ -39,7 +39,7 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
 
         communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
             if(this.reference) { 
-                const variableId = variableMetadata?.GetVariableId(this.reference)
+                const variableId = variableMetadata.GetVariableId(this.reference)
                 if(currentVariableValues?.[variableId] !== undefined) {
                     this.superHidden = false
                     if(this._enumType) {

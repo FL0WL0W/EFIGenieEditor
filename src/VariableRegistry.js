@@ -1,7 +1,39 @@
-export default class VariableRegistry {
+export default class VariableRegistry extends EventTarget {
     constructor(prop) {
+        super()
         Object.assign(this, prop)
         this.CreateIfNotFound = false
+    }
+
+    get variableReferences() {
+        var variableReferences = {}
+        for (var property in this) {
+            if (this[property] == undefined)
+                continue
+    
+            if(property === `VariableIncrement` || property === `CreateIfNotFound`)
+                continue
+            if(property.toLowerCase().indexOf(`temp`) === 0)
+                continue
+    
+            if (Array.isArray(this[property])) {
+                variableReferences[property] ??= []
+                var arr = this[property]
+    
+                for (var i = 0; i < this[property].length; i++) {
+                    let reference = { ...this[property][i] }
+                    reference.name = `${property}.${reference.name}`
+                    variableReferences[property].push(this.GetVariableByReference(reference))
+                }
+            } else {
+                variableReferences[property] = this.GetVariableByReference(this[property])
+            }
+        }
+        return variableReferences
+    }
+    set variableReferences(variableReferences) {
+        Object.assign(this, variableReferences)
+        this.dispatchEvent(new Event(`change`))
     }
     Clear() {
         Object.entries(this).forEach(([elementname, element]) => {
@@ -95,6 +127,7 @@ export default class VariableRegistry {
             reference.id ??= this.GenerateVariableId()
             this[reference.name] = reference
         }
+        this.dispatchEvent(new Event(`change`))
     }
     UnRegisterVariable(reference) {
         if(!reference || typeof reference !== `object` || !reference.name) return
@@ -117,32 +150,7 @@ export default class VariableRegistry {
         } else {
             delete this[reference.name]
         }
-    }
-    GetVariableReferenceList() {
-        var variableReferences = {}
-        for (var property in this) {
-            if (this[property] == undefined)
-                continue
-    
-            if(property === `VariableIncrement` || property === `CreateIfNotFound`)
-                continue
-            if(property.toLowerCase().indexOf(`temp`) === 0)
-                continue
-    
-            if (Array.isArray(this[property])) {
-                variableReferences[property] ??= []
-                var arr = this[property]
-    
-                for (var i = 0; i < this[property].length; i++) {
-                    let reference = { ...this[property][i] }
-                    reference.name = `${property}.${reference.name}`
-                    variableReferences[property].push(this.GetVariableByReference(reference))
-                }
-            } else {
-                variableReferences[property] = this.GetVariableByReference(this[property])
-            }
-        }
-        return variableReferences
+        this.dispatchEvent(new Event(`change`))
     }
     GetSelections(calculations, filter, ungroupSelections = true) {
         var selections = []

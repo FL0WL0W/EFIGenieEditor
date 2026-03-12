@@ -3,6 +3,7 @@ import UIDisplayLiveUpdate from "../UI/UIDisplayLiveUpdate"
 import UIParameterWithUnit from "../UI/UIParameterWithUnit"
 import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import { defaultFilter } from "../VariableRegistry"
+import { throttle } from "lodash-es"
 export default class CalculationOrVariableSelection extends UITemplate {
     static template = `<label><span data-element="labelElement"></span>:</label><div data-element="selection"></div><div data-element="liveUpdate"></div><span data-element="calculationContent"></span>`
     calculationContent = document.createElement(`span`)
@@ -56,7 +57,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
             if(`outputTypes` in calculationValue)
                 calculationValue.outputTypes = outputTypes
         })
-        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
+        this.RefreshOptions()
     }
 
     get outputUnits() {
@@ -72,7 +73,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
             if(`outputUnits` in calculationValue)
                 calculationValue.outputUnits = outputUnits
         })
-        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
+        this.RefreshOptions()
     }
 
     get inputTypes() {
@@ -87,7 +88,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
             if(`inputTypes` in calculationValue)
                 calculationValue.inputTypes = inputTypes
         })
-        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
+        this.RefreshOptions()
     }
 
     get inputUnits() {
@@ -100,7 +101,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
             if(`inputUnits` in calculationValue)
                 calculationValue.inputUnits = inputUnits
         })
-        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
+        this.RefreshOptions()
     }
 
     get options() { return this.selection.options }    
@@ -129,11 +130,13 @@ export default class CalculationOrVariableSelection extends UITemplate {
         })
         this.style.display = `block`
         this.Setup(prop)
+        VariableRegister.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        this.RefreshOptions()
     }
 
     Setup(...args) {
         super.Setup(...args)
-        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
+        this.RefreshOptions()
     }
 
     static SaveOnlyActive = false
@@ -211,9 +214,12 @@ export default class CalculationOrVariableSelection extends UITemplate {
         this.selection.displayUnit = value?.outputUnits?.[0]
     }
 
+    RefreshOptions() {
+        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
+    }
+
     RegisterVariables(reference) {
         reference = { ...reference }
-        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
 
         if (!this.selection.value || !reference) return
 

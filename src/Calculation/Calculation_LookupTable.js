@@ -7,6 +7,7 @@ import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import GenericConfigs from "./GenericConfigs"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
+import { throttle } from "lodash-es"
 export default class Calculation_LookupTable extends UITemplate {
     static displayName = `Lookup Table`
     static outputTypes = [ `float` ]
@@ -39,12 +40,13 @@ export default class Calculation_LookupTable extends UITemplate {
         this.Setup(prop)
         communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
             if(this.parameterSelection?.value) { 
-                const parameterVariableId = variableMetadata?.GetVariableId(this.parameterSelection?.value)
+                const parameterVariableId = variableMetadata.GetVariableId(this.parameterSelection?.value)
                 if(currentVariableValues?.[parameterVariableId] != undefined) {
                     this.table.trail(currentVariableValues[parameterVariableId])
                 } 
             }
         })
+        VariableRegister.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
     }
 
     get label() { return this.table.zLabel }
@@ -97,7 +99,6 @@ export default class Calculation_LookupTable extends UITemplate {
 
         if(!this.parameterSelection) {
             this.parameterSelection = new UIParameterWithUnit({
-                options: VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ])),
                 selectHidden: true
             })
             this.parameterSelection.unitHidden = true
@@ -113,6 +114,7 @@ export default class Calculation_LookupTable extends UITemplate {
             if(this._inputUnits?.[0] == undefined)
                 this.xMeasurement = undefined
         }
+        this.RefreshOptions()
     }
 
     get min() { return this.table.min }
@@ -163,10 +165,10 @@ export default class Calculation_LookupTable extends UITemplate {
     get inputUnits() { return [ this.xUnit ] }
     set inputUnits(inputUnits) {
         this._inputUnits = inputUnits?.[0]
-        this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
         this.xUnit = inputUnits?.[0]
         if(inputUnits?.[0] != undefined)
             this.xMeasurement = GetMeasurementNameFromUnitName(inputUnits?.[0])
+        this.RefreshOptions()
     }
     get outputUnits() { return [ this.valueUnit ] }
     set outputUnits(outputUnits) { 
@@ -177,7 +179,7 @@ export default class Calculation_LookupTable extends UITemplate {
     get displayUnits() { return [ this.displayUnit ] }
     set displayUnits(displayUnits) { this.displayUnit = displayUnits?.[0] }
 
-    RegisterVariables() {
+    RefreshOptions() {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
     }
 }
