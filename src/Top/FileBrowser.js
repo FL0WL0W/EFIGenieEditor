@@ -39,7 +39,7 @@ export default class FileBrowser extends UITemplate {
             window.localStorage.removeItem(this.fileSelection.value)
             this.updateOptions();
         })
-        this.fileSelectionMenu = this.fileSelection.contextMenuElement
+        this.fileSelectionMenu = this.fileSelection.contextMenu
         let visible = false
         let collapsingClick = false
         let currentTarget = undefined

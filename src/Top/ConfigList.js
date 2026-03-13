@@ -261,7 +261,7 @@ export default class ConfigList extends HTMLDivElement {
     get saveValue () { return [...this.children].map(e => { return this.staticItems.find(x => x.item === e.item) !== undefined? { [this.staticItems.find(x => x.item === e.item)?.name] : e.item.saveValue } : e.item.saveValue }) }
     set saveValue(saveValue) { 
         //remove all static items from list, we will add them back as we populate
-        [...this.children].forEach(item => {
+        ;[...this.children].forEach(item => {
             if(this.staticItems.find(x => x.item === item.item) !== undefined) {
                 this.removeChild(item)
             }
@@ -286,7 +286,7 @@ export default class ConfigList extends HTMLDivElement {
     get value () { return [...this.children].map(e => { return this.staticItems.find(x => x.item === e.item) !== undefined? { [this.staticItems.find(x => x.item === e.item)?.name] : e.item.value } : e.item.value }) }
     set value(value) { 
         //remove all static items from list, we will add them back as we populate
-        [...this.children].forEach(item => {
+        ;[...this.children].forEach(item => {
             if(this.staticItems.find(x => x.item === item.item) !== undefined)
                 this.removeChild(item)
         })

@@ -16,7 +16,7 @@ export default class Top extends UITemplate {
         <div data-element="sidebarOpen"></div>
         <div style="display: inline-block;">
             <span>
-                <div data-element="btnOpen"></div>
+                <div data-element="btnFile"></div>
             </span>
         </div>
     </div>
@@ -25,7 +25,7 @@ export default class Top extends UITemplate {
     <div data-element="page"></div>
 </div>`
 
-    btnOpen = new UIButton({ label: `Open` });
+    btnFile = new UIButton({ label: `File` });
     topTitle = document.createElement(`div`)
     pageTitle = document.createElement(`div`)
     sidebarClose = new UIButton({className: `sidebaropenclose w3-button w3-right`})
@@ -98,8 +98,8 @@ export default class Top extends UITemplate {
         this.pageTitle.style.margin = `3px`
         this.sidebarSelection.className = `w3-bar-block sidebarSelection`
         this.sidebarOpen.style.verticalAlign = `top`
-        this.btnOpen.classList.remove(`ui`, `button`)
-        this.btnOpen.classList.add(`w3-button`)
+        this.btnFile.classList.remove(`ui`, `button`)
+        this.btnFile.classList.add(`w3-button`)
         this.page.class = `w3-container w3-display-container`
 
         this.sidebarOpen.addEventListener(`click`, () => {

@@ -4,7 +4,6 @@ export default class VariableRegistry extends EventTarget {
         Object.assign(this, prop)
         this.CreateIfNotFound = false
     }
-
     get variableReferences() {
         var variableReferences = {}
         for (var property in this) {

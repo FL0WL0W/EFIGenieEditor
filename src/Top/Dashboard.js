@@ -143,7 +143,7 @@ export default class Dashboard extends UITemplate {
         this.loggedVariablesUnitSelection.classList.remove(`unit`)
         this.loggedVariablesUnitSelection.classList.add(`logged-variable-selection`)
         this.loggedVariablesRefreshSelection.classList.add(`logged-variable-selection`)
-        this.loggedVariableVariableSelectionDialog.content.appendChild(this.loggedVariableVariableSelection.contextMenuElement).class = `openned`
+        this.loggedVariableVariableSelectionDialog.content.appendChild(this.loggedVariableVariableSelection.contextMenu).class = `openned`
         this.loggedVariableVariableSelection.addEventListener(`change`, () => {
             this.loggedVariables.saveValue = [ ...this.loggedVariables.saveValue,  { ...this.loggedVariableVariableSelection.value, refreshRate: 60 } ]
             this.RefreshOptions();
@@ -224,7 +224,7 @@ export default class Dashboard extends UITemplate {
                             this.RefreshOptions();
                         })
                         row.addEventListener(`click`, event => {
-                            [...this.children].forEach(child => { 
+                            ;[...this.children].forEach(child => { 
                                 child.classList.remove(`selected`)
                                 child.unit = child.unit
                                 child.refreshRate = child.refreshRate
@@ -357,7 +357,7 @@ export default class Dashboard extends UITemplate {
         this.Setup(prop);
 
         communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
-            [...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
+            ;[...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
                 if(variableIndex === 0)
                     return
                 const variable = variableMetadata.GetVariableByReference(variableElement.variable) ?? 
@@ -431,7 +431,7 @@ export default class Dashboard extends UITemplate {
             return x
         }); return z})
         this.options = options;
-        [...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
+        ;[...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
             if(variableIndex === 0)
                 return
             let option = this.options.find(x => (x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)) && x.disabled)
