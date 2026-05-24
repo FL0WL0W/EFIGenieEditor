@@ -1,5 +1,7 @@
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UISelection from "../JavascriptUI/UISelection"
+import UIDialog from "../JavascriptUI/UIDialog"
+import UIEnumEditor from "./UIEnumEditor"
 
 function PerSecond(units)
 {
@@ -113,10 +115,23 @@ export default class UIUnit extends UISelection {
     })
 
     /** Dynamically generated option entries for all registered user enum types.
-     *  Each enum is its own top-level option (no sub-units to choose from). */
+     *  Grouped under a single "User Defined" group, always ending with a "+ New" option. */
     static get enumOptions() {
-        if (!window.EnumRegister?.names?.length) return []
-        return window.EnumRegister.names.map(name => ({ name, value: name }))
+        const enumEntries = window.EnumRegister?.names?.map(name => ({ name, value: name })) ?? []
+        return [{ group: `User Defined`, options: [...enumEntries, { name: `+ New`, value: `__new_enum__` }] }]
+    }
+
+    static enumDialog = null
+    static enumEditor = null
+    static openEnumEditorDialog(addNew = false) {
+        if (!UIUnit.enumDialog) {
+            const dialog = new UIDialog({ title: `User Defined Enums` })
+            UIUnit.enumEditor = new UIEnumEditor()
+            dialog.content.appendChild(UIUnit.enumEditor)
+            UIUnit.enumDialog = dialog
+        }
+        UIUnit.enumDialog.show()
+        if (addNew) UIUnit.enumEditor.addNewEnum()
     }
 
     _hidden = false
@@ -129,6 +144,7 @@ export default class UIUnit extends UISelection {
 
     get value() { return super.value }
     set value(value) {
+        if(value !== `__new_enum__`) this._previousValue = super.value
         super.value = value
     }
 
@@ -191,6 +207,15 @@ export default class UIUnit extends UISelection {
         this.selectHidden = true
         window.EnumRegister?.addEventListener(`change`, () => {
             this.refreshOptions()
+        })
+        this.addEventListener(`change`, (e) => {
+            if(this.value === `__new_enum__`) {
+                const previous = this._previousValue
+                this.value = previous
+                UIUnit.openEnumEditorDialog(true)
+            } else {
+                this._previousValue = this.value
+            }
         })
     }
 }
