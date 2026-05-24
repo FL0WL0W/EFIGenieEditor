@@ -289,14 +289,22 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .enumRow {
     display: flex;
-    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.25em;
+}
+.enumHeader {
+    display: flex;
+    align-items: center;
     gap: 0.5em;
+}
+.enumEntries {
+    padding-left: 2em;
 }
 .enumToggle {
     cursor: pointer;
     background: none;
     border: none;
-    padding: 0 0.2em;
+    padding: 0 0 0 1em;
     font-size: 0.75em;
     line-height: 1;
     color: inherit;
@@ -452,6 +460,8 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 label:has(.ui.text.genericCalculationName:disabled)::before {
     content: attr(label);
 }
+.ui.text.enumEntryLabel,
+.ui.text.enumName,
 .ui.text.canParseDataName,
 .ui.text.genericCalculationName,
 .ui.text.inputName {

@@ -17,7 +17,7 @@ class UIEnumEntry extends UITemplate {
 customElements.define(`ui-enum-entry`, UIEnumEntry, { extends: `span` })
 
 class UIEnum extends UITemplate {
-    static template = `<div class="enumRow"><span data-element="name"></span><button class="enumToggle"></button><span data-element="entries"></span></div>`
+    static template = `<div class="enumRow"><div class="enumHeader"><button class="enumToggle"></button><span data-element="name"></span></div><div class="enumEntries"><span data-element="entries"></span></div></div>`
 
     name = new UIText({ class: `enumName` })
     entries = (() => {
@@ -76,10 +76,11 @@ class UIEnum extends UITemplate {
     connectedCallback() {
         this.entries.updateControls()
         const toggle = this.querySelector(`.enumToggle`)
-        this.entries.hidden = true
+        const enumEntries = this.querySelector(`.enumEntries`)
+        enumEntries.hidden = true
         toggle.addEventListener(`click`, () => {
-            this.entries.hidden = !this.entries.hidden
-            toggle.classList.toggle(`enumToggle--open`, !this.entries.hidden)
+            enumEntries.hidden = !enumEntries.hidden
+            toggle.classList.toggle(`enumToggle--open`, !enumEntries.hidden)
         })
     }
 }
