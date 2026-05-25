@@ -14,7 +14,8 @@ export default class CAN_ReadData extends UITemplate {
         min: 0,
         max: 536870911,
         step: 1,
-        value: 0
+        value: 0,
+        hex: true
     })
     canBusLabel = document.createElement(`span`)
     canBus = new UISelection({
