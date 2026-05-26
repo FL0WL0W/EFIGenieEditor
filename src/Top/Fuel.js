@@ -85,8 +85,19 @@ export default class Fuel extends ConfigList {
         super(prop)
     }
 
+    #cylinderFuelMassReference = undefined
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.#cylinderFuelMassReference)
+        this.#cylinderFuelMassReference = undefined
+    }
+
     RegisterVariables() {
-        VariableRegister.RegisterVariable({ name: `FuelParameters.Cylinder Fuel Mass`, unit: `g` })
+        const cylinderFuelMassReference = { name: `FuelParameters.Cylinder Fuel Mass`, unit: `g` }
+        if(!objectTester(this.#cylinderFuelMassReference, cylinderFuelMassReference)) {
+            VariableRegister.UnRegisterVariable(this.#cylinderFuelMassReference)
+            VariableRegister.RegisterVariable(cylinderFuelMassReference)
+            this.#cylinderFuelMassReference = cylinderFuelMassReference
+        }
         super.RegisterVariables({ name: `FuelParameters` })
     }
 }

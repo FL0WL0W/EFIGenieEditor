@@ -124,8 +124,20 @@ export default class Engine extends ConfigList {
         super(prop)
     }
 
+
+    #engineSpeedReference = undefined
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.#engineSpeedReference)
+        this.#engineSpeedReference = undefined
+    }
+
     RegisterVariables() {
-        VariableRegister.RegisterVariable({ name: `EngineParameters.Engine Speed`, unit: `RPM` })
+        const engineSpeedReference = { name: `EngineParameters.Engine Speed`, unit: `RPM` }
+        if(!objectTester(this.#engineSpeedReference, engineSpeedReference)) {
+            VariableRegister.UnRegisterVariable(this.#engineSpeedReference)
+            VariableRegister.RegisterVariable(engineSpeedReference)
+            this.#engineSpeedReference = engineSpeedReference
+        }
         super.RegisterVariables({ name: `EngineParameters` })
         super.RegisterVariables({ name: `EngineParameters` })
     }

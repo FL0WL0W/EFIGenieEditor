@@ -5,6 +5,7 @@ import UIText from "../JavascriptUI/UIText"
 import UIUnit from "../UI/UIUnit"
 import GenericConfigs from "./GenericConfigs"
 import CalculationOrVariableSelection from "./CalculationOrVariableSelection"
+import { objectTester } from "../JavascriptUI/UIUtils"
 export default class Calculation_Formula extends UITemplate {
     static operators = [`!`,`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`=`,`&`,`|`]
     static parametersFromFormula(formula) {
@@ -398,6 +399,12 @@ export default class Calculation_Formula extends UITemplate {
         this.editFormula.content.append(this.querySelector(`[data-element="editFormulaContent"]`))
     }
 
+    #currentReference = undefined
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.#currentReference)
+        this.#currentReference = undefined
+    }
+
     RegisterVariables(reference) {
         reference = { ...reference }
         if (reference) {
@@ -411,10 +418,16 @@ export default class Calculation_Formula extends UITemplate {
 
             let operators = [`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`=`,`&`,`|`]
             if(!operators.some(o => this.formula.value.indexOf(o) > -1)) {
+                VariableRegister.UnRegisterVariable(this.#currentReference)
+                this.#currentReference = undefined
                 this.parameterValues[this.parameters[0]]?.RegisterVariables(reference)
             } else {
                 this.parameters.forEach(parameter => { this.parameterValues[parameter]?.RegisterVariables({ name: `${reference.name}_${this.parameterValues[parameter].label}`, unit: this.parameterValues[parameter].unit}) })
-                VariableRegister.RegisterVariable(reference)
+                if(!objectTester(this.#currentReference, reference)) {
+                    VariableRegister.UnRegisterVariable(this.#currentReference)
+                    VariableRegister.RegisterVariable(reference)
+                    this.#currentReference = reference
+                }
                 this.parameters.forEach(parameter => { VariableRegister.UnRegisterVariable({ name: `${reference.name}_${this.parameterValues[parameter].label}`, unit: this.parameterValues[parameter].unit}) })
             }
         }

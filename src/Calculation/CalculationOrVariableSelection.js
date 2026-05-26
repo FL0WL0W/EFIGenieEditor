@@ -4,6 +4,7 @@ import UIParameterWithUnit from "../UI/UIParameterWithUnit"
 import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import { defaultFilter } from "../VariableRegistry"
 import { throttle } from "lodash-es"
+import { objectTester } from "../JavascriptUI/UIUtils"
 export default class CalculationOrVariableSelection extends UITemplate {
     static template = `<label><span data-element="labelElement"></span>:</label><div data-element="selection"></div><div data-element="liveUpdate"></div><span data-element="calculationContent"></span>`
     calculationContent = document.createElement(`span`)
@@ -218,6 +219,12 @@ export default class CalculationOrVariableSelection extends UITemplate {
         this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
     }
 
+    #currentReference = undefined
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.#currentReference)
+        this.#currentReference = undefined
+    }
+
     RegisterVariables(reference) {
         reference = { ...reference }
 
@@ -235,11 +242,24 @@ export default class CalculationOrVariableSelection extends UITemplate {
         if(subConfig != undefined) {
             const o = (this.GetSubConfigProperty(`outputUnits`) ?? this.GetSubConfigProperty(`outputTypes`))
             const hasOutput = o !== undefined && o.length > 0
-            if (hasOutput) VariableRegister.RegisterVariable(reference)
+            if (hasOutput) {
+                if(!objectTester(this.#currentReference, reference)) {
+                    VariableRegister.UnRegisterVariable(this.#currentReference)
+                    VariableRegister.RegisterVariable(reference)
+                    this.#currentReference = reference
+                }
+            } else {
+                VariableRegister.UnRegisterVariable(this.#currentReference)
+                this.#currentReference = undefined
+            }
             subConfig.RegisterVariables?.(reference)
         } else {
             reference = { ...this.selection.value, name: reference.name, id: this.selection.value.name }
-            VariableRegister.RegisterVariable(reference)
+            if(!objectTester(this.#currentReference, reference)) {
+                VariableRegister.UnRegisterVariable(this.#currentReference)
+                VariableRegister.RegisterVariable(reference)
+                this.#currentReference = reference
+            }
         }
 
         this.liveUpdate.RegisterVariables(reference)

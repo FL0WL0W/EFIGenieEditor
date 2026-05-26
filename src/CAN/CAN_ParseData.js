@@ -3,6 +3,7 @@ import UITemplate from "../JavascriptUI/UITemplate"
 import UIText from "../JavascriptUI/UIText"
 import UIDisplayLiveUpdate from "../UI/UIDisplayLiveUpdate"
 import UIUnit from "../UI/UIUnit"
+import { objectTester } from "../JavascriptUI/UIUtils"
 export default class CAN_ParseData extends UITemplate {
     static displayName = `CAN Parse`
     static outputTypes = [ `bool|float` ]
@@ -62,6 +63,12 @@ export default class CAN_ParseData extends UITemplate {
         this.Setup(prop)
     }
 
+    #currentReference = undefined
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.#currentReference)
+        this.#currentReference = undefined
+    }
+
     RegisterVariables(reference) {
         reference = { ...reference, name: `${reference.name}.${this.name.value}` }
 
@@ -80,7 +87,11 @@ export default class CAN_ParseData extends UITemplate {
             }
         }
 
-        VariableRegister.RegisterVariable(reference)
+        if(!objectTester(this.#currentReference, reference)) {
+            VariableRegister.UnRegisterVariable(this.#currentReference)
+            VariableRegister.RegisterVariable(reference)
+            this.#currentReference = reference
+        }
         this.liveUpdate.RegisterVariables(reference)
     }
 }

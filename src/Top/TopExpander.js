@@ -42,7 +42,6 @@ export default class TopExpander extends Top {
     }
 
     RegisterVariables() {
-        VariableRegister.Clear()
         this.Inputs.RegisterVariables()
         this.CAN.RegisterVariables({ name: `CANParameters` })
         this.Outputs.RegisterVariables({ name: `Outputs` })

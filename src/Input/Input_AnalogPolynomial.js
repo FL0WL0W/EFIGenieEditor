@@ -2,6 +2,7 @@ import UITemplate from "../JavascriptUI/UITemplate"
 import Input_Analog from "./Input_Analog"
 import Calculation_Polynomial from "../Calculation/Calculation_Polynomial"
 import UIDisplayLiveUpdate from "../UI/UIDisplayLiveUpdate"
+import { objectTester } from "../JavascriptUI/UIUtils"
 export default class Input_AnalogPolynomial extends UITemplate {
     static outputTypes = [ `float` ]
     static template = `<div data-element="voltageLiveUpdate"></div><div data-element="analogInput"></div><div data-element="polynomial"></div>`
@@ -27,13 +28,25 @@ export default class Input_AnalogPolynomial extends UITemplate {
         this.style.display = `block`
     }
 
+    #currentReference = undefined
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.#currentReference)
+        this.#currentReference = undefined
+    }
+
     RegisterVariables(reference) {
         reference = { ...reference }
         delete reference.unit
         delete reference.type
         delete reference.id
-        VariableRegister.RegisterVariable({ ...reference, unit: `V`})
-        this.voltageLiveUpdate.RegisterVariables({ ...reference, unit: `V`})
+        reference = { ...reference, unit: `V` }
+        if(!objectTester(this.#currentReference, reference)) {
+            VariableRegister.UnRegisterVariable(this.#currentReference)
+            VariableRegister.RegisterVariable(reference)
+            this.#currentReference = reference
+        }
+
+        this.voltageLiveUpdate.RegisterVariables(reference)
     }
 }
 customElements.define(`input-analogpolynomial`, Input_AnalogPolynomial, { extends: `span` })

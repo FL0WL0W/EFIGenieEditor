@@ -57,9 +57,19 @@ export default class TopEngine extends Top {
     get value() { return { ...super.value, CANAvailable: (this.PinOverlay.pinOut.CANBusCount ?? 0) > 1 } }
     set value(value) { super.value = value }
 
+    #currentTickReference = undefined
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.#currentTickReference)
+        this.#currentTickReference = undefined
+    }
+
     RegisterVariables() {
-        VariableRegister.Clear()
-        VariableRegister.CurrentTick = { name: `CurrentTick`, type: `tick` }
+        const currentTickReference = { name: `CurrentTick`, type: `tick` }
+        if(!objectTester(this.#currentTickReference, currentTickReference)) {
+            VariableRegister.UnRegisterVariable(this.#currentTickReference)
+            VariableRegister.RegisterVariable(currentTickReference)
+            this.#currentTickReference = currentTickReference
+        }
         this.Inputs.RegisterVariables()
         this.CAN.RegisterVariables({ name: `CANParameters` })
         this.Engine.RegisterVariables()
