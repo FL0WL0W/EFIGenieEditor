@@ -762,7 +762,23 @@ let types = [
             { type: `UINT8`, value: (this.inverted? 0x01 : 0x00) | (this.highZ? 0x02 : 0x00) }
         ]}, this)
     }},
+    { type: `GenericOutput_Digital`, toDefinition() {
+        this.inputVariables ??= [ undefined ]
+        this.inputVariables[0] = { name: `temp0` }
+
+        return { type: `Group`, value: [
+            { ...this.output, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },
+            { ...this, type: `Output_Digital`, inputVariables: this.inputVariables }
+        ]}
+    }},
     { type: `Output_PWM`, toDefinition() {
+        return Packagize({ type: `definition`, value: [
+            { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.PulseWidthPinWrite }, //variable
+            { type: `UINT16`, value: this.pin },
+            { type: `UINT16`, value: this.minFrequency }
+        ]}, this)
+    }},
+    { type: `GenericOutput_PWM`, toDefinition() {
         this.inputVariables ??= [ undefined, undefined ]
         this.inputVariables[0] = { name: `temp0` }
         this.inputVariables[1] = { name: `temp1` }
@@ -770,11 +786,7 @@ let types = [
         return { type: `Group`, value: [
             { ...this.period, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },
             { ...this.pulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[1] ] },
-            Packagize({ type: `definition`, value: [
-                { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.PulseWidthPinWrite }, //variable
-                { type: `UINT16`, value: this.pin },
-                { type: `UINT16`, value: this.minFrequency }
-            ]}, this)
+            { ...this, type: `Output_PWM`, inputVariables: this.inputVariables }
         ]}
     }},
     { type: `Reluctor_GM24x`, toDefinition() {

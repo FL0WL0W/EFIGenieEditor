@@ -102,6 +102,8 @@ import Output_Digital from "./Output/Output_Digital.js"
 import Output_TDC from "./Output/Output_TDC.js"
 import OutputList from "./Output/OutputList.js"
 import Output_PWM from "./Output/Output_PWM.js"
+import GenericOutput_PWM from "./Output/GenericOutput_PWM.js"
+import GenericOutput_Digital from "./Output/GenericOutput_Digital.js"
 
 import ReluctorGM24x from "./Reluctor/Reluctor_GM24x.js"
 import Reluctor_Template from "./Reluctor/Reluctor_Template.js"

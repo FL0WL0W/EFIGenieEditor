@@ -8,7 +8,7 @@ import Input from "../Input/Input";
 import CANConfigs from "../CAN/CANConfigs";
 import GenericCalculation from "../Calculation/GenericCalculation";
 import GenericConfigs from "../Calculation/GenericConfigs";
-import FloatOutputConfigs from "../Output/FloatOutputConfigs";
+import GenericOutputConfigs from "../Output/GenericOutputConfigs";
 
 export default class TopExpander extends Top {
     Dashboard = new Dashboard()
@@ -24,7 +24,7 @@ export default class TopExpander extends Top {
         newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
     })
     Outputs = new ConfigList({
-        newItem() { return new GenericCalculation({ calculations: [ {group: `Output`, calculations: FloatOutputConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
+        newItem() { return new GenericCalculation({ calculations: [ {group: `Output`, calculations: GenericOutputConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
     })
 
     constructor(prop) {
