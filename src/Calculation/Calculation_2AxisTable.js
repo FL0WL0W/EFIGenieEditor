@@ -10,8 +10,8 @@ import { communication } from "../communication"
 import { throttle } from "lodash-es"
 export default class Calculation_2AxisTable extends UITemplate {
     static displayName = `2 Axis Table`
-    static outputTypes = [ `float` ]
-    static inputTypes = [ `float`, `float` ]
+    static outputTypes = [ `float|enum` ]
+    static inputTypes = [ `float|enum`, `float|enum` ]
     static template = `<div data-element="dialog"></div>`
 
     dialog = new UIDialog({ buttonLabel: `Edit Table` })
@@ -26,6 +26,7 @@ export default class Calculation_2AxisTable extends UITemplate {
             this.graph.width = Math.min(Math.max(600, this.graph.xResolution * 75), 1000)
         })
         this.table.addEventListener(`change`, () => {
+            this.dispatchEvent(new Event(`change`, {bubbles: true}))
             if(this.XSelection)
                  this.XSelection.displayUnit = this.table.xDisplayUnit
             if(this.YSelection)
@@ -229,6 +230,9 @@ export default class Calculation_2AxisTable extends UITemplate {
         if(inputUnits?.[1] != undefined)
             this.yMeasurement = GetMeasurementNameFromUnitName(inputUnits?.[1])
     }
+    get inputTypes() {
+        return this.inputUnits.map(unit => window.EnumRegister?.isEnum(unit)? `enum` : `float`)
+    }
     _outputUnits
     get outputUnits() { return this._outputUnits ?? [ this.valueUnit ] }
     set outputUnits(outputUnits) { 
@@ -237,12 +241,15 @@ export default class Calculation_2AxisTable extends UITemplate {
         if(outputUnits?.[0] != undefined)
             this.measurement = GetMeasurementNameFromUnitName(outputUnits?.[0])
     }
+    get outputTypes() {
+        return this.outputUnits.map(unit => window.EnumRegister?.isEnum(unit)? `enum` : `float`)
+    }
     get displayUnits() { return [ this.displayUnit ] }
     set displayUnits(displayUnits) { this.displayUnit = displayUnits?.[0] }
 
     RefreshOptions() {
-        this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float` ]))
-        this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[1], [ `float` ]))
+        this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float|enum` ]))
+        this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[1], [ `float|enum` ]))
     }
 }
 GenericConfigs.push(Calculation_2AxisTable)
