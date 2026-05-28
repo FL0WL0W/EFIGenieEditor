@@ -211,7 +211,7 @@ export default class Calculation_Formula extends UITemplate {
                 parameterValue = this.parameterValues[parameters[i]] = new CalculationOrVariableSelection({
                     label: parameters[i],
                     calculations: this.calculations,
-                    outputTypes: [ `bool|float` ],
+                    outputTypes: [ `bool|float|enum` ],
                     displayUnits: this.outputUnits
                 })
                 parameterValue.style.display = `inline`
