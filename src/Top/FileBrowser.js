@@ -60,7 +60,7 @@ export default class FileBrowser extends UITemplate {
             document.addEventListener(`click`, clickHandler)
             window.setTimeout(() => { currentTarget = event.target; currentTarget.append(this.contextMenuElement); visible = true }, 1)
         });
-        this.fileSelectionMenu.class = `openned`
+        this.fileSelectionMenu.class = `opened`
         this.fileSelection.addEventListener(`change`, () => {
             this.valueElement.value = this.fileSelection.value
         })

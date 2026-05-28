@@ -143,7 +143,7 @@ export default class Dashboard extends UITemplate {
         this.loggedVariablesUnitSelection.classList.remove(`unit`)
         this.loggedVariablesUnitSelection.classList.add(`logged-variable-selection`)
         this.loggedVariablesRefreshSelection.classList.add(`logged-variable-selection`)
-        this.loggedVariableVariableSelectionDialog.content.appendChild(this.loggedVariableVariableSelection.contextMenu).class = `openned`
+        this.loggedVariableVariableSelectionDialog.content.appendChild(this.loggedVariableVariableSelection.contextMenu).class = `opened`
         this.loggedVariableVariableSelection.addEventListener(`change`, () => {
             this.loggedVariables.saveValue = [ ...this.loggedVariables.saveValue,  { ...this.loggedVariableVariableSelection.value, refreshRate: 60 } ]
             this.RefreshOptions();
@@ -421,6 +421,8 @@ export default class Dashboard extends UITemplate {
             }
         }
         options = options.map(x => {
+            if(x.group)
+                return x
             if(-1 !== [...this.loggedVariables.children].findIndex(y => match(x?.value, y?.variable)))
                 x.disabled = true
             return x
@@ -430,11 +432,11 @@ export default class Dashboard extends UITemplate {
                 x.disabled = true
             return x
         }); return z})
-        this.options = options;
+        this.options = options
         ;[...this.loggedVariables.children].forEach((variableElement, variableIndex) => {
             if(variableIndex === 0)
                 return
-            let option = this.options.find(x => (x.group && x.options? -1 !== x.options.findIndex(x => match(x?.value, variableElement.variable)) : match(x?.value, variableElement.variable)) && x.disabled)
+            let option = this.options.find(x => (x.group && x.options? -1 !== x.options.findIndex(y => match(y?.value, variableElement.variable) && y.disabled) : (match(x?.value, variableElement.variable)) && x.disabled))
             if(option?.group && option?.options)
                 option = option.options.find(x => match(x?.value, variableElement.variable) && x.disabled)
 

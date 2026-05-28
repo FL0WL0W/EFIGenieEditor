@@ -4,6 +4,7 @@ import ConfigContainer from "./ConfigContainer"
 import ConfigList from "./ConfigList"
 import { CylinderAirTemperatureConfigs, ManifoldAbsolutePressureConfigs, VolumetricEfficiencyConfigs, ThrottlePositionConfigs } from "./TopConfigs"
 import CylinderAirmassConfigs from "../CylinderAirmass/CylinderAirmassConfigs"
+import { objectTester } from "../JavascriptUI/UIUtils";
 var EngineRequirements = []
 class EngineSensors extends ConfigContainer
 {

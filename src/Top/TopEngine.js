@@ -11,6 +11,7 @@ import Input from "../Input/Input";
 import CANConfigs from "../CAN/CANConfigs";
 import GenericCalculation from "../Calculation/GenericCalculation";
 import GenericConfigs from "../Calculation/GenericConfigs";
+import { objectTester } from "../JavascriptUI/UIUtils";
 
 export default class TopEngine extends Top {
     Dashboard = new Dashboard()

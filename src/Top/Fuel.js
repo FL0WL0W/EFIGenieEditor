@@ -8,6 +8,7 @@ import InjectorPulseWidthConfigs from "../InjectorPulseWidth/InjectorPulseWidthC
 import { InjectorEnableConfigs, AFRConfigs } from "./TopConfigs"
 import CalculationOrVariableSelection from "../Calculation/CalculationOrVariableSelection"
 import UISelection from "../JavascriptUI/UISelection"
+import { objectTester } from "../JavascriptUI/UIUtils";
 class InjectorProperties extends ConfigContainer{
     static template = `<div data-element="InjectorEnable"></div><div data-element="InjectorPulseWidth"></div><div data-element="InjectorPosition"></div>`
 

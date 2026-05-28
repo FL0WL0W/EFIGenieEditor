@@ -667,7 +667,8 @@ select .pinconflict{
     height: fit-content;
 }
 
-.ui.context-menu.openned {
+.ui.context-menu.opened {
+    display: block !important;
     position: inherit;
     width: 500px;
 }
