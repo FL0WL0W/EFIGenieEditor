@@ -31,6 +31,11 @@ export default class Calculation_2AxisTable extends UITemplate {
                  this.XSelection.displayUnit = this.table.xDisplayUnit
             if(this.YSelection)
                  this.YSelection.displayUnit = this.table.yDisplayUnit
+            if(window.EnumRegister?.isEnum(this.table.xUnit) || window.EnumRegister?.isEnum(this.table.yUnit) || window.EnumRegister?.isEnum(this.table.valueUnit)) {
+                this.graph.hidden = true
+            } else {
+                this.graph.hidden = false
+            }
         })
         this.table.attachToTable(this.graph)
         this.dialog.content.append(this.graph)

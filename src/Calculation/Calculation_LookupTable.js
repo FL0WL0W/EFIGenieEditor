@@ -31,6 +31,11 @@ export default class Calculation_LookupTable extends UITemplate {
             if(!this.parameterSelection)
                 return
             this.parameterSelection.displayUnit = this.table.xDisplayUnit
+            if(window.EnumRegister?.isEnum(this.table.xUnit) || window.EnumRegister?.isEnum(this.table.valueUnit)) {
+                this.graph.hidden = true
+            } else {
+                this.graph.hidden = false
+            }
         })
         this.table.attachToTable(this.graph)
         this.dialog.content.append(this.graph)

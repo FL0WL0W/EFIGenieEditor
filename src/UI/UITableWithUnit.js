@@ -37,8 +37,12 @@ export default class UITableWithUnit extends UITemplate {
         this.UpdateDisplayValue()
     }
 
-    get xResolutionModifiable() { return this.displayValueElement.xResolutionModifiable }
-    set xResolutionModifiable(xResolutionModifiable) { this.displayValueElement.xResolutionModifiable = xResolutionModifiable }
+    _xResolutionModifiable  = true
+    get xResolutionModifiable() { return this._xResolutionModifiable }
+    set xResolutionModifiable(xResolutionModifiable) { 
+        this._xResolutionModifiable = xResolutionModifiable
+        this.displayValueElement.xResolutionModifiable = window.EnumRegister?.isEnum(this.xUnit) ? false : xResolutionModifiable
+    }
     get xResolution() { return this.displayValueElement.xResolution }
     set xResolution(xResolution) { this.displayValueElement.xResolution = xResolution }
     get xLabel() { return this.#xLabel; }
@@ -54,14 +58,31 @@ export default class UITableWithUnit extends UITemplate {
     set xDisplayUnit(xDisplayUnit) { this.xDisplayUnitElement.value = xDisplayUnit }
     get xDisplayAxis() { return this.displayValueElement.xAxis }
     set xDisplayAxis(xDisplayAxis) { this.displayValueElement.xAxis = xDisplayAxis }
+    _xAxisModifiable  = true
+    get xAxisModifiable() { return this._xAxisModifiable }
+    set xAxisModifiable(xAxisModifiable) { 
+        this._xAxisModifiable = xAxisModifiable
+        this.displayValueElement.xAxisModifiable = window.EnumRegister?.isEnum(this.xUnit) ? false : xAxisModifiable
+    }
 
     _xUnit
-    get xUnit() { return Array.isArray(this._xUnit)? this._xUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.xDisplayUnit)) : (this._xUnit ?? this.xDisplayUnit) }
+    get xUnit() { return Array.isArray(this._xUnit)? (this._xUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.xDisplayUnit)) ?? this._xUnit[0]) : (this._xUnit ?? this.xDisplayUnit) }
     set xUnit(xUnit) { 
         if(objectTester(this._xUnit, xUnit)) return
 
-        const newUnit = Array.isArray(xUnit)? xUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.xDisplayUnit)) : xUnit
-        const newAxis = ConvertValueFromUnitToUnit(this.xAxis, this._xUnit, newUnit)
+        const newUnit = Array.isArray(xUnit)? (xUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.xDisplayUnit)) ?? xUnit[0]) : xUnit
+        let newAxis
+        if(window.EnumRegister?.isEnum(newUnit)) {
+            newAxis = window.EnumRegister.getEnum(newUnit)?.map(enumEntry => {
+                return enumEntry.value
+            })
+            this.displayValueElement.xResolutionModifiable = false
+            this.displayValueElement.xAxisModifiable = false
+        } else {
+            this.displayValueElement.xResolutionModifiable = this.xResolutionModifiable
+            this.displayValueElement.xAxisModifiable = this.xAxisModifiable
+            newAxis = ConvertValueFromUnitToUnit(this.xAxis, this._xUnit, newUnit)
+        }
         this._xUnit = xUnit
         this.xDisplayUnit ??= Array.isArray(xUnit)? xUnit[0] : xUnit
         this.xAxis = newAxis
@@ -76,8 +97,11 @@ export default class UITableWithUnit extends UITemplate {
         this.UpdateDisplayValue()
     }
 
-    get yResolutionModifiable() { return this.displayValueElement.yResolutionModifiable }
-    set yResolutionModifiable(yResolutionModifiable) { this.displayValueElement.yResolutionModifiable = yResolutionModifiable }
+    get yResolutionModifiable() { return this._yResolutionModifiable }
+    set yResolutionModifiable(yResolutionModifiable) { 
+        this._yResolutionModifiable = yResolutionModifiable
+        this.displayValueElement.yResolutionModifiable = window.EnumRegister?.isEnum(this.yUnit) ? false : yResolutionModifiable
+    }
     get yResolution() { return this.displayValueElement.yResolution }
     set yResolution(yResolution) { this.displayValueElement.yResolution = yResolution }
     get yLabel() { return this.#yLabel; }
@@ -93,14 +117,31 @@ export default class UITableWithUnit extends UITemplate {
     set yDisplayUnit(yDisplayUnit) { this.yDisplayUnitElement.value = yDisplayUnit }
     get yDisplayAxis() { return this.displayValueElement.yAxis }
     set yDisplayAxis(yDisplayAxis) { this.displayValueElement.yAxis = yDisplayAxis }
+    _yAxisModifiable  = true
+    get yAxisModifiable() { return this._yAxisModifiable }
+    set yAxisModifiable(yAxisModifiable) { 
+        this._yAxisModifiable = yAxisModifiable
+        this.displayValueElement.yAxisModifiable = window.EnumRegister?.isEnum(this.yUnit) ? false : yAxisModifiable
+    }
 
     _yUnit
-    get yUnit() { return Array.isArray(this._yUnit)? this._yUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.yDisplayUnit)) : (this._yUnit ?? this.yDisplayUnit) }
+    get yUnit() { return Array.isArray(this._yUnit)? (this._yUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.yDisplayUnit)) ?? this._yUnit[0]) : (this._yUnit ?? this.yDisplayUnit) }
     set yUnit(yUnit) { 
         if(objectTester(this._yUnit, yUnit)) return
 
-        const newUnit = Array.isArray(yUnit)? yUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.yDisplayUnit)) : yUnit
-        const newAxis = ConvertValueFromUnitToUnit(this.yAxis, this._yUnit, newUnit)
+        const newUnit = Array.isArray(yUnit)? (yUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.yDisplayUnit)) ?? yUnit[0]) : yUnit
+        let newAxis
+        if(window.EnumRegister?.isEnum(newUnit)) {
+            newAxis = window.EnumRegister.getEnum(newUnit)?.map(enumEntry => {
+                return enumEntry.value
+            })
+            this.displayValueElement.yResolutionModifiable = false
+            this.displayValueElement.yAxisModifiable = false
+        } else {
+            this.displayValueElement.yResolutionModifiable = this.yResolutionModifiable
+            this.displayValueElement.yAxisModifiable = this.yAxisModifiable
+            newAxis = ConvertValueFromUnitToUnit(this.yAxis, this._yUnit, newUnit)
+        }
         this._yUnit = yUnit
         this.yDisplayUnit ??= Array.isArray(yUnit)? yUnit[0] : yUnit
         this.yAxis = newAxis
@@ -201,6 +242,18 @@ export default class UITableWithUnit extends UITemplate {
         this.#zLabelElementWithUnit.append(this.#zLabelElement)
         this.#zLabelElementWithUnit.append(this.displayUnitElement)
         this.displayValueElement.zLabel = this. #zLabelElementWithUnit
+        window.EnumRegister?.addEventListener(`change`, () => {
+            if(window.EnumRegister?.isEnum(this.xUnit)) {
+                this.xAxis = window.EnumRegister.getEnum(this.xUnit)?.map(enumEntry => {
+                    return enumEntry.value
+                })
+            }
+            if(window.EnumRegister?.isEnum(this.yUnit)) {
+                this.yAxis = window.EnumRegister.getEnum(this.yUnit)?.map(enumEntry => {
+                    return enumEntry.value
+                })
+            }
+        })
         if(prop) {
             const propValue = prop.value;
             delete prop.value;
