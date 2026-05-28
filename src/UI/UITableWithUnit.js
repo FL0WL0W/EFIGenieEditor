@@ -15,7 +15,14 @@ export default class UITableWithUnit extends UITemplate {
     get measurement() { return this.displayUnitElement.measurement }
     set measurement(measurement) { this.displayUnitElement.measurement = measurement }
     get displayUnit() { return this.displayUnitElement.value }
-    set displayUnit(displayUnit) { this.displayUnitElement.value = displayUnit ?? this._valueUnit }
+    set displayUnit(displayUnit) { 
+        if(!window.EnumRegister?.isEnum(displayUnit)) {
+            this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
+        } else {
+            this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
+        }
+        this.displayUnitElement.value = displayUnit ?? this._valueUnit 
+    }
     get displayValue() { return this.displayValueElement.value }
     set displayValue(displayValue) { this.displayValueElement.value = displayValue }
 
@@ -26,14 +33,22 @@ export default class UITableWithUnit extends UITemplate {
         let newValue = ConvertValueFromUnitToUnit(this.value, this._valueUnit, valueUnit)
         this._valueUnit = valueUnit
         this.displayUnit ??= valueUnit
-        this.value = newValue
+        if(!window.EnumRegister?.isEnum(valueUnit)) {
+            this.value = newValue
+            this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
+        } else {
+            this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
+        }
     }
     #value
     get value() { return this.#value }
     set value(value) {
         if(objectTester(this.#value, value)) return
         this.#value = value
-        this.displayValue           = ConvertValueFromUnitToUnit(value, this.valueUnit, this.displayUnit)
+        if(!window.EnumRegister?.isEnum(this.valueUnit))
+            this.displayValue = ConvertValueFromUnitToUnit(value, this.valueUnit, this.displayUnit)
+        else
+            this.displayValue = value
         this.UpdateDisplayValue()
     }
 
@@ -199,8 +214,13 @@ export default class UITableWithUnit extends UITemplate {
         })
         let oldUnit = this.displayUnit
         this.displayUnitElement.addEventListener(`change`, () => {
-            if(this.displayValue != undefined)
-                this.displayValue = ConvertValueFromUnitToUnit(this.displayValue, oldUnit, this.displayUnit)
+            if(!window.EnumRegister?.isEnum(this.displayUnit)) {
+                this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
+                if(this.displayValue != undefined)
+                    this.displayValue = ConvertValueFromUnitToUnit(this.displayValue, oldUnit, this.displayUnit)
+            } else {
+                this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
+            }
             oldUnit = this.displayUnit
         })
         this.xDisplayUnitElement = new UIUnit({
@@ -290,25 +310,29 @@ export default class UITableWithUnit extends UITemplate {
     UpdateDisplayValue() {
         const displayUnit = this.displayUnit
         const valueUnit = this.valueUnit
-        if(this.value != undefined && this.value.length === this.displayValue.length)
-            this.displayValue           = ConvertValueFromUnitToUnit(this.value, valueUnit, displayUnit)
-        this.displayValueElement.min    = ConvertValueFromUnitToUnit(this.min, valueUnit, displayUnit)     ?? this.displayValueElement.min
-        this.displayValueElement.max    = ConvertValueFromUnitToUnit(this.max, valueUnit, displayUnit)     ?? this.displayValueElement.max
-        this.displayValueElement.step   = ConvertValueFromUnitToUnit(this.step, valueUnit, displayUnit)    ?? this.displayValueElement.step
+        if(!window.EnumRegister?.isEnum(this.valueUnit)) {
+            if(this.value != undefined && this.value.length === this.displayValue.length) 
+                this.displayValue           = ConvertValueFromUnitToUnit(this.value, valueUnit, displayUnit)
+            this.displayValueElement.min    = ConvertValueFromUnitToUnit(this.min, valueUnit, displayUnit)     ?? this.displayValueElement.min
+            this.displayValueElement.max    = ConvertValueFromUnitToUnit(this.max, valueUnit, displayUnit)     ?? this.displayValueElement.max
+            this.displayValueElement.step   = ConvertValueFromUnitToUnit(this.step, valueUnit, displayUnit)    ?? this.displayValueElement.step
+        }
         if(window.EnumRegister?.isEnum(this.xUnit)) {
             const e = window.EnumRegister.getEnum(this.xUnit)
             this.xDisplayAxis = this.xAxis.map(x => {
                 return e.find(enumEntry => enumEntry.value === x)?.label ?? x
             })
-        } else if(this.xAxis != undefined)
+        } else if(this.xAxis != undefined) {
             this.xDisplayAxis           = ConvertValueFromUnitToUnit(this.xAxis, this.xUnit, this.xDisplayUnit)
+        }
         if(window.EnumRegister?.isEnum(this.yUnit)) {
             const e = window.EnumRegister.getEnum(this.yUnit)
             this.yDisplayAxis = this.yAxis.map(y => {
                 return e.find(enumEntry => enumEntry.value === y)?.label ?? y
             })
-        } else if(this.yAxis != undefined)
+        } else if(this.yAxis != undefined) {
             this.yDisplayAxis           = ConvertValueFromUnitToUnit(this.yAxis, this.yUnit, this.yDisplayUnit)
+        }
     }
     attachToTable(table) {
         this.displayValueElement.attachToTable(table)
