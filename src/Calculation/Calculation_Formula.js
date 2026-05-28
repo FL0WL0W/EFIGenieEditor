@@ -165,7 +165,7 @@ export default class Calculation_Formula extends UITemplate {
 
 
     static displayName = `Formula`
-    static outputTypes = [ `bool|float` ]
+    static outputTypes = [ `bool|float|enum` ]
     static template = `<div data-element="editFormula"></div><div data-element="editFormulaContent"><div style="display: flex; width: 100%"><div style="margin: auto; margin-right: 1em; width: fit-content; white-space: nowrap;"><div data-element="labelElement"></div> <div data-element="formulaUnit"></div> = </div><div data-element="formula"></div></div><div data-element="parameterElements"></div></div><div data-element="parameterValueElements"></div>`
 
     get outputUnits() { return [ this.formulaUnit.textContent ] }
@@ -329,7 +329,7 @@ export default class Calculation_Formula extends UITemplate {
             let parameterValue = this.parameterValues[parameter] ??= new CalculationOrVariableSelection({
                 label: parameter,
                 calculations: this.calculations,
-                outputTypes: [ `bool|float` ],
+                outputTypes: [ `bool|float|enum` ],
                 displayUnits: this.outputUnits
             })
             parameterValue.style.display = `inline`
@@ -365,7 +365,7 @@ export default class Calculation_Formula extends UITemplate {
             let parameterValue = this.parameterValues[parameter] ??= new CalculationOrVariableSelection({
                 label: parameter,
                 calculations: this.calculations,
-                outputTypes: [ `bool|float` ],
+                outputTypes: [ `bool|float|enum` ],
                 displayUnits: this.outputUnits,
             })
             parameterValue.style.display = `inline`
