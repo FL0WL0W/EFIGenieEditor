@@ -6,7 +6,7 @@ import UIUnit from "../UI/UIUnit"
 import { objectTester } from "../JavascriptUI/UIUtils"
 export default class CAN_ParseData extends UITemplate {
     static displayName = `CAN Parse`
-    static outputTypes = [ `bool|float` ]
+    static outputTypes = [ `bool|float|enum` ]
     static inputTypes = [ `CANData` ]
     static template = `<div data-element="name"></div>: Offset:<div data-element="bitLocation"></div>Length:<div data-element="bitLength"></div><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div><div data-element="unit"></div><div data-element="liveUpdate"></div>`
 
