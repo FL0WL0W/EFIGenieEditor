@@ -1,4 +1,5 @@
 import { gzip } from "pako"
+import { downloadBin } from "../download.js"
 
 export async function BurnESP32(cfg, type){
     const saveValue = JSON.stringify(cfg.saveValue)

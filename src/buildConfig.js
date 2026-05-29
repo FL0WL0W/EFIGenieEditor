@@ -421,7 +421,6 @@ let types = [
         return this
     }},
     { type: `Group`, toDefinition() {
-        let newValue = []
         const thisGroup = this
 
         const removedTypes = [...this.types.filter(t => t.type === `Group` || t.type === `Package`)]
@@ -430,6 +429,7 @@ let types = [
             if(isEmptyObject(value))
                 return
                 
+            let newValue = []
             let definition = mapDefinitionFromValue.call(thisGroup, value)
             if(!Array.isArray(definition))
                 definition = [definition]
@@ -445,21 +445,18 @@ let types = [
                             thisGroup.types.push(definition[index].types[typeIndex])
                         }
                     }
-                    definition[index].value.forEach(reduce)
+                    newValue.push(...definition[index].value.map(reduce))
                 //if type is package add to newValue
                 } else if(definition[index].type === `Package`) {
                     newValue.push(definition[index])
                 //if type is not package than create a definition for it
                 } else {
-                    if(newValue[newValue.length - 1]?.type !== `definition`) {
-                        newValue.push({ type: `definition`, value: [definition[index]] })
-                    } else {
-                        newValue.push(definition[index])
-                    }
+                    newValue.push(definition[index])
                 }
             }
+            return newValue;
         }
-        this.value.forEach(reduce)
+        let newValue = this.value.flatMap(reduce).map(v => Array.isArray(v)? { type: `definition`, value: v } : v)
         this.types = [...this.types, ...removedTypes]
 
         newValue.unshift({ type: `UINT16`, value: newValue.length })
