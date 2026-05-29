@@ -446,10 +446,6 @@ let types = [
                         }
                     }
                     newValue.push(...definition[index].value.map(reduce))
-                //if type is package add to newValue
-                } else if(definition[index].type === `Package`) {
-                    newValue.push(definition[index])
-                //if type is not package than create a definition for it
                 } else {
                     newValue.push(definition[index])
                 }
