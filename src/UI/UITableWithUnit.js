@@ -18,8 +18,12 @@ export default class UITableWithUnit extends UITemplate {
     set displayUnit(displayUnit) { 
         if(!window.EnumRegister?.isEnum(displayUnit)) {
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
+            this.displayValueElement.options = undefined
         } else {
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
+            this.displayValueElement.options = window.EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
+                return { name: enumEntry.label, value: enumEntry.value }
+            })
         }
         this.displayUnitElement.value = displayUnit ?? this._valueUnit 
     }
@@ -36,8 +40,12 @@ export default class UITableWithUnit extends UITemplate {
         if(!window.EnumRegister?.isEnum(valueUnit)) {
             this.value = newValue
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
+            this.displayValueElement.options = undefined
         } else {
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
+            this.displayValueElement.options = window.EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
+                return { name: enumEntry.label, value: enumEntry.value }
+            })
         }
     }
     #value
@@ -216,10 +224,14 @@ export default class UITableWithUnit extends UITemplate {
         this.displayUnitElement.addEventListener(`change`, () => {
             if(!window.EnumRegister?.isEnum(this.displayUnit)) {
                 this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
+                this.displayValueElement.options = undefined
                 if(this.displayValue != undefined)
                     this.displayValue = ConvertValueFromUnitToUnit(this.displayValue, oldUnit, this.displayUnit)
             } else {
                 this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
+                this.displayValueElement.options = window.EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
+                    return { name: enumEntry.label, value: enumEntry.value }
+                })
             }
             oldUnit = this.displayUnit
         })
