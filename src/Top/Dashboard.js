@@ -302,16 +302,23 @@ export default class Dashboard extends UITemplate {
             const offsetX = (downEvent.touches?.[0]?.clientX ?? downEvent.clientX) - target.offsetLeft
             const offsetY = (downEvent.touches?.[0]?.clientY ?? downEvent.clientY) - target.offsetTop
             
+            const startX = downEvent.touches?.[0]?.clientX ?? downEvent.clientX
+            const startY = downEvent.touches?.[0]?.clientY ?? downEvent.clientY
             const mouseMove = moveEvent => {
                 moveEvent.preventDefault()
+                const gridSize = 50
+                const curX = moveEvent.touches?.[0]?.clientX ?? moveEvent.clientX
+                const curY = moveEvent.touches?.[0]?.clientY ?? moveEvent.clientY
                 if(draggingElement === false) {
+                    const dx = curX - startX
+                    const dy = curY - startY
+                    if(Math.sqrt(dx * dx + dy * dy) < gridSize / 4) return
                     draggingElement = true
                     target.style.position = `absolute`
                     target.classList.add(`dragging`)
                 }
-                const gridSize = 50
-                let x = (moveEvent.touches?.[0]?.clientX ?? moveEvent.clientX) - offsetX
-                let y = (moveEvent.touches?.[0]?.clientY ?? moveEvent.clientY) - offsetY
+                let x = curX - offsetX
+                let y = curY - offsetY
 
                 x = Math.round(x / gridSize) * gridSize
                 y = Math.round(y / gridSize) * gridSize
