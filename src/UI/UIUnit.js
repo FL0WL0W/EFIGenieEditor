@@ -144,6 +144,7 @@ export default class UIUnit extends UISelection {
 
     get value() { return super.value }
     set value(value) {
+        if(!this.options || this.options.length === 0) this.options = [...UIUnit.allMeasurementOptions, ...UIUnit.enumOptions]
         if(value !== `__new_enum__`) this._previousValue = super.value
         super.value = value
     }
