@@ -27,6 +27,7 @@ let LambdaUnits = [ { name: `λ`, SIMultiplier: 1, SIOffset: 0 } ]
 let VolumeUnits = [ { name: `L`, SIMultiplier: 1, SIOffset: 0 }, { name: `mL`, SIMultiplier: 1000, SIOffset: 0 } ]
 let MassFlowUnits = [ { name: `g/s`, SIMultiplier: 1, SIOffset: 0 }, { name: `g/min`, SIMultiplier: 60, SIOffset: 0 } ]
 let ResistanceUnits = [ { name: `Ω`, SIMultiplier: 1, SIOffset: 0 }, { name: `kΩ`, SIMultiplier: 0.001, SIOffset: 0 } ]
+let TorqueUnits = [ { name: `Nm`, SIMultiplier: 1, SIOffset: 0 }, { name: `lb-ft`, SIMultiplier: 0.737562, SIOffset: 0 } ]
 
 export let Measurements = {
     'No Unit': BlankUnits,
@@ -46,6 +47,7 @@ export let Measurements = {
     AngularSpeed: AngularSpeedUnits,
     Ratio: Ratio,
     Resistance: ResistanceUnits,
+    TorqueUnits: TorqueUnits,
 }
 
 export function GetDefaultMinMaxStepRedlineFromUnit(unit) {
