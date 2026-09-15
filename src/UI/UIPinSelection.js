@@ -14,6 +14,8 @@ export default class UIPinSelection extends UISelection {
         var options = []
         var endOptions = []
         if(!pinOut) return
+        const pinOutChanged = this.pinOut !== pinOut
+        this.pinOut = pinOut
         for(var i = 0; i < pinOut.Pins.length; i++) {
             const selected = this.value === pinOut.Pins[i].value
             if(pinOut.Pins[i].supportedModes.split(` `). indexOf(this.pinType) === -1) {
@@ -33,6 +35,8 @@ export default class UIPinSelection extends UISelection {
         options = options.concat(endOptions)
 
         this.options = options
+        if(pinOutChanged)
+            this.dispatchEvent(new Event(`pinoutchange`))
     }
 }
 customElements.define('ui-pinselection', UIPinSelection, { extends: `div` })
