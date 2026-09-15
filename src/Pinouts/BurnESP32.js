@@ -1,9 +1,9 @@
 import { gzip } from "pako"
 import { downloadBin } from "../download.js"
 
-export async function BurnESP32(cfg, type){
+export async function BurnESP32(cfg, type, processorDefinition){
     const saveValue = JSON.stringify(cfg.saveValue)
-    const bin = buildConfig({ ...cfg.value, type: type })
+    const bin = buildConfig({ ...cfg.value, type: type }, processorDefinition)
 
     //save config to ESP32
     const compressedData = gzip(new TextEncoder().encode(saveValue))

@@ -3,8 +3,29 @@ import VariableRegistry from "./VariableRegistry"
 import { GetUnitFromName } from "./UI/UIUnit"
 import Calculation_Formula from "./Calculation/Calculation_Formula"
 
-export default function buildConfig(obj) {
-    return types.find(x => x.type === obj.type).toArrayBuffer.call(obj)
+export default function buildConfig(obj, processorDefinition) {
+    processorDefinition ??= [
+        { type: `INT8`, align: 1, endian: `little` },
+        { type: `INT16`, align: 2, endian: `little` },
+        { type: `INT32`, align: 4, endian: `little` },
+        { type: `INT64`, align: 8, endian: `little` },
+        { type: `BOOL`, align: 1, endian: `little` },
+        { type: `UINT8`, align: 1, endian: `little` },
+        { type: `UINT16`, align: 2, endian: `little` },
+        { type: `UINT32`, align: 4, endian: `little` },
+        { type: `UINT64`, align: 8, endian: `little` },
+        { type: `FLOAT`, align: 4, endian: `little` },
+        { type: `DOUBLE`, align: 8, endian: `little` },
+    ]
+    for(var index in processorDefinition) {
+        var type = types.find(x => x.type == processorDefinition[index].type)
+        if(type){
+            type.align = processorDefinition[index].align ?? 1
+            type.endian = processorDefinition[index].endian ?? `little`
+        }
+    }
+    const typeInfo = types.find(x => x.type === obj.type)
+    return typeInfo.toArrayBuffer.call(obj, obj.endian ?? typeInfo.endian)
 }
 
 var BuildRegister
@@ -230,48 +251,6 @@ function GetTypeId(type) {
     }
 }
 
-let PackedTypeAlignment = [
-    { type: `INT8`, align: 1 }, 
-    { type: `INT16`, align: 1 },
-    { type: `INT32`, align: 1 },
-    { type: `INT64`, align: 1 },
-    { type: `BOOL`, align: 1 }, 
-    { type: `UINT8`, align: 1 },
-    { type: `UINT16`, align: 1 },
-    { type: `UINT32`, align: 1 },
-    { type: `UINT64`, align: 1 },
-    { type: `FLOAT`, align: 1 },
-    { type: `DOUBLE`, align: 1 },
-]
-
-let STM32TypeAlignment = [
-    { type: `INT8`, align: 1 }, 
-    { type: `INT16`, align: 2 },
-    { type: `INT32`, align: 4 },
-    { type: `INT64`, align: 8 },
-    { type: `BOOL`, align: 1 }, 
-    { type: `UINT8`, align: 1 },
-    { type: `UINT16`, align: 2 },
-    { type: `UINT32`, align: 4 },
-    { type: `UINT64`, align: 8 },
-    { type: `FLOAT`, align: 4 },
-    { type: `DOUBLE`, align: 8 },
-]
-
-let x86TypeAlignment = [
-    { type: `INT8`, align: 1 }, 
-    { type: `INT16`, align: 2 },
-    { type: `INT32`, align: 4 },
-    { type: `INT64`, align: 8 },
-    { type: `BOOL`, align: 1 }, 
-    { type: `UINT8`, align: 1 },
-    { type: `UINT16`, align: 2 },
-    { type: `UINT32`, align: 4 },
-    { type: `UINT64`, align: 8 },
-    { type: `FLOAT`, align: 4 },
-    { type: `DOUBLE`, align: 8 },
-]
-
 function Packagize(definition, val) {
     val = {...val}
     val.outputVariables ??= []
@@ -374,25 +353,40 @@ function toArrayBuffer() {
             toArrayBuffer = typeInfo.toArrayBuffer
         }
         if(toArrayBuffer != undefined){
-            buffer = buffer.concatArray(toArrayBuffer.call(definition.value[index]))
+            buffer = buffer.concatArray(toArrayBuffer.call(definition.value[index], definition.value[index].endian ?? typeInfo?.endian))
         }
     }
     return buffer
 }
 
+function numericArrayBuffer(value, byteLength, setter, endian, bigint = false) {
+    const values = Array.isArray(value) ? value : [value]
+    const buffer = new ArrayBuffer(values.length * byteLength)
+    const view = new DataView(buffer)
+    values.forEach((item, index) => {
+        view[setter](index * byteLength, bigint ? BigInt(item) : item, endian !== `big`)
+    })
+    return buffer
+}
+
+function uint32ArrayBuffer(value) {
+    const typeInfo = types.find(x => x.type === `UINT32`)
+    return typeInfo.toArrayBuffer.call({ value }, typeInfo.endian)
+}
+
 let types = [
     { type: `definition`, toDefinition, toArrayBuffer},
-    { type: `INT8`, toArrayBuffer() { return new Int8Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `INT16`, toArrayBuffer() { return new Int16Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `INT32`, toArrayBuffer() { return new Int32Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `INT64`, toArrayBuffer() { return new BigInt64Array(Array.isArray(this.value)? this.value : [BigInt(this.value)]).buffer }},
-    { type: `BOOL`, toArrayBuffer() { return new Uint8Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `UINT8`, toArrayBuffer() { return new Uint8Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `UINT16`, toArrayBuffer() { return new Uint16Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `UINT32`, toArrayBuffer() { return new Uint32Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `UINT64`, toArrayBuffer() { return new BigUint64Array(Array.isArray(this.value)? this.value : [BigInt(this.value)]).buffer }},
-    { type: `FLOAT`, toArrayBuffer() { return new Float32Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
-    { type: `DOUBLE`, toArrayBuffer() { return new Float64Array(Array.isArray(this.value)? this.value : [this.value]).buffer }},
+    { type: `INT8`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 1, `setInt8`, endian) }},
+    { type: `INT16`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 2, `setInt16`, endian) }},
+    { type: `INT32`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 4, `setInt32`, endian) }},
+    { type: `INT64`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 8, `setBigInt64`, endian, true) }},
+    { type: `BOOL`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 1, `setUint8`, endian) }},
+    { type: `UINT8`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 1, `setUint8`, endian) }},
+    { type: `UINT16`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 2, `setUint16`, endian) }},
+    { type: `UINT32`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 4, `setUint32`, endian) }},
+    { type: `UINT64`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 8, `setBigUint64`, endian, true) }},
+    { type: `FLOAT`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 4, `setFloat32`, endian) }},
+    { type: `DOUBLE`, toArrayBuffer(endian) { return numericArrayBuffer(this.value, 8, `setFloat64`, endian) }},
     { type: `CompressedObject`, toArrayBuffer() { return gzip(new TextEncoder().encode(JSON.stringify(this.value))).buffer }},
     { type: `VariableId`, toDefinition() { 
         return { type: `definition`, value: [
@@ -427,13 +421,13 @@ let types = [
         this.types = this.types.filter(t => !(t.type === `Group` || t.type === `Package`))
         function reduce(value) {
             if(isEmptyObject(value))
-                return
+                return []
                 
             let newValue = []
             let definition = mapDefinitionFromValue.call(thisGroup, value)
             if(!Array.isArray(definition))
                 definition = [definition]
-            for(index in definition)
+            for(let index in definition)
             {
                 if(definition[index] == undefined)
                     continue
@@ -445,7 +439,7 @@ let types = [
                             thisGroup.types.push(definition[index].types[typeIndex])
                         }
                     }
-                    newValue.push(...definition[index].value.map(reduce))
+                    newValue.push(...definition[index].value.flatMap(reduce))
                 } else {
                     newValue.push(definition[index])
                 }
@@ -1144,13 +1138,13 @@ let types = [
             ]},
         ]}
     }, toArrayBuffer() {
-        let buf = buildConfig({ type:`definition`, value: [ this ], types: types })
-        buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
-        buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
+        let buf = types.find(x => x.type === `definition`).toArrayBuffer.call({ type:`definition`, value: [ this ], types: types })
+        buf = uint32ArrayBuffer(buf.byteLength).concatArray(buf)
+        buf = buf.concatArray(uint32ArrayBuffer(buf.crc32()))
 
         let bufMeta = gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.variableReferences))).buffer
-        bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
-        bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
+        bufMeta = uint32ArrayBuffer(bufMeta.byteLength).concatArray(bufMeta)
+        bufMeta = bufMeta.concatArray(uint32ArrayBuffer(bufMeta.crc32()))
 
         return buf.concatArray(bufMeta)
     }},
@@ -1172,21 +1166,14 @@ let types = [
             ]},
         ]}
     }, toArrayBuffer() {
-        let buf = buildConfig({ type:`definition`, value: [ this ], types: types })
-        buf = new Uint32Array([buf.byteLength]).buffer.concatArray(buf)
-        buf = buf.concatArray(new Uint32Array([buf.crc32()]).buffer)
+        let buf = types.find(x => x.type === `definition`).toArrayBuffer.call({ type:`definition`, value: [ this ], types: types })
+        buf = uint32ArrayBuffer(buf.byteLength).concatArray(buf)
+        buf = buf.concatArray(uint32ArrayBuffer(buf.crc32()))
 
         let bufMeta = gzip(new TextEncoder().encode(JSON.stringify(BuildRegister.variableReferences))).buffer
-        bufMeta = new Uint32Array([bufMeta.byteLength]).buffer.concatArray(bufMeta)
-        bufMeta = bufMeta.concatArray(new Uint32Array([bufMeta.crc32()]).buffer)
+        bufMeta = uint32ArrayBuffer(bufMeta.byteLength).concatArray(bufMeta)
+        bufMeta = bufMeta.concatArray(uint32ArrayBuffer(bufMeta.crc32()))
 
         return buf.concatArray(bufMeta)
     }},
 ]
-
-for(var index in STM32TypeAlignment) {
-    var type = types.find(x => x.type == x86TypeAlignment[index].type)
-    if(type){
-        type.align = x86TypeAlignment[index].align
-    }
-}

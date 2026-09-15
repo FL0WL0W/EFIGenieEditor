@@ -9,6 +9,19 @@ Pinouts.ESP32C6_Expander = {
     OverlayWidth: 610,
     OverlayElementHeight: 25,
     CANBusCount: 2,
+    ProcessorDefinition: [
+        { type: `INT8`, align: 1, endian: `little` }, 
+        { type: `INT16`, align: 2, endian: `little` },
+        { type: `INT32`, align: 4, endian: `little` },
+        { type: `INT64`, align: 8, endian: `little` },
+        { type: `BOOL`, align: 1, endian: `little` }, 
+        { type: `UINT8`, align: 1, endian: `little` },
+        { type: `UINT16`, align: 2, endian: `little` },
+        { type: `UINT32`, align: 4, endian: `little` },
+        { type: `UINT64`, align: 8, endian: `little` },
+        { type: `FLOAT`, align: 4, endian: `little` },
+        { type: `DOUBLE`, align: 8, endian: `little` },
+    ],
     Pins: [
         { name: `1`, value: 1, supportedModes: `digitalin digitalout analog pwmout`, overlayX: 120, overlayY: 345, align: `right`},
         { name: `3`, value: 3, supportedModes: `digitalin digitalout analog pwmout`, overlayX: 120, overlayY: 391, align: `right`},
@@ -24,7 +37,7 @@ Pinouts.ESP32C6_Expander = {
     Type: "TopExpander",
     Top: TopExpander,
     Burn: async function(cfg) {
-        await BurnESP32(cfg, this.Type);
+        await BurnESP32(cfg, this.Type, this.ProcessorDefinition);
     },
     Connect: function() {
         communication._serial = new Socket("EFIGenieCommunication")

@@ -8,6 +8,19 @@ Pinouts.Purple_Pill_W806 = {
     Overlay: overlayURL,
     OverlayWidth: 720,
     OverlayElementHeight: 22,
+    ProcessorDefinition: [
+        { type: `INT8`, align: 1, endian: `little` }, 
+        { type: `INT16`, align: 2, endian: `little` },
+        { type: `INT32`, align: 4, endian: `little` },
+        { type: `INT64`, align: 8, endian: `little` },
+        { type: `BOOL`, align: 1, endian: `little` }, 
+        { type: `UINT8`, align: 1, endian: `little` },
+        { type: `UINT16`, align: 2, endian: `little` },
+        { type: `UINT32`, align: 4, endian: `little` },
+        { type: `UINT64`, align: 8, endian: `little` },
+        { type: `FLOAT`, align: 4, endian: `little` },
+        { type: `DOUBLE`, align: 8, endian: `little` },
+    ],
     Pins: [
         { name: `PA_0`,  value: (32*0 + 0 ), supportedModes: `digitalin digitalout digitalinterrupt pwm`, overlayX: 491, overlayY: 560, align: `left`},
         { name: `PA_1`,  value: (32*0 + 1 ), supportedModes: `digitalin digitalout digitalinterrupt analog pwm`, overlayX: 491, overlayY: 537, align: `left`},
@@ -57,7 +70,7 @@ Pinouts.Purple_Pill_W806 = {
     Type: "TopEngine",
     Top: TopEngine,
     Burn: async function(cfg) {
-        await BurnW806(cfg, this.Type);
+        await BurnW806(cfg, this.Type, processorDefinition);
     },
     Connect: function() {
         communication._serial = new Serial({ baudRate: 1000000 }, [ 

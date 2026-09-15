@@ -1,6 +1,8 @@
 import overlayURL from './E78.svg';
 import Pinouts from './Pinouts';
 import TopEngine from '../Top/TopEngine';
+import buildConfig from '../buildConfig';
+import { downloadBin } from '../download';
 
 // E78DigitalService uses connector * 100 + cavity (X2-5 is 205). Keep this
 // list in connector numbering, not MPC5566 SIU pad numbering. The available
@@ -176,13 +178,27 @@ Pinouts.E78 = {
     OverlayElementHeight: 120,
     // Current EFIGenieE78 initializes only FlexCAN-A.
     CANBusCount: 1,
+    ProcessorDefinition: [
+        { type: `INT8`, align: 1, endian: `big` }, 
+        { type: `INT16`, align: 2, endian: `big` },
+        { type: `INT32`, align: 4, endian: `big` },
+        { type: `INT64`, align: 8, endian: `big` },
+        { type: `BOOL`, align: 1, endian: `big` }, 
+        { type: `UINT8`, align: 1, endian: `big` },
+        { type: `UINT16`, align: 2, endian: `big` },
+        { type: `UINT32`, align: 4, endian: `big` },
+        { type: `UINT64`, align: 8, endian: `big` },
+        { type: `FLOAT`, align: 4, endian: `big` },
+        { type: `DOUBLE`, align: 8, endian: `big` },
+    ],
     Pins: Object.entries(connectorPins).flatMap(([connector, pins]) =>
         pins.map(([cavity, functionName, supportedModes]) =>
             makePin(Number(connector), cavity, functionName, supportedModes))),
     Type: 'TopEngine',
     Top: TopEngine,
-    Burn: async function() {
-        throw new Error('E78 configuration upload is not implemented yet.');
+    Burn: async function(cfg) {
+        const bin = buildConfig({ ...cfg.value, type: this.Type }, this.ProcessorDefinition);
+        downloadBin(bin, 'E78-Config.bin');
     },
     Connect: function() {
         throw new Error('E78 communication transport is not configured yet.');
