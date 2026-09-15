@@ -592,7 +592,7 @@ select .pinconflict{
     transform-origin: top left;
 }
 .pinoverlay img {
-    position: absolute; left: 150px;
+    position: absolute;
 }
 
 .sidebaropenclose::after {

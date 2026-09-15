@@ -36,6 +36,7 @@ import { downloadBin, downloadObject } from "./download.js"
 import Pinouts from "./Pinouts/Pinouts.js"
 import "./Pinouts/PinoutESP32C6_Expander.js"
 import "./Pinouts/PinoutPurple_Pill_W806.js"
+import "./Pinouts/PinoutE78.js"
 
 import VariableRegistry from "./VariableRegistry.js"
 window.VariableRegister = new VariableRegistry()

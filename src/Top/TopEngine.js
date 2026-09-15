@@ -25,7 +25,7 @@ export default class TopEngine extends Top {
     })
     CAN = new ConfigList({
         newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
-    });
+    })
     Engine = new Engine()
     Fuel = new Fuel()
     Ignition = new Ignition()
@@ -41,11 +41,13 @@ export default class TopEngine extends Top {
         this.addTab(this.Ignition, `Ignition`)
         this.TargetDevice.addEventListener(`change`, () => { 
             this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
-            if(this.PinOverlay.pinOut.CANBusCount)
+            if(this.PinOverlay.pinOut.CANBusCount) {
                 this.unhideTab(`CAN`)
-            else
+                this.CAN.hidden = false
+            } else {
                 this.hideTab(`CAN`)
-            this.CAN.hidden = true
+                this.CAN.hidden = true
+            }
         })
         this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
         if(this.PinOverlay.pinOut?.CANBusCount)
