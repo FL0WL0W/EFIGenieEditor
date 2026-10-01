@@ -40,11 +40,13 @@ export default class UIPinOverlay extends HTMLDivElement {
         const xWhiteSpace = -xMin + xMax - pinOut.OverlayWidth
         const scale = 910 / (pinOut.OverlayWidth + xWhiteSpace)
         this.overlayImage.style.width = `${pinOut.OverlayWidth}px`
-        this.overlayImage.style.left = `${-xMin + 1}px`
+        this.overlayImage.style.left = `${-xMin + pinScale}px`
         this.style.width = `910px`
         this.style.transformOrigin = `top left`
         this.style.transform = `scale(${scale})`
         this.overlayImage.src = pinOut.Overlay
+        this.pinElements.style.transformOrigin = `top left`
+        this.pinElements.style.scale = `${pinScale}`
         while(pinOut.Pins.length < this.pinElements.children.length) this.pinElements.removeChild(this.pinElements.lastChild)
         for(let i = 0; i < pinOut.Pins.length; i++) {
             let pinElement = this.pinElements.children[i]
@@ -95,14 +97,12 @@ export default class UIPinOverlay extends HTMLDivElement {
             }
             pinElement.pin = pinOut.Pins[i].value
             pinElement.supportedModes = pinOut.Pins[i].supportedModes
-            pinElement.style.top = pinOut.Pins[i].overlayY - pinOut.OverlayElementHeight / 2 + `px`
+            pinElement.style.top = (pinOut.Pins[i].overlayY - pinOut.OverlayElementHeight / 2)  / pinScale + `px`
             if(pinOut.Pins[i].align === `left`) {
-                pinElement.style.left = pinOut.Pins[i].overlayX - xMin + `px`
+                pinElement.style.left = (pinOut.Pins[i].overlayX - xMin) / pinScale + `px`
             } else {
-                pinElement.style.left = pinOut.Pins[i].overlayX -150 * pinScale - xMin + `px`
+                pinElement.style.left = (pinOut.Pins[i].overlayX - xMin) / pinScale -150 + `px`
             }
-            pinElement.style.transformOrigin = `top left`
-            pinElement.style.scale = `${pinScale}`
         }
         this.update()
     }
