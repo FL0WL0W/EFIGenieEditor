@@ -1,5 +1,8 @@
 import UISelection from "../JavascriptUI/UISelection"
 export default class UIPinOverlay extends HTMLDivElement {
+    pinSelectElementChangeHandler = () => {
+        this.update();
+    }
     get pinSelectElements() {
         function getNameFromPinSelectChildren(element){
             if(element.classList.contains(`pinselectname`)){
@@ -22,9 +25,7 @@ export default class UIPinOverlay extends HTMLDivElement {
         elements.forEach((element) => {
             element.name = getNameFromPinSelectElement(element)
             element.updateOptions?.(this.pinOut);
-            element.addEventListener(`change`, () => {
-                this.update();
-            })
+            element.addEventListener(`change`, this.pinSelectElementChangeHandler)
         })
         return elements
     }

@@ -6,9 +6,13 @@ export default class UIPinSelection extends UISelection {
         this.selectValue = prop.selectValue ?? 0xFFFF
         
         this.classList.add(`pinselect`)
+        this.updateOptions(document.querySelectorAll(`.pinoverlay`)[0]?.pinOut)
     }
 
-    wtf = 1
+    get saveValue() { return super.saveValue }
+    set saveValue(value) {
+        super.saveValue = value
+    }
     
     updateOptions(pinOut) {
         var options = []
