@@ -243,18 +243,18 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     z-index: 100;
     display: flex;
     align-items: center;
-    height: 65px;
+    height: 55px;
     background-color: #121619;
 }
 
 .application-header > .sidebaropenclose {
     display: flex;
-    flex: 0 0 63px;
+    flex: 0 0 55px;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-    width: 63px;
-    height: 63px;
+    width: 55px;
+    height: 55px;
     padding: 0;
     font-size: 32px;
     line-height: 1;
@@ -277,15 +277,14 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     box-sizing: border-box;
     background-color: #121619;
     min-width: 0;
-    height: 65px;
+    height: 55px;
     padding: 0 0px;
 }
 
 .application-logo {
     display: block;
     flex: 0 0 250px;
-    width: 250px;
-    height: 63px;
+    height: 55px;
     background-position: center;
     background-size: contain;
     background-repeat: no-repeat;
