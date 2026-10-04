@@ -93,6 +93,9 @@ import UITable from "./JavascriptUI/UITable.js"
 import UIGraph3D from "./JavascriptUI/UIGraph3D.js"
 import UIGraph2D from "./JavascriptUI/UIGraph2D.js"
 import UIDialog from "./JavascriptUI/UIDialog.js"
+import UIContextMenu from "./JavascriptUI/UIContextMenu.js"
+
+import efigenieLogo from "./EFIGenieLogo.svg"
 
 import MAP_GM1Bar from "./MAP/MAP_GM1Bar.js"
 import MAP_GM2Bar from "./MAP/MAP_GM2Bar.js"
@@ -127,7 +130,9 @@ import FileBrowser from "./Top/FileBrowser.js"
 
 
 window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
+document.querySelector(`.application-logo`).style.backgroundImage = `url("${efigenieLogo}")`
 window.addEventListener(`load`, function() {
+    const applicationToolbar = document.querySelector(`.application-toolbar`)
     window.fileBrowser = new FileBrowser()
     window.fileBrowserDialog = new UIDialog()
     window.fileBrowserDialog.content.append(window.fileBrowser)
@@ -190,6 +195,7 @@ window.addEventListener(`load`, function() {
         let workspace = document.querySelector(`#workspace`)
         workspace.innerHTML = ``
         workspace.append(b)
+        b.querySelector(`.application-header`).append(applicationToolbar)
         b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
     }
     setupTop()
@@ -224,30 +230,25 @@ window.addEventListener(`load`, function() {
         xhr.send()
     }
 
-    const btnOpen = document.querySelector(`#btnOpen`)
-    btnOpen.addEventListener(`click`, function(){
+    const openConfig = () => {
         window.fileBrowser.value = configJsonName ?? ``
         window.fileBrowserDialog.title = window.fileBrowser.actionLabel = `Open`
         window.fileBrowserDialog.show()
-    })
-    const btnSaveAs = document.querySelector(`#btnSaveAs`)
-    btnSaveAs.addEventListener(`click`, function(){
+    }
+    const saveConfigAs = () => {
         window.fileBrowser.value = configJsonName ?? ``
         window.fileBrowserDialog.title = window.fileBrowser.actionLabel = `Save`
         window.fileBrowserDialog.show()
-    })
-    const btnSave = document.querySelector(`#btnSave`)
-    btnSave.addEventListener(`click`, function(){
+    }
+    const saveConfig = () => {
         if(configJsonName === undefined) {
-            window.fileBrowser.value = configJsonName ?? ``
-            window.fileBrowserDialog.title = window.fileBrowser.actionLabel = `Save`
-            window.fileBrowserDialog.show()
+            saveConfigAs()
         }
         else {
             window.localStorage.setItem(configJsonName, JSON.stringify(window.b.saveValue))
             window.fileBrowser.updateOptions()
         }
-    })
+    }
     window.fileBrowser.actionButton.addEventListener(`click`, function(){
         window.fileBrowserDialog.close()
         if(window.fileBrowser.value === undefined)
@@ -295,11 +296,17 @@ window.addEventListener(`load`, function() {
             }, 5000)
         })
     })
-    document.querySelector(`#btnDownload`).addEventListener(`click`, function(){
+    const downloadConfig = () => {
         var cfg = b.saveValue
         downloadObject(cfg, `${configJsonName ?? `tune`}.json`)
-    })
-    document.querySelector(`#btnLoad`).addEventListener(`change`, function(evt){
+    }
+
+    const btnLoad = document.querySelector(`#btnLoad`)
+    btnLoad.addEventListener(`change`, function(evt){
+        const selectedFile = evt.target.files[0]
+        if(selectedFile === undefined)
+            return
+
         var test = new FileReader()
 
         test.onload = function(evt) {
@@ -314,16 +321,22 @@ window.addEventListener(`load`, function() {
             loadConfig(result)
         }
 
-        test.readAsText(evt.target.files[0])
-        let file = evt.target.files[0].name
+        test.readAsText(selectedFile)
+        let file = selectedFile.name
         file = file.substr(file.lastIndexOf('\\') + 1).split('.')[0];
         window.localStorage.setItem(`lastConfigName`, configJsonName = file)
     })
 
-    document.querySelector(`#btnSaveLog`).addEventListener(`click`, function(){
+    const saveLog = () => {
         downloadBin(communication.saveValue, `${configJsonName ?? `log`}.log`)
-    })
-    document.querySelector(`#btnOpenLog`).addEventListener(`change`, function(evt){
+    }
+
+    const btnOpenLog = document.querySelector(`#btnOpenLog`)
+    btnOpenLog.addEventListener(`change`, function(evt){
+        const selectedFile = evt.target.files[0]
+        if(selectedFile === undefined)
+            return
+
         var test = new FileReader()
 
         test.onload = function(evt) {
@@ -337,8 +350,42 @@ window.addEventListener(`load`, function() {
             communication.saveValue = result;
         }
 
-        test.readAsArrayBuffer(evt.target.files[0])
+        test.readAsArrayBuffer(selectedFile)
     })
+
+    const fileActions = {
+        open: openConfig,
+        save: saveConfig,
+        saveAs: saveConfigAs,
+        upload: () => btnLoad.click(),
+        download: downloadConfig,
+        openLog: () => btnOpenLog.click(),
+        saveLog: saveLog
+    }
+    const fileMenu = new UIContextMenu({
+        options: [
+            {
+                group: `Configuration`,
+                options: [
+                    { name: `Open`, action: `open` },
+                    { name: `Save`, action: `save` },
+                    { name: `Save As`, action: `saveAs` },
+                    { name: `Upload`, action: `upload` },
+                    { name: `Download`, action: `download` }
+                ]
+            },
+            {
+                group: `Data Log`,
+                options: [
+                    { name: `Open Log`, action: `openLog` },
+                    { name: `Save Log`, action: `saveLog` }
+                ]
+            }
+        ]
+    })
+    document.querySelector(`.file-menu`).append(fileMenu)
+    document.querySelector(`#btnFile`).addEventListener(`click`, () => fileMenu.show())
+    fileMenu.addEventListener(`optionselect`, ({ detail }) => fileActions[detail.action]?.())
 
     const btnConnect = document.querySelector(`#btnConnect`)
     btnConnect.addEventListener(`click`, function(){

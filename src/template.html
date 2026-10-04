@@ -8,23 +8,19 @@
     <title><%= htmlWebpackPlugin.options.title %></title>
   </head>
   <body>
-    <div style="position: fixed; background-color: #121619; z-index: 100; width: 100%; height: 57px;">
-        <input id="btnOpen" type="button" class="w3-button w3-padding-16" value="Open">
-        <input id="btnSave" type="button" class="w3-button w3-padding-16" value="Save">
-        <input id="btnSaveAs" type="button" class="w3-button w3-padding-16" value="Save As">
+    <div class="application-toolbar">
+        <div class="application-logo" role="img" aria-label="EFIGenie"></div>
+        <div class="file-menu">
+          <input id="btnFile" type="button" class="w3-button w3-padding-16" value="File">
+        </div>
         <input id="btnBurn" type="button" class="w3-button w3-padding-16" value="Burn">
-        <label tabindex=0 for="btnLoad" class="w3-button w3-padding-16">Upload</label>
-        <input id="btnDownload" type="button" class="w3-button w3-padding-16" value="Download">
         <input id="btnLoad" type="file" style="display: none;">
         <input id="btnConnect" type="button" class="w3-button w3-padding-16" value="Connect">
-        <input id="btnSaveLog" type="button" class="w3-button w3-padding-16" value="Save Log">
-        <label tabindex=0 for="btnOpenLog" class="w3-button w3-padding-16">Open Log</label>
         <input id="btnOpenLog" type="file" style="display: none;">
         <span id="target"></span>
-        </select>
     </div>
     <div id="overlay"></div>
-    <div style="position: relative; top: 57px;"><div id="workspace" style="position: static; margin: 0; padding: 0;"></div></div>
+    <div><div id="workspace" style="position: static; margin: 0; padding: 0;"></div></div>
     <script>
       var siteWidth = 750
       var scale = screen.width /siteWidth

@@ -12,25 +12,20 @@ export default class Top extends UITemplate {
     </div>
 </div>
 <div>
-    <div style="background-color: #121619;">
+    <div class="application-header">
         <div data-element="sidebarOpen"></div>
-        <div style="display: inline-block;">
-            <span>
-                <div data-element="btnFile"></div>
-            </span>
-        </div>
     </div>
     <div data-element="pageTitle"></div>
     <hr style="margin: 0px 0px 5px 0px;">
     <div data-element="page"></div>
 </div>`
 
-    btnFile = new UIButton({ label: `File` });
     topTitle = document.createElement(`div`)
     pageTitle = document.createElement(`div`)
     sidebarClose = new UIButton({className: `sidebaropenclose w3-button w3-right`})
     sidebarOpen = new UIButton({className: `sidebaropenclose w3-button`})
     sidebarSelection = document.createElement(`div`)
+    mainContent = document.createElement(`div`)
     page = document.createElement(`div`)
 
     addTab(content, label)
@@ -98,14 +93,20 @@ export default class Top extends UITemplate {
         this.pageTitle.style.margin = `3px`
         this.sidebarSelection.className = `w3-bar-block sidebarSelection`
         this.sidebarOpen.style.verticalAlign = `top`
-        this.btnFile.classList.remove(`ui`, `button`)
-        this.btnFile.classList.add(`w3-button`)
+        this.mainContent.className = `main-content`
         this.page.class = `w3-container w3-display-container`
 
-        this.sidebarOpen.addEventListener(`click`, () => {
+        this.sidebarOpen.addEventListener(`click`, event => {
+            if(event.efigenieSidebarHandled)
+                return
+            event.efigenieSidebarHandled = true
+            if(this.firstChild.style.display !== `none`) {
+                this.sidebarClose.dispatchEvent(new Event(`click`))
+                return
+            }
             window.localStorage.setItem(`expanded`, `true`)
             var sidebarElement = this.firstChild
-            var containerElement = this.lastChild
+            var containerElement = this.mainContent
             sidebarElement.hidden = false
             var width = sidebarElement.offsetWidth
             var moveamount = 0.005 * width / 0.1
@@ -123,12 +124,14 @@ export default class Top extends UITemplate {
                     sidebarElement.style.opacity = left / width
                 }
             }, 5)
-            this.sidebarOpen.hidden = true
         })
-        this.sidebarClose.addEventListener(`click`, () => {
+        this.sidebarClose.addEventListener(`click`, event => {
+            if(event.efigenieSidebarHandled)
+                return
+            event.efigenieSidebarHandled = true
             window.localStorage.setItem(`expanded`, `false`)
             var sidebarElement = this.firstChild
-            var containerElement = this.lastChild
+            var containerElement = this.mainContent
             var width = sidebarElement.offsetWidth
             var moveamount = 0.005 * width / 0.1
             var left = parseFloat(containerElement.style.left)
@@ -146,7 +149,6 @@ export default class Top extends UITemplate {
                     sidebarElement.style.opacity = left / width
                 }
             }, 5)
-            this.sidebarOpen.hidden = false
         })
         let touched = false
         this.sidebarSelection.addEventListener(`touchstart`, () => {
@@ -165,6 +167,11 @@ export default class Top extends UITemplate {
             }
         }, 50)
         super.Setup(prop)
+        const contentParent = this.pageTitle.parentElement
+        const divider = this.pageTitle.nextElementSibling
+        contentParent.insertBefore(this.mainContent, this.pageTitle)
+        this.mainContent.replaceChildren()
+        this.mainContent.append(this.pageTitle, divider, this.page)
         this.lastChild.style.position = `relative`
     }
 

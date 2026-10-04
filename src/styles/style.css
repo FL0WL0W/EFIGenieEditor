@@ -237,6 +237,85 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
 
 body {background-color: #222629; color: #eee; font-weight:bold;}
 
+.application-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    height: 65px;
+    background-color: #121619;
+}
+
+.application-header > .sidebaropenclose {
+    display: flex;
+    flex: 0 0 63px;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 63px;
+    height: 63px;
+    padding: 0;
+    font-size: 32px;
+    line-height: 1;
+}
+
+.top > .w3-sidebar {
+    top: 65px;
+    height: calc(100% - 65px);
+}
+
+.main-content {
+    position: relative;
+}
+
+.application-toolbar {
+    display: flex;
+    flex: 1 1 auto;
+    align-items: center;
+    gap: 0;
+    box-sizing: border-box;
+    background-color: #121619;
+    min-width: 0;
+    height: 65px;
+    padding: 0 8px;
+}
+
+.application-logo {
+    display: block;
+    flex: 0 0 250px;
+    width: 250px;
+    height: 63px;
+    background-position: center;
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: invert(1);
+    margin-right: 8px;
+}
+
+.file-menu {
+    position: relative;
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.file-menu > .ui.context-menu {
+    top: 100%;
+    left: 0;
+    width: 220px;
+    inline-size: 220px;
+    max-height: none;
+}
+
+.file-menu > .ui.context-menu .selectgroup {
+    padding: 5px 12px;
+}
+
+.file-menu > .ui.context-menu .selectoption {
+    padding: 8px 16px;
+}
+
 .inputconfig {
     display: inline-block;
 }
