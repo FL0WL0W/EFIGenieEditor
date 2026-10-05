@@ -23,6 +23,7 @@ export default class FileBrowser extends UITemplate {
     actionButton = new UIButton({
         label:          `Open`,
     })
+    excludedKeys = []
 
     constructor(prop) {
         super();
@@ -80,7 +81,10 @@ export default class FileBrowser extends UITemplate {
                 return false;
             }
         }
-        this.fileSelection.options = Object.keys(window.localStorage).map((key) => { return isValidJSON(window.localStorage.getItem(key))? { name: key, value: key } : undefined }).filter(x => x !== undefined)
+        this.fileSelection.options = Object.keys(window.localStorage)
+            .filter(key => !this.excludedKeys.includes(key))
+            .map(key => isValidJSON(window.localStorage.getItem(key))? { name: key, value: key } : undefined)
+            .filter(x => x !== undefined)
     }
 }
 customElements.define(`file-browser`, FileBrowser, { extends: `span` })

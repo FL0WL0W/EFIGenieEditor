@@ -133,7 +133,7 @@ window.GetMeasurementNameFromUnitName = GetMeasurementNameFromUnitName;
 document.querySelector(`.application-logo`).style.backgroundImage = `url("${efigenieLogo}")`
 window.addEventListener(`load`, function() {
     const applicationToolbar = document.querySelector(`.application-toolbar`)
-    window.fileBrowser = new FileBrowser()
+    window.fileBrowser = new FileBrowser({ excludedKeys: [Dashboard.storageKey] })
     window.fileBrowserDialog = new UIDialog()
     window.fileBrowserDialog.content.append(window.fileBrowser)
 
