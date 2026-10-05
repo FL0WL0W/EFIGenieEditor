@@ -105,7 +105,7 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
 .w3-circle{border-radius:50%}
 .w3-round-small{border-radius:2px}.w3-round,.w3-round-medium{border-radius:4px}.w3-round-large{border-radius:8px}.w3-round-xlarge{border-radius:16px}.w3-round-xxlarge{border-radius:32px}
 .w3-row-padding,.w3-row-padding>.w3-half,.w3-row-padding>.w3-third,.w3-row-padding>.w3-twothird,.w3-row-padding>.w3-threequarter,.w3-row-padding>.w3-quarter,.w3-row-padding>.w3-col{padding:0 8px}
-.w3-container,.w3-panel{padding:0.01em 16px}.w3-panel{margin-top:16px;margin-bottom:16px}
+.w3-panel{padding:0.01em 16px}.w3-panel{margin-top:16px;margin-bottom:16px}
 .w3-code,.w3-codespan{font-family: "Courier New", Courier, "Liberation Mono", monospace;font-size:16px}
 .w3-code{width:auto;background-color:#fff;padding:8px 12px;border-left:4px solid #4CAF50;word-wrap:break-word}
 .w3-codespan{color:crimson;background-color:#f1f1f1;padding-left:4px;padding-right:4px;font-size:110%}
@@ -343,6 +343,7 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     margin-bottom: 0.55em;
 }
 .controladd,
+.controldelete,
 .controlnew,
 .controlhamburger,
 .controldummy {
@@ -400,6 +401,7 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     content: "▼";
 }
 .controladd:hover,
+.controldelete:hover,
 .controlnew:hover,
 .controlhamburger:hover,
 .controlhamburger.hamburger-open {
@@ -419,6 +421,13 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 .controladd::after {
     top: -0.125em;
     content: "+";
+    position: relative;
+    display: inline-block;
+    line-height: 1;
+}
+.controldelete::after {
+    top: -0.125em;
+    content: "×";
     position: relative;
     display: inline-block;
     line-height: 1;
@@ -707,28 +716,213 @@ select .pinconflict{
     min-width: 120px;
 }
 
-.gauges {
+.dashboard-shell {
+    position: relative;
+    min-height: 500px;
+}
+
+.dashboard-toolbar {
+    position: sticky;
+    top: 55px;
+    z-index: 45;
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
+    min-height: 28px;
+    gap: 4px;
+    padding: 3px 6px;
+    background: #1a1f22;
+    border-bottom: 1px solid #505962;
+}
+
+.dashboard-toolbar-spacer {
+    flex: 1 1 auto;
+}
+
+.dashboard-view-tabs {
+    display: flex;
+    align-self: stretch;
+    align-items: center;
+    gap: 2px;
+}
+
+.dashboard-view-tab {
+    border-radius: 6px 6px 0 0;
+}
+
+.dashboard-view-tab.active {
+    background: #3590d0;
+    color: #fff;
+}
+
+.ui.button.dashboard-view-remove {
+    margin: 0;
+    padding: 0px 5px;
+    background-color: transparent;
+    border-color: transparent
+}
+.ui.button.dashboard-view-remove:hover {
+    background-color: rgba(0,0,0,0.2);
+    border-color: inherit
+}
+
+.dashboard-view-remove:hover {
+    color: inherit;
+}
+
+.dashboard-canvas {
+    position: relative;
+    min-width: 100%;
+    min-height: max(calc(100vh - 90px), var(--dashboard-content-height, 500px));
+    overflow: visible;
+    background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 25px 25px;
+}
+
+.dashboard-widget {
+    position: absolute;
+    box-sizing: border-box;
+    min-width: 250px;
+    min-height: 250px;
+    overflow: hidden;
+    border: 1px solid #505962;
+    border-radius: 6px;
+    background: #222629;
+    box-shadow: 0 2px 8px #0008;
+    cursor: grab;
+}
+
+.dashboard-widget.dragging {
+    z-index: 40;
+    opacity: .9;
+    cursor: grabbing;
+}
+
+.dashboard-plot {
+    resize: both;
+}
+
+.dashboard-gauge {
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+}
+
+.dashboard-gauge canvas {
+    display: block;
+}
+
+.dashboard-widget-remove {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    z-index: 30;
+    padding: 1px 8px;
+    font-size: 20px;
+    line-height: 1.2;
+    color: #aaa;
+    background: rgba(18, 22, 25, .72);
+    opacity: 0;
+    transition: opacity .15s;
+}
+
+.dashboard-widget:hover > .dashboard-widget-remove {
+    opacity: 1;
+}
+
+.dashboard-variable-invalid {
+    position: relative;
+}
+
+.dashboard-variable-invalid::after {
+    content: "Variable unavailable or not configured";
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    color: #fff;
+    text-align: center;
+    background: rgba(180, 20, 20, .42);
+    border: 2px solid rgba(255, 65, 65, .8);
+    pointer-events: none;
+}
+
+.dashboard-logger {
+    position: absolute;
+    top: 35px;
+    left: 0;
+    z-index: 50;
+    display: flex;
+    align-items: flex-start;
+    height: calc(100vh - 90px);
 }
 
 .loggedVariables {
-    border-right: 0.1em solid #eee
+    box-sizing: border-box;
+    height: 100%;
+    padding: 5px;
+    overflow: auto;
+    background: rgba(18, 22, 25, .85);
+    box-shadow: 2px 3px 12px #000b;
 }
+
 .loggedVariables table {
     outline: none;
     border-spacing: 0;
 }
-.loggedVariables table tr.selected td {
+.loggedVariables table tr.selected > td {
     background-color: #3590d0;
 }
-.loggedVariables table tr.selected td.actions {
+.loggedVariables table tr > td:nth-child(1)[draggable="true"],
+.loggedVariables table tr > td:nth-child(2)[draggable="true"] {
+    cursor: grab;
+    user-select: none;
+}
+.loggedVariables table tr.logged-variable-dragging {
+    opacity: 1;
+}
+.loggedVariables table tr.logged-variable-dragging > td {
+    background-image: linear-gradient(rgba(0, 120, 255, 0.3), rgba(0, 120, 255, 0.3));
+}
+.loggedVariables table tr.logged-variable-dragging > td:nth-child(1),
+.loggedVariables table tr.logged-variable-dragging > td:nth-child(2) {
+    cursor: grabbing;
+}
+.loggedVariables table tr > td:nth-child(3),
+.loggedVariables table tr > td:nth-child(4) {
+    cursor: default;
+}
+.loggedVariables table tr.unavailable td {
+    color: #888;
+    background-color: #292d30;
+}
+.loggedVariables table tr.logged-variable-required td {
+    color: #ffb0b0;
+    background-color: rgba(130, 25, 32, .72);
+}
+.loggedVariables table tr.logged-variable-required.addable td {
+    background-color: rgba(105, 30, 35, .72);
+}
+.loggedVariables table tr.logged-variable-separator td {
+    height: .3em;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    background-color: #eee;
+}
+.loggedVariables table tr.selected > td.actions {
     background-color: inherit;
 }
 .loggedVariables table td {
-    border: 0.1em solid rgba(0, 0, 0, 0.3);
+    border: 0.1em solid #eee;
     border-spacing: 0;
-    min-width: 50px;
+    min-width: 75px;
     white-space: nowrap;
 }
 .loggedVariables table td.actions {
@@ -736,10 +930,13 @@ select .pinconflict{
     border-top: 0;
     border-bottom: 0;
     border-spacing: 0;
-    min-width: 50px;
+    min-width: 0px;
+}
+.loggedVariables table tr.logged-variable-add-row td {
+    border: 0;
 }
 .loggedVariables table td.loggedVariableName {
-    min-width: 200px;
+    min-width: 250px;
 }
 .ui.select.refreshRateSelection .ui.selected {
     min-width: 50px;
@@ -748,6 +945,8 @@ select .pinconflict{
 .ui.button.loggedVariablesExpand {
     writing-mode: vertical-lr;
     height: fit-content;
+    padding-top: 0.3em;
+    padding-bottom: 0.5em;
 }
 
 .ui.context-menu.opened {
@@ -767,9 +966,7 @@ select .pinconflict{
     border: none;
     min-width: 2em;
 }
-.ui.select.logged-variable-selection .ui.selected::after {
-    float: right;
-}
+.ui.select.logged-variable-selection .ui.selected::after,
 .ui.select.unit .ui.selected::after {
     float: right;
     content: "";

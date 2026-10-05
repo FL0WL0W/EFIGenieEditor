@@ -2,10 +2,10 @@ import UIDialog from "../JavascriptUI/UIDialog"
 import UITemplate from "../JavascriptUI/UITemplate"
 // import Dashboard from "../Top/Dashboard" TODO
 import UIParameterWithUnit from "./UIParameterWithUnit"
-import UINumberWithUnit from "./UINumberWithUnit"
+import UINumber from "../JavascriptUI/UINumber"
 import UITextArea from "../JavascriptUI/UITextArea"
 import UIButton from "../JavascriptUI/UIButton"
-import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit } from "./UIUnit"
+import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit, GetMeasurementNameFromUnitName } from "./UIUnit"
 import Dashboard from "../Top/Dashboard"
 import { BaseGauge } from "canvas-gauges"
 import { defaultFilter } from "../VariableRegistry"
@@ -34,8 +34,12 @@ export default class UIGauge extends UITemplate {
     data-animation-rule="linear"
 ></canvas>`
 
+    #activeTemplate
+
     Setup(prop) {
+        this.gauge?.destroy?.()
         super.Setup(prop)
+        this.#activeTemplate = this.template ?? this.constructor.template
         const canvas = this.querySelector(`canvas`)
         canvas.addEventListener(`click`, () => {
             this.configDialog.show()
@@ -65,7 +69,30 @@ export default class UIGauge extends UITemplate {
             delete saveValue.gaugeTemplate
         return saveValue
     }
-    set saveValue(saveValue) { this.configTemplate.saveValue = saveValue }
+    set saveValue(saveValue) {
+        saveValue = { ...saveValue }
+        if(saveValue.variable !== undefined) {
+            this.configTemplate.variable.saveValue = saveValue.variable
+            delete saveValue.variable
+        }
+        // Compatibility with layouts saved when these fields were
+        // UINumberWithUnit instances.
+        for(const name of [`min`, `lowRedline`, `step`, `highRedline`, `max`]) {
+            const range = saveValue[name]
+            if(range !== null && typeof range === `object`) {
+                saveValue[name] = ConvertValueFromUnitToUnit(
+                    range.value,
+                    this.valueUnit,
+                    range.displayUnit ?? this.displayUnit)
+            }
+        }
+        this.configTemplate.saveValue = saveValue
+        const template = this.configTemplate.gaugeTemplate.value
+        if(template && template !== this.#activeTemplate) {
+            this.template = template
+            this.Setup()
+        }
+    }
     get min() { return this.configTemplate.min.value }
     set min(min) { this.configTemplate.min.value = min }
     get max() { return this.configTemplate.max.value }
@@ -79,11 +106,11 @@ export default class UIGauge extends UITemplate {
 
     #updateGauge() {
         let options = {}
-        options.minValue = parseFloat(ConvertValueFromUnitToUnit(this.min, this.valueUnit, this.displayUnit)?.toFixed(2) ?? 0)
-        options.maxValue = parseFloat(ConvertValueFromUnitToUnit(this.max, this.valueUnit, this.displayUnit)?.toFixed(2) ?? 100)
+        options.minValue = parseFloat(this.min?.toFixed(2) ?? 0)
+        options.maxValue = parseFloat(this.max?.toFixed(2) ?? 100)
         let i = options.minValue
         options.majorTicks = [i]
-        let step = ConvertValueFromUnitToUnit(this.step, this.valueUnit, this.displayUnit) ?? 10
+        let step = this.step ?? 10
         const range = options.maxValue - options.minValue
         if(range < 0 || range / Math.max(range/30,step) > 25)
             step = range / 25
@@ -92,7 +119,7 @@ export default class UIGauge extends UITemplate {
             options.majorTicks.push(parseFloat(i.toFixed(2)))
         options.majorTicks.push(parseFloat(i.toFixed(2)))
         options.highlights = []
-        const highRedline = ConvertValueFromUnitToUnit(this.highRedline, this.valueUnit, this.displayUnit)
+        const highRedline = this.highRedline
         if(highRedline != undefined) {
             options.highlights.push({
                 from: highRedline,
@@ -100,7 +127,7 @@ export default class UIGauge extends UITemplate {
                 color: `rgba(200, 50, 50, .75)`
             })
         }
-        const lowRedline = ConvertValueFromUnitToUnit(this.lowRedline, this.valueUnit, this.displayUnit)
+        const lowRedline = this.lowRedline
         if(lowRedline != undefined) {
             options.highlights.push({
                 from: options.minValue,
@@ -128,12 +155,12 @@ export default class UIGauge extends UITemplate {
                         <span style="display: block;"><label>High:</label><div data-element="highRedline"></div></span>
                         <span style="display: block;"><label>Max:</label><div data-element="max"></div></span>
                         <span style="display: block;"><label>Gauge Template</label><div data-element="editGauge"></div><div data-element="gaugeTemplate"></div></span>`,
-            variable: new UIParameterWithUnit(),
-            min: new UINumberWithUnit(),
-            max: new UINumberWithUnit(),
-            step: new UINumberWithUnit({ min: 0.0000001 }),
-            highRedline: new UINumberWithUnit(),
-            lowRedline: new UINumberWithUnit(),
+            variable: new UIParameterWithUnit({ persistValueInOptions: true }),
+            min: new UINumber(),
+            max: new UINumber(),
+            step: new UINumber({ min: 0.0000001 }),
+            highRedline: new UINumber(),
+            lowRedline: new UINumber(),
             editGauge: new UIButton({ label: `Edit` }),
             gaugeTemplate: new UITextArea({ value: this.constructor.template, class: `gaugeTemplate`, hidden: true })
         })
@@ -152,39 +179,41 @@ export default class UIGauge extends UITemplate {
             event.preventDefault()
         })
         let previousDisplayUnit
-        let previousValueUnit
         let previousVariable
+        let updatingVariable = false
         this.configTemplate.variable.addEventListener(`change`, () => {
-            if(previousDisplayUnit !== this.displayUnit) {
-                const pdu = previousDisplayUnit
-                previousDisplayUnit = this.displayUnit
-                if(pdu === this.configTemplate.min.displayUnit) this.configTemplate.min.displayUnit = this.displayUnit
-                if(pdu === this.configTemplate.max.displayUnit) this.configTemplate.max.displayUnit = this.displayUnit
-                if(pdu === this.configTemplate.step.displayUnit) this.configTemplate.step.displayUnit = this.displayUnit
-                if(pdu === this.configTemplate.highRedline.displayUnit) this.configTemplate.highRedline.displayUnit = this.displayUnit
-                if(pdu === this.configTemplate.lowRedline.displayUnit) this.configTemplate.lowRedline.displayUnit = this.displayUnit
-            }
-            if(previousValueUnit !== this.valueUnit) {
-                previousValueUnit = this.valueUnit
-                this.configTemplate.min.valueUnit = this.valueUnit
-                this.configTemplate.max.valueUnit = this.valueUnit
-                this.configTemplate.step.valueUnit = this.valueUnit
-                this.configTemplate.highRedline.valueUnit = this.valueUnit
-                this.configTemplate.lowRedline.valueUnit = this.valueUnit
-            }
-            if(previousVariable !== this.configTemplate.variable.value?.name) {
-                previousVariable = this.configTemplate.variable.value?.name
-                let unitDefaultOptions = GetDefaultMinMaxStepRedlineFromUnit(this.valueUnit)
-                this.min = unitDefaultOptions?.min ?? this.min
-                this.max = unitDefaultOptions?.max ?? this.max
-                this.step = unitDefaultOptions?.step ?? this.step
-                this.highRedline = unitDefaultOptions?.highRedline ?? unitDefaultOptions?.max ?? this.highRedline
-                this.lowRedline = unitDefaultOptions?.lowRedline ?? unitDefaultOptions?.min ?? this.lowRedline
+            if(updatingVariable) return
+            updatingVariable = true
+            try {
+                if(previousDisplayUnit !== this.displayUnit) {
+                    const pdu = previousDisplayUnit
+                    previousDisplayUnit = this.displayUnit
+                    if(pdu !== undefined && this.displayUnit !== undefined &&
+                        GetMeasurementNameFromUnitName(pdu) === GetMeasurementNameFromUnitName(this.displayUnit)) {
+                        this.min = ConvertValueFromUnitToUnit(this.min, pdu, this.displayUnit)
+                        this.max = ConvertValueFromUnitToUnit(this.max, pdu, this.displayUnit)
+                        this.step = ConvertValueFromUnitToUnit(this.step, pdu, this.displayUnit)
+                        this.highRedline = ConvertValueFromUnitToUnit(this.highRedline, pdu, this.displayUnit)
+                        this.lowRedline = ConvertValueFromUnitToUnit(this.lowRedline, pdu, this.displayUnit)
+                    }
+                }
+                if(previousVariable !== this.configTemplate.variable.value?.name) {
+                    previousVariable = this.configTemplate.variable.value?.name
+                    let unitDefaultOptions = GetDefaultMinMaxStepRedlineFromUnit(this.displayUnit)
+                    this.min = unitDefaultOptions?.min ?? this.min
+                    this.max = unitDefaultOptions?.max ?? this.max
+                    this.step = unitDefaultOptions?.step ?? this.step
+                    this.highRedline = unitDefaultOptions?.highRedline ?? unitDefaultOptions?.max ?? this.highRedline
+                    this.lowRedline = unitDefaultOptions?.lowRedline ?? unitDefaultOptions?.min ?? this.lowRedline
+                }
+            } finally {
+                updatingVariable = false
             }
         })
         let previousMin
         let previousMax
         this.configTemplate.addEventListener(`change`, () => {
+            if(updatingVariable) return
             this.configTemplate.min.step = this.configTemplate.max.step = this.configTemplate.highRedline.step = this.configTemplate.lowRedline.step = this.step
         
             if(previousMin != this.min) {
@@ -203,24 +232,41 @@ export default class UIGauge extends UITemplate {
             }
             this.configTemplate.step.min = (this.max - this.min) / 25
             this.#updateGauge()
+            this.RefreshAvailability()
+            this.dispatchEvent(new Event(`change`, { bubbles: true }))
         })
         this.configDialog = new UIDialog({ title: `Edit Gauge` })
         this.configDialog.content.append(this.configTemplate)
         this.Setup(prop)
         communication.addEventListener(`change`, ({ detail: { variableMetadata, currentVariableValues } }) => {
-            const reference = this.configTemplate.variable.value
-            if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
-            const variableId = variableMetadata.GetVariableId(reference)
-            if(currentVariableValues?.[variableId] !== undefined) {
-                this.value = currentVariableValues[variableId]
-            }
+            this.#updateFromValues(currentVariableValues, variableMetadata)
+            this.RefreshAvailability()
         })
+        Dashboard.thisDashboard.addEventListener(`playback`, ({ detail }) => this.#updateFromValues(detail.values, communication.variableMetadata))
         Dashboard.thisDashboard.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
         this.RefreshOptions()
+        this.RefreshAvailability()
+    }
+
+    #updateFromValues(values, metadata) {
+        const reference = this.configTemplate.variable.value
+        if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
+        const variable = Dashboard.thisDashboard.ResolveVariable(reference, metadata)
+        if(values?.[variable?.id] !== undefined) {
+            this.value = ConvertValueFromUnitToUnit(values[variable.id], variable.unit, this.valueUnit) ?? values[variable.id]
+        }
     }
     
     RefreshOptions() {
         this.configTemplate.variable.options = Dashboard.thisDashboard.options.map(x => x.group && x.options? {...x, options: x.options.map(x => { return {...x, disabled: !x.disabled}})} : {...x, disabled: !x.disabled})
+        this.RefreshAvailability()
+    }
+
+    RefreshAvailability() {
+        const reference = this.configTemplate.variable.value
+        const selectedOption = this.configTemplate.variable.selectedOption
+        this.classList.toggle(`dashboard-variable-invalid`,
+            selectedOption?.disabled === true || !Dashboard.thisDashboard.IsVariableAvailable(reference))
     }
 }
 customElements.define(`ui-gauge`, UIGauge, { extends: `span` })

@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "activeViewId": "default-main",
+  "views": [
+    {
+      "id": "default-main",
+      "name": "Main",
+      "elements": [
+        { "variable": { "name": "EngineParameters.Engine Speed", "unit": "RPM" }, "min": 0, "max": 8000, "step": 1000, "highRedline": 6500, "lowRedline": 0, "type": "gauge", "left": 25, "top": 0 },
+        { "variable": { "name": "IgnitionParameters.Ignition Advance", "unit": "°" }, "min": -20, "max": 50, "step": 10, "highRedline": 50, "lowRedline": -20, "type": "gauge", "left": 725, "top": 325 },
+        { "variable": { "name": "FuelParameters.Injector Pulse Width", "unit": "ms" }, "min": 0, "max": 24, "step": 2, "highRedline": 24, "lowRedline": 0, "type": "gauge", "left": 725, "top": 0 },
+        { "variable": { "name": "EngineParameters.Manifold Absolute Pressure", "unit": "kPa" }, "min": 0.2, "max": 3, "step": 0.2, "highRedline": 3, "lowRedline": 0.25, "type": "gauge", "left": 25, "top": 325 },
+        { "variable": { "name": "EngineParameters.Cylinder Air Temperature", "unit": "°F" }, "min": -40, "max": 240, "step": 20, "highRedline": 240, "lowRedline": -40, "type": "gauge", "left": 375, "top": 325 },
+        { "variable": { "name": "EngineParameters.Cylinder Air Mass", "unit": "g" }, "min": 0, "max": 10, "step": 1, "highRedline": 10, "lowRedline": 0, "type": "gauge", "left": 375, "top": 0 },
+        { "variable": { "name": "FuelParameters.Air Fuel Ratio", "unit": ":1" }, "min": 10, "max": 19, "step": 1, "highRedline": 15, "lowRedline": 11, "type": "gauge", "left": 1075, "top": 0 },
+        { "variable": { "name": "IgnitionParameters.Ignition Dwell", "unit": "ms" }, "min": 0, "max": 5, "step": 1, "highRedline": 4, "lowRedline": 0.005, "type": "gauge", "left": 1075, "top": 325 }
+      ]
+    },
+    {
+      "id": "default-plot",
+      "name": "Plot",
+      "elements": [
+        {
+          "variablesToPlot": [
+            { "variable": { "name": "EngineParameters.Engine Speed", "unit": "RPM" }, "min": { "value": 0 }, "max": { "value": 8000 }, "color": "Aqua" },
+            { "variable": { "name": "EngineParameters.Manifold Absolute Pressure", "unit": "kPa" }, "min": { "displayUnit": "kPa", "value": 0.2 }, "max": { "displayUnit": "kPa", "value": 3 }, "color": "Red" },
+            { "variable": { "name": "IgnitionParameters.Ignition Advance", "unit": "°" }, "min": { "value": 0 }, "max": { "value": 40 }, "color": "Yellow" },
+            { "variable": { "name": "FuelParameters.Air Fuel Ratio", "unit": ":1" }, "min": { "value": 11 }, "max": { "value": 15 }, "color": "Green" }
+          ],
+          "type": "plot",
+          "left": 25,
+          "top": 0,
+          "width": 1400,
+          "height": 650
+        }
+      ]
+    }
+  ]
+}

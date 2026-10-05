@@ -360,7 +360,9 @@ window.addEventListener(`load`, function() {
         upload: () => btnLoad.click(),
         download: downloadConfig,
         openLog: () => btnOpenLog.click(),
-        saveLog: saveLog
+        saveLog: saveLog,
+        uploadDashboardView: () => b.Dashboard.uploadView(),
+        downloadDashboardView: () => b.Dashboard.downloadView()
     }
     const fileMenu = new UIContextMenu({
         options: [
@@ -379,6 +381,13 @@ window.addEventListener(`load`, function() {
                 options: [
                     { name: `Open Log`, action: `openLog` },
                     { name: `Save Log`, action: `saveLog` }
+                ]
+            },
+            {
+                group: `Dashboard Views`,
+                options: [
+                    { name: `Upload View`, action: `uploadDashboardView` },
+                    { name: `Download View`, action: `downloadDashboardView` }
                 ]
             }
         ]

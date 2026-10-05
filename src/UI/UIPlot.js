@@ -14,7 +14,7 @@ import { throttle } from "lodash-es"
 
 class UIPlot_Variable extends UITemplate {
     static template = `<div data-element="color"></div><div data-element="variable"></div><div data-element="min"></div><div data-element="max"></div>`
-    variable = new UIParameterWithUnit()
+    variable = new UIParameterWithUnit({ persistValueInOptions: true })
     min = new UINumberWithUnit()
     max = new UINumberWithUnit()
     color = new UIColorPicker()
@@ -76,8 +76,6 @@ export default class UIPlot extends UITemplate {
         
         this.plotWorkspace = document.createElement(`div`)
         const options = {
-            title: "Real-Time Data",
-            id: "realtimeChart",
             ms: 1,
             width: 800,
             height: 400,
@@ -90,7 +88,10 @@ export default class UIPlot extends UITemplate {
             axes: [
                 { stroke: "#fff", grid: { show: true } },
                 { stroke: "#fff", grid: { show: true } },
-            ]
+            ],
+            hooks: {
+                setCursor: [plot => this.#selectPlaybackRecord(plot)]
+            }
         }
         this.plot = new uPlot(options, [], this.plotWorkspace)
         this.plot.options = options
@@ -98,7 +99,7 @@ export default class UIPlot extends UITemplate {
         this.configDialog = new UIDialog({ title: `Edit Plot` })
         this.configDialog.content.append(this.variablesToPlot)
 
-        this.plotWorkspace.addEventListener(`click`, () => {
+        this.plotWorkspace.addEventListener(`dblclick`, () => {
             this.configDialog.show()
         })
 
@@ -140,29 +141,72 @@ export default class UIPlot extends UITemplate {
             delete this.plot
             this.plot = new uPlot(options, [], this.plotWorkspace)
             this.plot.options = options
+            this.RefreshAvailability()
+            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+            this.Resize()
         })
 
         this.Setup(prop)
         communication.addEventListener(`change`, ({ detail: { variableMetadata, loggedVariableValues, startedLoggingTime } }) => {
             const displayUnits = [ undefined, ...[...this.variablesToPlot.children].map(x => x.variable.displayUnit)]
             const references = [ { name: `CurrentTick` }, ...[...this.variablesToPlot.children].map(x => x.variable.value) ].map( reference => {
+                if(reference?.name === `CurrentTick`) return reference
                 if(!reference?.unit && reference?.type?.split(`|`)?.indexOf(`float`) === -1) return
                 return reference;
             })
             const data = references.map((reference, idx) => {
-                const variableId = variableMetadata.GetVariableId(reference)
+                const variable = Dashboard.thisDashboard.ResolveVariable(reference, variableMetadata)
+                const variableId = variable?.id
                 if(reference) {
                     if(reference.name === `CurrentTick`) {
                         const UINT32_MAX = 0xFFFFFFFF
                         const ticks = loggedVariableValues.map(x => x[variableId] / 1000)
                         let previousTick = 0
-                        return ticks.map((tick, idx) => startedLoggingTime + (previousTick += (idx > 0? (tick - ticks[idx - 1] + (tick > ticks[idx-1]? 0 : UINT32_MAX)) : 0)))
+                        return ticks.map((tick, idx) => startedLoggingTime + (previousTick += (idx > 0? (tick - ticks[idx - 1] + (tick >= ticks[idx-1]? 0 : UINT32_MAX)) : 0)))
                     }
-                    return loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], reference.unit, displayUnits[idx]))
+                    return loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], variable?.unit, displayUnits[idx]))
                 }
             })
             this.plot.setData(data);
+            this.Resize()
+            this.RefreshAvailability()
         })
+        Dashboard.thisDashboard.addEventListener(`change`, throttle(this.RefreshAvailability.bind(this), 100))
+        this.RefreshAvailability()
+    }
+
+    #selectPlaybackRecord(plot) {
+        if(communication.connected || plot.cursor.left < 0) return
+        const times = plot.data?.[0]
+        if(!times?.length || !communication.loggedVariableValues.length) return
+        const selectedTime = plot.posToVal(plot.cursor.left, `x`)
+        let low = 0
+        let high = times.length - 1
+        while(low < high) {
+            const middle = Math.floor((low + high) / 2)
+            if(times[middle] < selectedTime) low = middle + 1
+            else high = middle
+        }
+        let index = low
+        if(index > 0 && Math.abs(times[index - 1] - selectedTime) < Math.abs(times[index] - selectedTime)) index--
+        Dashboard.thisDashboard.ShowPlaybackRecord(communication.loggedVariableValues[index], times[index], index)
+    }
+
+    Resize() {
+        if(!this.plot) return
+        const width = Math.max(300, Math.floor(this.clientWidth))
+        const height = Math.max(200, Math.floor(this.clientHeight))
+        if(this.plot.width === width && this.plot.height === height) return
+        this.plot.setSize({ width, height })
+    }
+
+    RefreshAvailability() {
+        const variables = [...this.variablesToPlot.children].map(x => x.item.variable)
+        const references = variables.map(variable => variable.value).filter(reference => reference?.name)
+        const unavailable = references.length === 0 ||
+            variables.some(variable => variable.selectedOption?.disabled === true) ||
+            references.some(reference => !Dashboard.thisDashboard.IsVariableAvailable(reference))
+        this.classList.toggle(`dashboard-variable-invalid`, unavailable)
     }
 }
 customElements.define(`ui-plot`, UIPlot, { extends: `span` })
