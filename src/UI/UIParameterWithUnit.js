@@ -1,5 +1,6 @@
 import UISelection from "../JavascriptUI/UISelection"
 import UITemplate from "../JavascriptUI/UITemplate"
+import { objectTester } from "../JavascriptUI/UIUtils"
 import UIUnit, { GetMeasurementNameFromUnitName } from "./UIUnit"
 export default class UIParameterWithUnit extends UITemplate {
     static template = `<div data-element="parameterSelection"></div><div data-element="unitSelection"></div>`
@@ -9,6 +10,7 @@ export default class UIParameterWithUnit extends UITemplate {
 
     parameterSelection = new UISelection()
     unitSelection = new UIUnit()
+    persistValueInOptions = false
     constructor(prop){
         super()
         this.style.display = `inline-flex`
@@ -63,6 +65,8 @@ export default class UIParameterWithUnit extends UITemplate {
     set value(value) {
         if(typeof value === `object`) {
             value = {...value}
+            if(this.persistValueInOptions)
+                this.#addPersistedOption(value)
             if(this.optionUnits[value.name] !== undefined)
                 this.unitSelection.value = value.unit
             delete value.unit
@@ -80,6 +84,8 @@ export default class UIParameterWithUnit extends UITemplate {
         if(typeof saveValue === `object`) {
             saveValue = {...saveValue}
             const displayUnit = saveValue.unit
+            if(this.persistValueInOptions)
+                this.#addPersistedOption(saveValue)
             delete saveValue.unit
             this.parameterSelection.saveValue = saveValue
             if(displayUnit !== undefined)
@@ -95,6 +101,27 @@ export default class UIParameterWithUnit extends UITemplate {
     set displayUnit(displayUnit) { this.unitSelection.value = displayUnit }
 
     optionUnits = {}
+
+    #addPersistedOption(value) {
+        if(value === null || typeof value !== `object` || value.name === undefined)
+            return
+        const optionValue = { ...value }
+        const unit = optionValue.unit
+        delete optionValue.unit
+        if(unit !== undefined) {
+            this.optionUnits[optionValue.name] ??= []
+            if(!this.optionUnits[optionValue.name].includes(unit))
+                this.optionUnits[optionValue.name].push(unit)
+        }
+        const hasOption = options => options.some(option => option.group?
+            hasOption(option.options ?? []) : objectTester(option.value, optionValue))
+        if(!hasOption(this.parameterSelection.options))
+            this.parameterSelection.options = [
+                ...this.parameterSelection.options,
+                { name: optionValue.name, value: optionValue, disabled: true }
+            ]
+    }
+
     get options() { 
         const expand = options => {
             let expandedOptions = []
@@ -121,6 +148,7 @@ export default class UIParameterWithUnit extends UITemplate {
         return expand(this.parameterSelection.options)
     }
     set options(options) {
+        const persistedValue = this.persistValueInOptions? this.saveValue : undefined
         const flatten = options => {
             let newOptions = []
             for(const optionIndex in options) {
@@ -144,6 +172,8 @@ export default class UIParameterWithUnit extends UITemplate {
         }
         this.optionUnits = {}
         this.parameterSelection.options = flatten(options)
+        if(this.persistValueInOptions && persistedValue !== undefined)
+            this.#addPersistedOption(persistedValue)
         const units = this.units
         this.unitSelection.measurement = GetMeasurementNameFromUnitName(units)
         if(units !== undefined)

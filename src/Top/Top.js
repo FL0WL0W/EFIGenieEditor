@@ -16,7 +16,7 @@ export default class Top extends UITemplate {
         <div data-element="sidebarOpen"></div>
     </div>
     <div data-element="pageTitle"></div>
-    <hr style="margin: 0px 0px 5px 0px;">
+    <hr style="margin: 0px 0px 5px 0px; display: none;">
     <div data-element="page"></div>
 </div>`
 
@@ -89,7 +89,7 @@ export default class Top extends UITemplate {
     Setup(prop){
         this.className = `top`
         this.topTitle.className = `w3-bar-item`
-        this.pageTitle.style.display = `block`
+        this.pageTitle.style.display = `none`
         this.pageTitle.style.margin = `3px`
         this.sidebarSelection.className = `w3-bar-block sidebarSelection`
         this.sidebarOpen.style.verticalAlign = `top`
