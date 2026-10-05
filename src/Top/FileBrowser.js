@@ -32,6 +32,7 @@ export default class FileBrowser extends UITemplate {
     downloadFile
     deleteFile
     visibilityChanged
+    reorderFiles
     fileType = `configuration`
     showFileActions = true
     #updatingSelectionText = false
@@ -62,6 +63,58 @@ export default class FileBrowser extends UITemplate {
     Setup(prop) {
         this.fileSelectionMenu = this.fileSelection.contextMenu
         this.fileSelectionMenu.class = `opened`
+        let draggedOption
+        let optionMoved = false
+        let dragImage
+        this.fileSelectionMenu.addEventListener(`dragstart`, event => {
+            const option = event.target.closest(`.selectoption`)
+            if(!this.reorderFiles || !option?._optionData ||
+                event.target.closest(`.ui.button, .ui.checkbox`)) {
+                event.preventDefault()
+                return
+            }
+            draggedOption = option
+            optionMoved = false
+            option.classList.add(`file-reordering`)
+            event.dataTransfer.effectAllowed = `move`
+            event.dataTransfer.setData(`text/plain`, option._optionData.value)
+            dragImage = document.createElement(`canvas`)
+            dragImage.width = 1
+            dragImage.height = 1
+            dragImage.style.position = `fixed`
+            dragImage.style.left = `-10px`
+            dragImage.style.top = `-10px`
+            document.body.appendChild(dragImage)
+            event.dataTransfer.setDragImage(dragImage, 0, 0)
+        })
+        this.fileSelectionMenu.addEventListener(`dragover`, event => {
+            if(!draggedOption) return
+            const target = event.target.closest(`.selectoption`)
+            if(!target?._optionData || target === draggedOption) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = `move`
+            const insertAfter = event.clientY > target.getBoundingClientRect().top + target.offsetHeight / 2
+            const before = insertAfter? target.nextSibling : target
+            if(before !== draggedOption) {
+                this.fileSelectionMenu.insertBefore(draggedOption, before)
+                optionMoved = true
+            }
+        })
+        this.fileSelectionMenu.addEventListener(`drop`, event => {
+            if(draggedOption) event.preventDefault()
+        })
+        this.fileSelectionMenu.addEventListener(`dragend`, () => {
+            if(!draggedOption) return
+            dragImage?.remove()
+            dragImage = undefined
+            draggedOption.classList.remove(`file-reordering`)
+            draggedOption = undefined
+            if(!optionMoved) return
+            this.reorderFiles([...this.fileSelectionMenu.children]
+                .filter(option => option._optionData)
+                .map(option => option._optionData.value))
+            this.updateOptions()
+        })
         this.fileSelection.addEventListener(`change`, () => {
             this.#updatingSelectionText = true
             this.valueElement.value = this.fileSelection.selectedOption?.name ?? this.fileSelection.value
@@ -94,11 +147,13 @@ export default class FileBrowser extends UITemplate {
                 .filter(key => key !== FileBrowser.metadataKey && !this.excludedKeys.includes(key))
                 .map(key => isValidJSON(window.localStorage.getItem(key))? { name: key, value: key, modified: metadata[key] } : undefined)
                 .filter(x => x !== undefined)
+                .sort((a, b) => (b.modified ?? 0) - (a.modified ?? 0) || a.name.localeCompare(b.name))
         }
         this.fileSelection.options = files
         ;[...this.fileSelectionMenu.children].forEach(optionElement => {
             const option = optionElement._optionData
             if(!option) return
+            optionElement.draggable = Boolean(this.reorderFiles)
             const name = document.createElement(`span`)
             name.className = `file-name`
             name.textContent = option.name

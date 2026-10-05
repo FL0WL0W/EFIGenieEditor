@@ -357,6 +357,7 @@ export default class Dashboard extends UITemplate {
     }
 
     #setupDashboardControls() {
+        this.#setupViewTabReordering()
         this.expandSidebar.addEventListener(`click`, () => {
             if(this.sidebar.hidden) {
                 this.sidebar.hidden = false
@@ -375,6 +376,8 @@ export default class Dashboard extends UITemplate {
                 name: `View ${this.#layoutDocument.views.length + 1}`,
                 modified: Date.now(),
                 visible: true,
+                browserOrder: this.#nextViewOrder(`browserOrder`),
+                tabOrder: this.#nextViewOrder(`tabOrder`),
                 elements: []
             }
             this.#layoutDocument.views.push(view)
@@ -405,6 +408,8 @@ export default class Dashboard extends UITemplate {
                         name,
                         modified: file.lastModified || Date.now(),
                         visible: true,
+                        browserOrder: this.#nextViewOrder(`browserOrder`),
+                        tabOrder: this.#nextViewOrder(`tabOrder`),
                         elements: structuredClone(imported.elements)
                     }
                     this.#captureActiveView()
@@ -432,7 +437,9 @@ export default class Dashboard extends UITemplate {
         this.#viewBrowser = new FileBrowser({
             fileType: `dashboard view`,
             showFileActions: false,
-            fileProvider: () => (this.#layoutDocument?.views ?? []).map(view => ({
+            fileProvider: () => [...(this.#layoutDocument?.views ?? [])]
+                .sort((a, b) => a.browserOrder - b.browserOrder)
+                .map(view => ({
                 name: view.name,
                 value: view.id,
                 modified: view.modified,
@@ -441,6 +448,7 @@ export default class Dashboard extends UITemplate {
                     this.#layoutDocument.views.filter(view => view.visible !== false).length <= 1,
                 deletable: this.#layoutDocument.views.length > 1
             })),
+            reorderFiles: ids => this.#reorderBrowserViews(ids),
             downloadFile: option => this.downloadView(option.value),
             visibilityChanged: (option, visible) => this.#setViewVisibility(option.value, visible),
             deleteFile: option => {
@@ -469,6 +477,10 @@ export default class Dashboard extends UITemplate {
             this.#layoutDocument = structuredClone(defaultDashboardViews)
         }
         this.#layoutDocument.views.forEach(view => view.visible ??= true)
+        this.#layoutDocument.views.forEach((view, index) => {
+            if(!Number.isFinite(view.browserOrder)) view.browserOrder = index
+            if(!Number.isFinite(view.tabOrder)) view.tabOrder = index
+        })
         if(!this.#layoutDocument.views.some(view => view.visible)) this.#layoutDocument.views[0].visible = true
         const requestedView = this.#layoutDocument.views.find(view => view.id === this.#layoutDocument.activeViewId && view.visible)
         this.#activeViewId = requestedView?.id ?? this.#layoutDocument.views.find(view => view.visible).id
@@ -492,9 +504,13 @@ export default class Dashboard extends UITemplate {
 
     #renderViewTabs() {
         this.viewTabs.replaceChildren()
-        const visibleViews = this.#layoutDocument.views.filter(view => view.visible !== false)
+        const visibleViews = this.#layoutDocument.views
+            .filter(view => view.visible !== false)
+            .sort((a, b) => a.tabOrder - b.tabOrder)
         for(const view of visibleViews) {
             const tab = new UIButton({ label: view.name, class: view.id === this.#activeViewId? `dashboard-view-tab active` : `dashboard-view-tab` })
+            tab.dataset.viewId = view.id
+            tab.draggable = true
             tab.title = `Double-click to rename`
             tab.addEventListener(`click`, () => this.#activateView(view.id))
             tab.addEventListener(`dblclick`, () => {
@@ -517,6 +533,81 @@ export default class Dashboard extends UITemplate {
             }
             this.viewTabs.append(tab)
         }
+    }
+
+    #setupViewTabReordering() {
+        let draggedTab
+        let tabMoved = false
+        let dragImage
+        this.viewTabs.addEventListener(`dragstart`, event => {
+            const tab = event.target.closest(`.dashboard-view-tab`)
+            if(!tab || event.target.closest(`.dashboard-view-remove`)) {
+                event.preventDefault()
+                return
+            }
+            draggedTab = tab
+            tabMoved = false
+            tab.classList.add(`dashboard-view-reordering`)
+            event.dataTransfer.effectAllowed = `move`
+            event.dataTransfer.setData(`text/plain`, tab.dataset.viewId)
+            dragImage = document.createElement(`canvas`)
+            dragImage.width = 1
+            dragImage.height = 1
+            dragImage.style.position = `fixed`
+            dragImage.style.left = `-10px`
+            dragImage.style.top = `-10px`
+            document.body.appendChild(dragImage)
+            event.dataTransfer.setDragImage(dragImage, 0, 0)
+        })
+        this.viewTabs.addEventListener(`dragover`, event => {
+            if(!draggedTab) return
+            const target = event.target.closest(`.dashboard-view-tab`)
+            if(!target || target === draggedTab) return
+            event.preventDefault()
+            event.dataTransfer.dropEffect = `move`
+            const insertAfter = event.clientX > target.getBoundingClientRect().left + target.offsetWidth / 2
+            const before = insertAfter? target.nextSibling : target
+            if(before !== draggedTab) {
+                this.viewTabs.insertBefore(draggedTab, before)
+                tabMoved = true
+            }
+        })
+        this.viewTabs.addEventListener(`drop`, event => {
+            if(draggedTab) event.preventDefault()
+        })
+        this.viewTabs.addEventListener(`dragend`, () => {
+            if(!draggedTab) return
+            dragImage?.remove()
+            dragImage = undefined
+            draggedTab.classList.remove(`dashboard-view-reordering`)
+            draggedTab = undefined
+            if(!tabMoved) return
+            this.#reorderVisibleTabs([...this.viewTabs.children].map(tab => tab.dataset.viewId))
+        })
+    }
+
+    #nextViewOrder(property) {
+        return Math.max(-1, ...(this.#layoutDocument?.views ?? []).map(view => view[property] ?? -1)) + 1
+    }
+
+    #reorderBrowserViews(ids) {
+        const views = new Map(this.#layoutDocument.views.map(view => [view.id, view]))
+        ids.forEach((id, index) => {
+            const view = views.get(id)
+            if(view) view.browserOrder = index
+        })
+        this.#saveLayouts()
+    }
+
+    #reorderVisibleTabs(ids) {
+        const views = new Map(this.#layoutDocument.views.map(view => [view.id, view]))
+        const reorderedVisible = ids.map(id => views.get(id)).filter(Boolean)
+        let visibleIndex = 0
+        const orderedViews = [...this.#layoutDocument.views].sort((a, b) => a.tabOrder - b.tabOrder)
+        const reorderedViews = orderedViews.map(view =>
+            view.visible === false? view : reorderedVisible[visibleIndex++])
+        reorderedViews.forEach((view, index) => view.tabOrder = index)
+        this.#saveLayouts()
     }
 
     #setViewVisibility(id, visible) {

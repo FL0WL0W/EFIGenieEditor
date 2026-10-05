@@ -768,6 +768,12 @@ select .pinconflict{
 .dashboard-view-remove:hover {
     color: inherit;
 }
+.dashboard-view-tab[draggable="true"] {
+    cursor: grab;
+}
+.dashboard-view-tab.dashboard-view-reordering {
+    background-image: linear-gradient(rgba(0, 120, 255, 0.3), rgba(0, 120, 255, 0.3));
+}
 
 .dashboard-canvas {
     position: relative;
@@ -1079,6 +1085,14 @@ select .pinconflict{
 }
 .fileSelectionMenu .selectoption.has-visibility {
     grid-template-columns: auto minmax(12em, 1fr) auto auto auto;
+}
+.fileSelectionMenu .selectoption[draggable="true"] .file-name,
+.fileSelectionMenu .selectoption[draggable="true"] .file-modified {
+    cursor: grab;
+    user-select: none;
+}
+.fileSelectionMenu .selectoption.file-reordering {
+    background-image: linear-gradient(rgba(0, 120, 255, 0.3), rgba(0, 120, 255, 0.3));
 }
 .fileSelectionMenu .file-modified {
     margin-left: 1em;
