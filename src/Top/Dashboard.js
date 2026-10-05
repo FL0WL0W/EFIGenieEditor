@@ -734,8 +734,56 @@ export default class Dashboard extends UITemplate {
     }
 
     #installWidgetDrag(widget) {
+        let lastPointerWasTouch = false
+        const beginMove = (startX, startY, touchDrag = false) => {
+            const startLeft = widget.offsetLeft
+            const startTop = widget.offsetTop
+            let moved = false
+            const move = moveEvent => {
+                const point = moveEvent.touches?.[moveEvent.touches.length - 1] ?? moveEvent
+                if(touchDrag && moveEvent.cancelable) moveEvent.preventDefault()
+                const dx = point.clientX - startX
+                const dy = point.clientY - startY
+                if(!moved && Math.hypot(dx, dy) < 8) return
+                moved = true
+                const grid = 25
+                widget.classList.add(`dragging`)
+                widget.style.left = `${Math.max(0, Math.round((startLeft + dx) / grid) * grid)}px`
+                widget.style.top = `${Math.max(0, Math.round((startTop + dy) / grid) * grid)}px`
+                this.#updateCanvasHeight()
+            }
+            const up = () => {
+                document.removeEventListener(`pointermove`, move)
+                document.removeEventListener(`pointerup`, up)
+                document.removeEventListener(`pointercancel`, up)
+                document.removeEventListener(`touchmove`, move)
+                document.removeEventListener(`touchend`, up)
+                document.removeEventListener(`touchcancel`, up)
+                widget.classList.remove(`dragging`)
+                if(moved) {
+                    const suppressClick = clickEvent => {
+                        clickEvent.preventDefault()
+                        clickEvent.stopImmediatePropagation()
+                        document.removeEventListener(`click`, suppressClick, true)
+                    }
+                    document.addEventListener(`click`, suppressClick, true)
+                    this.#scheduleLayoutSave()
+                }
+            }
+            document.addEventListener(`pointermove`, move)
+            document.addEventListener(`pointerup`, up)
+            document.addEventListener(`pointercancel`, up)
+            if(touchDrag) {
+                widget.classList.add(`dragging`)
+                document.addEventListener(`touchmove`, move, { passive: false })
+                document.addEventListener(`touchend`, up)
+                document.addEventListener(`touchcancel`, up)
+            }
+        }
+
         widget.addEventListener(`pointerdown`, event => {
-            if(event.target.closest(`.dashboard-widget-remove`)) return
+            lastPointerWasTouch = event.pointerType === `touch`
+            if(lastPointerWasTouch || event.target.closest(`.dashboard-widget-remove`)) return
             const bounds = widget.getBoundingClientRect()
             if(widget.classList.contains(`dashboard-plot`) &&
                 event.clientX >= bounds.right - 20 && event.clientY >= bounds.bottom - 20) {
@@ -751,39 +799,15 @@ export default class Dashboard extends UITemplate {
                 return
             }
             event.preventDefault()
-            const startX = event.clientX
-            const startY = event.clientY
-            const startLeft = widget.offsetLeft
-            const startTop = widget.offsetTop
-            let moved = false
-            const move = moveEvent => {
-                const dx = moveEvent.clientX - startX
-                const dy = moveEvent.clientY - startY
-                if(!moved && Math.hypot(dx, dy) < 8) return
-                moved = true
-                const grid = 25
-                widget.classList.add(`dragging`)
-                widget.style.left = `${Math.max(0, Math.round((startLeft + dx) / grid) * grid)}px`
-                widget.style.top = `${Math.max(0, Math.round((startTop + dy) / grid) * grid)}px`
-                this.#updateCanvasHeight()
-            }
-            const up = () => {
-                document.removeEventListener(`pointermove`, move)
-                document.removeEventListener(`pointerup`, up)
-                widget.classList.remove(`dragging`)
-                if(moved) {
-                    const suppressClick = clickEvent => {
-                        clickEvent.preventDefault()
-                        clickEvent.stopImmediatePropagation()
-                        document.removeEventListener(`click`, suppressClick, true)
-                    }
-                    document.addEventListener(`click`, suppressClick, true)
-                    this.#scheduleLayoutSave()
-                }
-            }
-            document.addEventListener(`pointermove`, move)
-            document.addEventListener(`pointerup`, up)
+            beginMove(event.clientX, event.clientY)
         })
+        widget.addEventListener(`contextmenu`, event => {
+            const touchGenerated = lastPointerWasTouch || event.sourceCapabilities?.firesTouchEvents
+            if(!touchGenerated || event.target.closest(`.dashboard-widget-remove`)) return
+            event.preventDefault()
+            event.stopPropagation()
+            beginMove(event.clientX, event.clientY, true)
+        }, { capture: true })
     }
 
     #serializeWidgets() {
