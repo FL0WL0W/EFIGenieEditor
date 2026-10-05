@@ -1063,10 +1063,38 @@ select .pinconflict{
     padding: 8px;
     min-height: 20em;
 }
+.fileSelectionToolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 8px;
+}
+.fileSelectionMenu > .ui.context-menu {
+    width: 100%;
+}
+.fileSelectionMenu .selectoption {
+    display: grid;
+    grid-template-columns: minmax(12em, 1fr) auto auto auto;
+    gap: 0em;
+    align-items: center;
+}
+.fileSelectionMenu .file-modified {
+    margin-left: 1em;
+    color: #aaa;
+    font-size: .85em;
+}
+.fileSelectionMenu .file-download,
+.fileSelectionMenu .file-delete {
+    cursor: pointer;
+    min-width: 1em;
+    font-size: 1.25em;
+    line-height: 1;
+    text-align: center;
+}
 .fileSelectionActions {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 1em;
 }
 
 .dragging::after {

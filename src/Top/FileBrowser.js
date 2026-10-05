@@ -1,10 +1,12 @@
 import UIButton from "../JavascriptUI/UIButton"
-import UIDialog from "../JavascriptUI/UIDialog"
 import UISelection from "../JavascriptUI/UISelection"
 import UITemplate from "../JavascriptUI/UITemplate"
 import UIText from "../JavascriptUI/UIText"
+import { downloadObject } from "../download"
 export default class FileBrowser extends UITemplate {
+    static metadataKey = `EFIGenie.configuration.metadata.v1`
     static template = `
+    <div class="fileSelectionToolbar"><div data-element="uploadButton"></div></div>
     <div class="fileSelectionMenu"><div data-element="fileSelectionMenu"></div></div>
     <div class="fileSelectionActions">
         <div data-element="valueElement"></div>
@@ -23,7 +25,26 @@ export default class FileBrowser extends UITemplate {
     actionButton = new UIButton({
         label:          `Open`,
     })
+    uploadButton = new UIButton({ label: `Upload` })
     excludedKeys = []
+
+    get metadata() {
+        try { return JSON.parse(window.localStorage.getItem(FileBrowser.metadataKey)) ?? {} }
+        catch { return {} }
+    }
+
+    markModified(key, modified = Date.now()) {
+        if(!key || this.excludedKeys.includes(key)) return
+        const metadata = this.metadata
+        metadata[key] = modified
+        window.localStorage.setItem(FileBrowser.metadataKey, JSON.stringify(metadata))
+    }
+
+    removeMetadata(key) {
+        const metadata = this.metadata
+        delete metadata[key]
+        window.localStorage.setItem(FileBrowser.metadataKey, JSON.stringify(metadata))
+    }
 
     constructor(prop) {
         super();
@@ -31,36 +52,7 @@ export default class FileBrowser extends UITemplate {
     }
 
     Setup(prop) {
-        this.contextMenuElement = document.createElement(`div`)
-        this.contextMenuElement.class = `ui context-menu`
-        const deleteElement = this.contextMenuElement.appendChild(document.createElement(`div`))
-        deleteElement.class = `selectoption collapsed`
-        deleteElement.innerText = `Delete`
-        deleteElement.addEventListener('click', (event) => {
-            window.localStorage.removeItem(this.fileSelection.value)
-            this.updateOptions();
-        })
         this.fileSelectionMenu = this.fileSelection.contextMenu
-        let visible = false
-        let collapsingClick = false
-        let currentTarget = undefined
-        this.fileSelectionMenu.addEventListener('contextmenu', (event) => {
-            event.preventDefault();
-            event.target.dispatchEvent(new Event(`click`, {bubbles: true}))
-
-            const clickHandler = () => {
-                if(collapsingClick)
-                    return collapsingClick = false
-                if(!visible) 
-                    return
-                if(currentTarget?.contains?.(this.contextMenuElement))
-                    currentTarget?.removeChild?.(this.contextMenuElement)
-                document.removeEventListener(`click`, clickHandler)
-                visible = false
-            }
-            document.addEventListener(`click`, clickHandler)
-            window.setTimeout(() => { currentTarget = event.target; currentTarget.append(this.contextMenuElement); visible = true }, 1)
-        });
         this.fileSelectionMenu.class = `opened`
         this.fileSelection.addEventListener(`change`, () => {
             this.valueElement.value = this.fileSelection.value
@@ -81,10 +73,44 @@ export default class FileBrowser extends UITemplate {
                 return false;
             }
         }
+        const metadata = this.metadata
         this.fileSelection.options = Object.keys(window.localStorage)
-            .filter(key => !this.excludedKeys.includes(key))
-            .map(key => isValidJSON(window.localStorage.getItem(key))? { name: key, value: key } : undefined)
+            .filter(key => key !== FileBrowser.metadataKey && !this.excludedKeys.includes(key))
+            .map(key => isValidJSON(window.localStorage.getItem(key))? { name: key, value: key, modified: metadata[key] } : undefined)
             .filter(x => x !== undefined)
+        ;[...this.fileSelectionMenu.children].forEach(optionElement => {
+            const option = optionElement._optionData
+            if(!option) return
+            const name = document.createElement(`span`)
+            name.className = `file-name`
+            name.textContent = option.name
+            const modified = document.createElement(`span`)
+            modified.className = `file-modified`
+            modified.textContent = option.modified? new Date(option.modified).toLocaleString() : `Modified date unavailable`
+            const download = new UIButton({ label: `\u2913`, class: `file-download` })
+            download.title = `Download ${option.name}.json`
+            download.setAttribute(`aria-label`, `Download ${option.name}.json`)
+            download.addEventListener(`click`, event => {
+                event.stopPropagation()
+                const contents = window.localStorage.getItem(option.value)
+                if(contents == undefined) return
+                try { downloadObject(JSON.parse(contents), `${option.name}.json`) }
+                catch { }
+            })
+            const remove = new UIButton({ label: `×`, class: `file-delete` })
+            remove.title = `Delete ${option.name}`
+            remove.setAttribute(`aria-label`, `Delete ${option.name}`)
+            remove.addEventListener(`click`, event => {
+                event.stopPropagation()
+                if(!window.confirm(`Delete configuration "${option.name}"?`)) return
+                window.localStorage.removeItem(option.value)
+                this.removeMetadata(option.value)
+                if(this.value === option.value) this.value = ``
+                this.dispatchEvent(new CustomEvent(`filedelete`, { detail: { name: option.value } }))
+                this.updateOptions()
+            })
+            optionElement.replaceChildren(name, modified, download, remove)
+        })
     }
 }
 customElements.define(`file-browser`, FileBrowser, { extends: `span` })

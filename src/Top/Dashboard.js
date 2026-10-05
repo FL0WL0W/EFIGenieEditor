@@ -458,6 +458,7 @@ export default class Dashboard extends UITemplate {
                 remove.title = `Delete ${view.name}`
                 remove.addEventListener(`click`, event => {
                     event.stopPropagation()
+                    if(!window.confirm(`Delete dashboard view "${view.name}"?`)) return
                     this.#deleteView(view.id)
                 })
                 tab.append(remove)

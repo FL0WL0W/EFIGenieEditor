@@ -31,7 +31,7 @@ import "./JavascriptUI/UI.css"
 import "./styles/style.css"
 import 'uplot/dist/uPlot.min.css';
 
-import { downloadBin, downloadObject } from "./download.js"
+import { downloadBin } from "./download.js"
 
 import Pinouts from "./Pinouts/Pinouts.js"
 import "./Pinouts/PinoutESP32C6_Expander.js"
@@ -203,6 +203,11 @@ window.addEventListener(`load`, function() {
     const lastTarget = window.localStorage.getItem(`lastTarget`)
     let configJsonName = window.localStorage.getItem(`lastConfigName`) ?? `config`
     let lastConfig = window.localStorage.getItem(configJsonName)
+    window.fileBrowser.addEventListener(`filedelete`, ({ detail }) => {
+        if(configJsonName !== detail.name) return
+        configJsonName = undefined
+        window.localStorage.removeItem(`lastConfigName`)
+    })
 
     if(configJsonName !== `config` && lastConfig) {
         loadConfig(lastConfig)
@@ -230,9 +235,10 @@ window.addEventListener(`load`, function() {
         xhr.send()
     }
 
-    const openConfig = () => {
+    const browseConfigs = () => {
         window.fileBrowser.value = configJsonName ?? ``
-        window.fileBrowserDialog.title = window.fileBrowser.actionLabel = `Open`
+        window.fileBrowserDialog.title = `Configurations`
+        window.fileBrowser.actionLabel = `Open`
         window.fileBrowserDialog.show()
     }
     const saveConfigAs = () => {
@@ -246,6 +252,7 @@ window.addEventListener(`load`, function() {
         }
         else {
             window.localStorage.setItem(configJsonName, JSON.stringify(window.b.saveValue))
+            window.fileBrowser.markModified(configJsonName)
             window.fileBrowser.updateOptions()
         }
     }
@@ -263,6 +270,7 @@ window.addEventListener(`load`, function() {
         if(window.fileBrowser.actionLabel == `Save`) {
             window.localStorage.setItem(`lastConfigName`, configJsonName = window.fileBrowser.value)
             window.localStorage.setItem(window.fileBrowser.value, JSON.stringify(window.b.saveValue))
+            window.fileBrowser.markModified(window.fileBrowser.value)
             window.fileBrowser.updateOptions()
         }
     })
@@ -296,17 +304,14 @@ window.addEventListener(`load`, function() {
             }, 5000)
         })
     })
-    const downloadConfig = () => {
-        var cfg = b.saveValue
-        downloadObject(cfg, `${configJsonName ?? `tune`}.json`)
-    }
-
     const btnLoad = document.querySelector(`#btnLoad`)
+    window.fileBrowser.uploadButton.addEventListener(`click`, () => btnLoad.click())
     btnLoad.addEventListener(`change`, function(evt){
         const selectedFile = evt.target.files[0]
         if(selectedFile === undefined)
             return
 
+        const file = selectedFile.name.replace(/\.json$/i, ``)
         var test = new FileReader()
 
         test.onload = function(evt) {
@@ -317,14 +322,16 @@ window.addEventListener(`load`, function() {
             }
 
             const result = evt.target.result
-            window.localStorage.setItem(`config`, result)
+            window.localStorage.setItem(file, result)
+            window.fileBrowser.markModified(file, selectedFile.lastModified || Date.now())
+            window.localStorage.setItem(`lastConfigName`, configJsonName = file)
+            window.fileBrowser.value = file
+            window.fileBrowser.updateOptions()
             loadConfig(result)
+            btnLoad.value = ``
         }
 
         test.readAsText(selectedFile)
-        let file = selectedFile.name
-        file = file.substr(file.lastIndexOf('\\') + 1).split('.')[0];
-        window.localStorage.setItem(`lastConfigName`, configJsonName = file)
     })
 
     const saveLog = () => {
@@ -354,11 +361,9 @@ window.addEventListener(`load`, function() {
     })
 
     const fileActions = {
-        open: openConfig,
+        browse: browseConfigs,
         save: saveConfig,
         saveAs: saveConfigAs,
-        upload: () => btnLoad.click(),
-        download: downloadConfig,
         openLog: () => btnOpenLog.click(),
         saveLog: saveLog,
         uploadDashboardView: () => b.Dashboard.uploadView(),
@@ -369,11 +374,9 @@ window.addEventListener(`load`, function() {
             {
                 group: `Configuration`,
                 options: [
-                    { name: `Open`, action: `open` },
+                    { name: `Browse`, action: `browse` },
                     { name: `Save`, action: `save` },
-                    { name: `Save As`, action: `saveAs` },
-                    { name: `Upload`, action: `upload` },
-                    { name: `Download`, action: `download` }
+                    { name: `Save As`, action: `saveAs` }
                 ]
             },
             {
