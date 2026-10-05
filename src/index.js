@@ -366,8 +366,7 @@ window.addEventListener(`load`, function() {
         saveAs: saveConfigAs,
         openLog: () => btnOpenLog.click(),
         saveLog: saveLog,
-        uploadDashboardView: () => b.Dashboard.uploadView(),
-        downloadDashboardView: () => b.Dashboard.downloadView()
+        browseDashboardViews: () => b.Dashboard.browseViews()
     }
     const fileMenu = new UIContextMenu({
         options: [
@@ -389,8 +388,7 @@ window.addEventListener(`load`, function() {
             {
                 group: `Dashboard Views`,
                 options: [
-                    { name: `Upload View`, action: `uploadDashboardView` },
-                    { name: `Download View`, action: `downloadDashboardView` }
+                    { name: `Browse`, action: `browseDashboardViews` }
                 ]
             }
         ]

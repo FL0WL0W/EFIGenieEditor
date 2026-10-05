@@ -1,4 +1,5 @@
 import UIButton from "../JavascriptUI/UIButton"
+import UICheckBox from "../JavascriptUI/UICheckBox"
 import UISelection from "../JavascriptUI/UISelection"
 import UITemplate from "../JavascriptUI/UITemplate"
 import UIText from "../JavascriptUI/UIText"
@@ -27,6 +28,13 @@ export default class FileBrowser extends UITemplate {
     })
     uploadButton = new UIButton({ label: `Upload` })
     excludedKeys = []
+    fileProvider
+    downloadFile
+    deleteFile
+    visibilityChanged
+    fileType = `configuration`
+    showFileActions = true
+    #updatingSelectionText = false
 
     get metadata() {
         try { return JSON.parse(window.localStorage.getItem(FileBrowser.metadataKey)) ?? {} }
@@ -55,12 +63,16 @@ export default class FileBrowser extends UITemplate {
         this.fileSelectionMenu = this.fileSelection.contextMenu
         this.fileSelectionMenu.class = `opened`
         this.fileSelection.addEventListener(`change`, () => {
-            this.valueElement.value = this.fileSelection.value
+            this.#updatingSelectionText = true
+            this.valueElement.value = this.fileSelection.selectedOption?.name ?? this.fileSelection.value
+            this.#updatingSelectionText = false
         })
         this.valueElement.addEventListener(`change`, () => {
+            if(this.#updatingSelectionText) return
             this.fileSelection.value = this.valueElement.value
         })
         super.Setup(prop)
+        this.querySelector(`.fileSelectionActions`).hidden = !this.showFileActions
         this.updateOptions()
         this.class = `filebrowser`
     }
@@ -73,11 +85,17 @@ export default class FileBrowser extends UITemplate {
                 return false;
             }
         }
-        const metadata = this.metadata
-        this.fileSelection.options = Object.keys(window.localStorage)
-            .filter(key => key !== FileBrowser.metadataKey && !this.excludedKeys.includes(key))
-            .map(key => isValidJSON(window.localStorage.getItem(key))? { name: key, value: key, modified: metadata[key] } : undefined)
-            .filter(x => x !== undefined)
+        let files
+        if(this.fileProvider) {
+            files = this.fileProvider() ?? []
+        } else {
+            const metadata = this.metadata
+            files = Object.keys(window.localStorage)
+                .filter(key => key !== FileBrowser.metadataKey && !this.excludedKeys.includes(key))
+                .map(key => isValidJSON(window.localStorage.getItem(key))? { name: key, value: key, modified: metadata[key] } : undefined)
+                .filter(x => x !== undefined)
+        }
+        this.fileSelection.options = files
         ;[...this.fileSelectionMenu.children].forEach(optionElement => {
             const option = optionElement._optionData
             if(!option) return
@@ -87,29 +105,61 @@ export default class FileBrowser extends UITemplate {
             const modified = document.createElement(`span`)
             modified.className = `file-modified`
             modified.textContent = option.modified? new Date(option.modified).toLocaleString() : `Modified date unavailable`
+            const controls = []
+            if(typeof option.visible === `boolean`) {
+                optionElement.classList.add(`has-visibility`)
+                const visible = new UICheckBox({ value: option.visible })
+                visible.disabled = option.visibilityDisabled === true
+                visible.title = option.visible? `Visible` : `Hidden`
+                visible.setAttribute(`aria-label`, `${option.name} visible`)
+                visible.addEventListener(`click`, event => event.stopPropagation())
+                visible.addEventListener(`change`, event => {
+                    event.stopPropagation()
+                    if(this.visibilityChanged?.(option, visible.value) === false)
+                        visible.value = option.visible
+                })
+                controls.push(visible)
+            } else {
+                optionElement.classList.remove(`has-visibility`)
+            }
+            controls.push(name, modified)
             const download = new UIButton({ label: `\u2913`, class: `file-download` })
             download.title = `Download ${option.name}.json`
             download.setAttribute(`aria-label`, `Download ${option.name}.json`)
             download.addEventListener(`click`, event => {
                 event.stopPropagation()
+                if(this.downloadFile) {
+                    this.downloadFile(option)
+                    return
+                }
                 const contents = window.localStorage.getItem(option.value)
                 if(contents == undefined) return
                 try { downloadObject(JSON.parse(contents), `${option.name}.json`) }
                 catch { }
             })
-            const remove = new UIButton({ label: `×`, class: `file-delete` })
-            remove.title = `Delete ${option.name}`
-            remove.setAttribute(`aria-label`, `Delete ${option.name}`)
-            remove.addEventListener(`click`, event => {
-                event.stopPropagation()
-                if(!window.confirm(`Delete configuration "${option.name}"?`)) return
-                window.localStorage.removeItem(option.value)
-                this.removeMetadata(option.value)
-                if(this.value === option.value) this.value = ``
-                this.dispatchEvent(new CustomEvent(`filedelete`, { detail: { name: option.value } }))
-                this.updateOptions()
-            })
-            optionElement.replaceChildren(name, modified, download, remove)
+            controls.push(download)
+            if(option.deletable !== false) {
+                const remove = new UIButton({ label: `×`, class: `file-delete` })
+                remove.title = `Delete ${option.name}`
+                remove.setAttribute(`aria-label`, `Delete ${option.name}`)
+                remove.addEventListener(`click`, event => {
+                    event.stopPropagation()
+                    if(!window.confirm(`Delete ${this.fileType} "${option.name}"?`)) return
+                    if(this.deleteFile) {
+                        if(this.deleteFile(option) === false) return
+                    } else {
+                        window.localStorage.removeItem(option.value)
+                        this.removeMetadata(option.value)
+                    }
+                    if(this.fileSelection.value === option.value) this.value = ``
+                    this.dispatchEvent(new CustomEvent(`filedelete`, { detail: { name: option.value } }))
+                    this.updateOptions()
+                })
+                controls.push(remove)
+            } else {
+                controls.push(document.createElement(`span`))
+            }
+            optionElement.replaceChildren(...controls)
         })
     }
 }

@@ -1077,6 +1077,9 @@ select .pinconflict{
     gap: 0em;
     align-items: center;
 }
+.fileSelectionMenu .selectoption.has-visibility {
+    grid-template-columns: auto minmax(12em, 1fr) auto auto auto;
+}
 .fileSelectionMenu .file-modified {
     margin-left: 1em;
     color: #aaa;

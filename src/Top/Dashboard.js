@@ -11,6 +11,7 @@ import UIPlot from "../UI/UIPlot"
 import { downloadObject } from "../download"
 import { throttle } from 'lodash-es'
 import defaultDashboardViews from "./DefaultDashboardViews.json"
+import FileBrowser from "./FileBrowser"
 
 class UILoggedVariable extends HTMLTableRowElement {
     #variable
@@ -110,6 +111,8 @@ export default class Dashboard extends UITemplate {
     #activeViewId
     #saveLayoutTimer
     #loggedVariableAddRow
+    #viewBrowser
+    #viewBrowserDialog
 
     get options() { return this.loggedVariableVariableSelection.options }
     set options(options) {
@@ -140,6 +143,7 @@ export default class Dashboard extends UITemplate {
         this.Setup(prop)
         this.#setupDashboardControls()
         this.#loadLayouts()
+        this.#setupViewBrowser()
 
         communication.addEventListener(`change`, ({ detail }) => {
             this.#updateLoggedValues(detail.currentVariableValues, detail.variableMetadata)
@@ -366,7 +370,13 @@ export default class Dashboard extends UITemplate {
         this.addPlot.addEventListener(`click`, () => this.#addWidget({ type: `plot` }, true))
         this.addView.addEventListener(`click`, () => {
             this.#captureActiveView()
-            const view = { id: `${Date.now()}-${Math.random().toString(16).slice(2)}`, name: `View ${this.#layoutDocument.views.length + 1}`, elements: [] }
+            const view = {
+                id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                name: `View ${this.#layoutDocument.views.length + 1}`,
+                modified: Date.now(),
+                visible: true,
+                elements: []
+            }
             this.#layoutDocument.views.push(view)
             this.#activateView(view.id)
         })
@@ -393,11 +403,14 @@ export default class Dashboard extends UITemplate {
                         ...imported,
                         id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
                         name,
+                        modified: file.lastModified || Date.now(),
+                        visible: true,
                         elements: structuredClone(imported.elements)
                     }
                     this.#captureActiveView()
                     this.#layoutDocument.views.push(view)
                     this.#activateView(view.id)
+                    this.#viewBrowser?.updateOptions()
                 } catch(error) {
                     alert(`Unable to load dashboard view: ${error.message}`)
                 }
@@ -407,11 +420,43 @@ export default class Dashboard extends UITemplate {
         })
     }
 
-    downloadView() {
+    downloadView(id = this.#activeViewId) {
         this.#captureActiveView()
-        const view = this.#activeView()
+        const view = this.#layoutDocument.views.find(view => view.id === id)
+        if(!view) return
         const filename = `${view.name ?? `Dashboard-View`}`.replace(/[^a-z0-9._-]+/gi, `-`)
         downloadObject({ version: 1, view: structuredClone(view) }, `EFIGenie-${filename}.json`)
+    }
+
+    #setupViewBrowser() {
+        this.#viewBrowser = new FileBrowser({
+            fileType: `dashboard view`,
+            showFileActions: false,
+            fileProvider: () => (this.#layoutDocument?.views ?? []).map(view => ({
+                name: view.name,
+                value: view.id,
+                modified: view.modified,
+                visible: view.visible !== false,
+                visibilityDisabled: view.visible !== false &&
+                    this.#layoutDocument.views.filter(view => view.visible !== false).length <= 1,
+                deletable: this.#layoutDocument.views.length > 1
+            })),
+            downloadFile: option => this.downloadView(option.value),
+            visibilityChanged: (option, visible) => this.#setViewVisibility(option.value, visible),
+            deleteFile: option => {
+                if(this.#layoutDocument.views.length <= 1) return false
+                this.#deleteView(option.value)
+                return true
+            }
+        })
+        this.#viewBrowserDialog = new UIDialog({ title: `Dashboard Views` })
+        this.#viewBrowserDialog.content.append(this.#viewBrowser)
+        this.#viewBrowser.uploadButton.addEventListener(`click`, () => this.uploadView())
+    }
+
+    browseViews() {
+        this.#viewBrowser.updateOptions()
+        this.#viewBrowserDialog.show()
     }
 
     uploadView() {
@@ -423,7 +468,10 @@ export default class Dashboard extends UITemplate {
         if(!Array.isArray(this.#layoutDocument?.views) || this.#layoutDocument.views.length === 0) {
             this.#layoutDocument = structuredClone(defaultDashboardViews)
         }
-        this.#activeViewId = this.#layoutDocument.activeViewId ?? this.#layoutDocument.views[0].id
+        this.#layoutDocument.views.forEach(view => view.visible ??= true)
+        if(!this.#layoutDocument.views.some(view => view.visible)) this.#layoutDocument.views[0].visible = true
+        const requestedView = this.#layoutDocument.views.find(view => view.id === this.#layoutDocument.activeViewId && view.visible)
+        this.#activeViewId = requestedView?.id ?? this.#layoutDocument.views.find(view => view.visible).id
         this.#activateView(this.#activeViewId)
     }
 
@@ -431,6 +479,9 @@ export default class Dashboard extends UITemplate {
 
     #activateView(id) {
         if(this.#activeViewId && this.#activeViewId !== id) this.#captureActiveView()
+        const activatedView = this.#layoutDocument.views.find(view => view.id === id)
+        if(!activatedView) return
+        activatedView.visible = true
         this.#activeViewId = id
         this.#layoutDocument.activeViewId = id
         this.elements.replaceChildren()
@@ -441,7 +492,8 @@ export default class Dashboard extends UITemplate {
 
     #renderViewTabs() {
         this.viewTabs.replaceChildren()
-        for(const view of this.#layoutDocument.views) {
+        const visibleViews = this.#layoutDocument.views.filter(view => view.visible !== false)
+        for(const view of visibleViews) {
             const tab = new UIButton({ label: view.name, class: view.id === this.#activeViewId? `dashboard-view-tab active` : `dashboard-view-tab` })
             tab.title = `Double-click to rename`
             tab.addEventListener(`click`, () => this.#activateView(view.id))
@@ -449,22 +501,44 @@ export default class Dashboard extends UITemplate {
                 const name = prompt(`View name`, view.name)
                 if(name?.trim()) {
                     view.name = name.trim()
+                    view.modified = Date.now()
                     this.#renderViewTabs()
                     this.#saveLayouts()
                 }
             })
-            if(this.#layoutDocument.views.length > 1) {
+            if(visibleViews.length > 1) {
                 const remove = new UIButton({ label: `×`, class: `dashboard-view-remove` })
-                remove.title = `Delete ${view.name}`
+                remove.title = `Hide ${view.name}`
                 remove.addEventListener(`click`, event => {
                     event.stopPropagation()
-                    if(!window.confirm(`Delete dashboard view "${view.name}"?`)) return
-                    this.#deleteView(view.id)
+                    this.#setViewVisibility(view.id, false)
                 })
                 tab.append(remove)
             }
             this.viewTabs.append(tab)
         }
+    }
+
+    #setViewVisibility(id, visible) {
+        const view = this.#layoutDocument.views.find(view => view.id === id)
+        if(!view) return false
+        if(!visible && view.visible !== false &&
+            this.#layoutDocument.views.filter(view => view.visible !== false).length <= 1) return false
+        if((view.visible !== false) === visible) return true
+
+        this.#captureActiveView()
+        view.visible = visible
+        view.modified = Date.now()
+        if(!visible && id === this.#activeViewId) {
+            const nextView = this.#layoutDocument.views.find(view => view.visible !== false)
+            this.#activeViewId = undefined
+            this.#activateView(nextView.id)
+        } else {
+            this.#renderViewTabs()
+            this.#saveLayouts()
+        }
+        this.#viewBrowser?.updateOptions()
+        return true
     }
 
     #deleteView(id) {
@@ -475,7 +549,9 @@ export default class Dashboard extends UITemplate {
         if(!deletingActiveView) this.#captureActiveView()
         this.#layoutDocument.views.splice(index, 1)
         if(deletingActiveView) {
-            const nextView = this.#layoutDocument.views[Math.min(index, this.#layoutDocument.views.length - 1)]
+            const nextView = this.#layoutDocument.views.find(view => view.visible !== false) ??
+                this.#layoutDocument.views[Math.min(index, this.#layoutDocument.views.length - 1)]
+            nextView.visible = true
             this.#activeViewId = undefined
             this.#activateView(nextView.id)
         } else {
@@ -641,6 +717,8 @@ export default class Dashboard extends UITemplate {
         clearTimeout(this.#saveLayoutTimer)
         this.#saveLayoutTimer = setTimeout(() => {
             this.#captureActiveView()
+            const view = this.#activeView()
+            if(view) view.modified = Date.now()
             this.#saveLayouts()
         }, 100)
     }
