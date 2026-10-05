@@ -238,11 +238,15 @@ hr{border:0;border-top:1px solid #eee;margin:20px 0}
 body {background-color: #222629; color: #eee; font-weight:bold;}
 
 .application-header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 100;
     display: flex;
     align-items: center;
+    box-sizing: border-box;
+    width: 100%;
     height: 55px;
     background-color: #121619;
 }
@@ -261,12 +265,13 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 
 .top > .w3-sidebar {
-    top: 55px;
-    height: calc(100% - 55px);
+    padding-top: 55px;
+    height: calc(100%);
 }
 
 .main-content {
     position: relative;
+    padding-top: 55px;
 }
 
 .application-toolbar {
