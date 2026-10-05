@@ -162,7 +162,8 @@ export default class Top extends UITemplate {
         })
         this.activeTab = window.localStorage.getItem(`lastTab`) ?? `Inputs`
         window.setTimeout(() => {
-            if((window.localStorage.getItem(`expanded`) ?? `false`) === `true`) {
+            if((window.localStorage.getItem(`expanded`) ?? `false`) === `true` &&
+                this.firstChild.style.display === `none`) {
                 this.sidebarOpen.dispatchEvent(new Event(`click`))
             }
         }, 50)

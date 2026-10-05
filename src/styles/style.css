@@ -261,8 +261,8 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 
 .top > .w3-sidebar {
-    top: 65px;
-    height: calc(100% - 65px);
+    top: 55px;
+    height: calc(100% - 55px);
 }
 
 .main-content {
