@@ -216,19 +216,42 @@ export default class CalculationOrVariableSelection extends UITemplate {
     }
 
     RefreshOptions() {
-        this.options = VariableRegister.GetSelections(this.calculations, this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits))
+        const filterSelfReference = options => options.flatMap(option => {
+            if(option.group) {
+                const filteredOptions = filterSelfReference(option.options ?? [])
+                return filteredOptions.length > 0? [{ ...option, options: filteredOptions }] : []
+            }
+            return option.value?.name === this.#outputReference?.name? [] : [option]
+        })
+        const options = filterSelfReference(VariableRegister.GetSelections(
+            this.calculations,
+            this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits)
+        ))
+        if(this.selection.value?.name === this.#outputReference?.name) {
+            this.selection.parameterSelection.lastValidValue = undefined
+            this.selection.value = undefined
+        }
+        this.options = options
     }
 
     #currentReference = undefined
+    #outputReference = undefined
     disconnectedCallback() {
         VariableRegister.UnRegisterVariable(this.#currentReference)
         this.#currentReference = undefined
+        this.#outputReference = undefined
     }
 
     RegisterVariables(reference) {
         reference = { ...reference }
+        this.#outputReference = reference
+        this.RefreshOptions()
 
-        if (!this.selection.value || !reference) return
+        if(!this.selection.value || !reference.name) {
+            VariableRegister.UnRegisterVariable(this.#currentReference)
+            this.#currentReference = undefined
+            return
+        }
 
         reference.unit = this.outputUnits?.[0] ?? reference.unit
         if(reference.unit) {

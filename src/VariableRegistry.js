@@ -46,8 +46,10 @@ export default class VariableRegistry extends EventTarget {
         this.VariableIncrement ??= 0
         return ++this.VariableIncrement
     }
-    GetVariableByReference(reference) {
+    GetVariableByReference(reference, visitedReferences = new Set()) {
         if(!reference || typeof reference !== `object`) return
+        if(visitedReferences.has(reference.name)) return
+        visitedReferences.add(reference.name)
 
         let variable
         //variable is contained in a list
@@ -72,7 +74,10 @@ export default class VariableRegistry extends EventTarget {
 
         if(variable) {
             if(typeof variable.id === `string`) {
-                const referencedVariable = this.GetVariableByReference({ name: variable.id, unit: reference.unit ?? variable.unit, type: reference.type ?? variable.type })
+                const referencedVariable = this.GetVariableByReference(
+                    { name: variable.id, unit: reference.unit ?? variable.unit, type: reference.type ?? variable.type },
+                    visitedReferences
+                )
                 if(referencedVariable)
                     return { ...referencedVariable, name: variable.name }
             }
