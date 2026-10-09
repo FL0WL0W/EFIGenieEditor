@@ -216,18 +216,21 @@ export default class CalculationOrVariableSelection extends UITemplate {
     }
 
     RefreshOptions() {
+        const outputReferenceName = this.#outputReference?.name
         const filterSelfReference = options => options.flatMap(option => {
             if(option.group) {
                 const filteredOptions = filterSelfReference(option.options ?? [])
                 return filteredOptions.length > 0? [{ ...option, options: filteredOptions }] : []
             }
-            return option.value?.name === this.#outputReference?.name? [] : [option]
+            const optionValueName = option.value?.name
+            return optionValueName !== undefined && outputReferenceName !== undefined && optionValueName === outputReferenceName ? [] : [option]
         })
         const options = filterSelfReference(VariableRegister.GetSelections(
             this.calculations,
             this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits)
         ))
-        if(this.selection.value?.name === this.#outputReference?.name) {
+        const selectionValueName = this.selection.value?.name
+        if(selectionValueName !== undefined && outputReferenceName !== undefined && selectionValueName === outputReferenceName) {
             this.selection.parameterSelection.lastValidValue = undefined
             this.selection.value = undefined
         }
