@@ -393,7 +393,7 @@ let types = [
             { type: `UINT32`, value: typeof this.value === `number`? this.value : BuildRegister.GetVariableId(this.value) }
         ]} 
     }},
-    { type: `Package`, toDefinition() {
+    { type: `Package`, standalone: true, toDefinition() {
         this.value.unshift({ type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.Package }) //Package
         
         const thisValue = this
@@ -414,11 +414,11 @@ let types = [
 
         return this
     }},
-    { type: `Group`, toDefinition() {
+    { type: `Group`, standalone: true, toDefinition() {
         const thisGroup = this
 
-        const removedTypes = [...this.types.filter(t => t.type === `Group` || t.type === `Package`)]
-        this.types = this.types.filter(t => !(t.type === `Group` || t.type === `Package`))
+        const removedTypes = [...this.types.filter(t => t.standalone === true)]
+        this.types = this.types.filter(t => t.standalone !== true)
         function reduce(value) {
             if(isEmptyObject(value))
                 return []
@@ -519,7 +519,7 @@ let types = [
         ]}, this)
     }},
     { type: `CalculationOrVariableSelection`, toDefinition() {
-        if(this.calculation !== undefined) return { ...this, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
+        if(this.calculation !== undefined) return { ...this, toDefinition: undefined, ...( typeof this.calculation === `object`? this.calculation : { value: this.calculation }), type: this.selection }
         if(!this.selection 
             || (this.selection.unit == undefined && this.selection.type == undefined)) // temporary fix for formulas that don't have units
             return
@@ -627,7 +627,7 @@ let types = [
         
         return group
     }},
-    { type: `CAN_ReadData`, toDefinition() {
+    { type: `CAN_ReadData`, standalone: true, toDefinition() {
         return { type: `definition`, value: [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANReadData}, //read factory ID
             { type: `UINT32`, value: (this.canBus << 29) | this.canID}, //bus and identifier
@@ -652,7 +652,7 @@ let types = [
             { type: `UINT32`, value: 0 } //input data from CAN_READ
         ]}
     }},
-    { type: `CAN_WriteData`, toDefinition() {
+    { type: `CAN_WriteData`, standalone: true, toDefinition() {
         let tempIndex = 0
         const packData = this.packData.map(x => { //pack data configuration
             x.variable.outputVariables = [ { name: `temp${tempIndex++}` } ]
