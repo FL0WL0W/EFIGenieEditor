@@ -40,7 +40,9 @@ Pinouts.ESP32C6_Expander = {
         await BurnESP32(cfg, this.Type, this.ProcessorDefinition);
     },
     Connect: function() {
-        communication._serial = new Socket("EFIGenieCommunication")
+        // Pausing stops polling but keeps the transport open. Reuse it on resume.
+        if(!(communication._serial instanceof Socket))
+            communication._serial = new Socket("EFIGenieCommunication")
         communication.connect()
     }
 }

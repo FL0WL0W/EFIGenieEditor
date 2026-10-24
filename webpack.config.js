@@ -22,6 +22,11 @@ module.exports = (env, argv) => { return {
         clean: true,
     },
     devtool: 'source-map',
+    watchOptions: {
+        // Avoid native watcher limits on development machines.
+        poll: 1000,
+        ignored: /node_modules/,
+    },
     performance: {
         hints: false,
         maxEntrypointSize: 10000000,
@@ -29,7 +34,9 @@ module.exports = (env, argv) => { return {
     },
     devServer: {
         static: {
-            directory: path.resolve(__dirname, "dist")
+            directory: path.resolve(__dirname, "dist"),
+            // Webpack watches sources and serves rebuilt assets from memory.
+            watch: false,
         },
         proxy: [
             {

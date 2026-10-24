@@ -396,7 +396,8 @@ class EFIGenieCommunication extends EFIGenieLog {
         const currentTickId = this.variableMetadata.GetVariableId({name: `CurrentTick`, type: `tick`})
         if(currentTickId)
             variableIds.push(currentTickId)
-        for (let variableId in this.variablesToPoll) {
+        for (let variablesToPollIndex in this.variablesToPoll) {
+            const variableId = this.variablesToPoll[variablesToPollIndex]
             if(variableId != undefined && variableIds.indexOf(variableId) === -1)
                 variableIds.push(variableId)
         }
