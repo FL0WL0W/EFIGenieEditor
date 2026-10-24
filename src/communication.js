@@ -494,6 +494,21 @@ class EFIGenieCommunication extends EFIGenieLog {
             this.connect()
     }
 
+    async #pollVariablesWithRetry() {
+        const retries = 3
+        for(let attempt = 0; attempt <= retries && this.connected; attempt++) {
+            try {
+                // Each poll flushes stale bytes before issuing its read queries.
+                await this.pollVariables()
+                return
+            } catch(error) {
+                if(!this.connected) return
+                if(attempt === retries) throw error
+                await new Promise(resolve => setTimeout(resolve, 10))
+            }
+        }
+    }
+
     connect() {
         if(this.polling)
             return
@@ -508,7 +523,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         this.connected = true
         this.connectionError = false;
         const thisClass = this
-        this.pollVariables().then(function() {
+        this.#pollVariablesWithRetry().then(function() {
             thisClass.polling = false
             if(thisClass.connected)
                 thisClass.connect()
