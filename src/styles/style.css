@@ -717,6 +717,7 @@ select .pinconflict{
 }
 
 .dashboard-shell {
+    --dashboard-logger-rail-width: 32px;
     position: relative;
     min-height: 500px;
 }
@@ -777,7 +778,8 @@ select .pinconflict{
 
 .dashboard-canvas {
     position: relative;
-    min-width: 100%;
+    margin-left: var(--dashboard-logger-rail-width);
+    min-width: 0;
     min-height: max(calc(100vh - 90px), var(--dashboard-content-height, 500px));
     overflow: visible;
     background-image:
@@ -949,6 +951,9 @@ select .pinconflict{
 }
 
 .ui.button.loggedVariablesExpand {
+    box-sizing: border-box;
+    width: var(--dashboard-logger-rail-width);
+    margin: 0;
     writing-mode: vertical-lr;
     height: fit-content;
     padding-top: 0.3em;

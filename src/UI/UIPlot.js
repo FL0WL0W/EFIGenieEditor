@@ -4,50 +4,72 @@ import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
 import ConfigList from "../Top/ConfigList"
 import UIParameterWithUnit from "./UIParameterWithUnit"
-import UINumberWithUnit from "./UINumberWithUnit"
+import UINumber from "../JavascriptUI/UINumber"
 import Dashboard from "../Top/Dashboard"
 import uPlot from "uplot"
 import UIDialog from "../JavascriptUI/UIDialog"
-import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit } from "./UIUnit"
+import { ConvertValueFromUnitToUnit, GetDefaultMinMaxStepRedlineFromUnit, GetMeasurementNameFromUnitName } from "./UIUnit"
 import UIColorPicker from "./UIColorPicker"
 import { throttle } from "lodash-es"
 
 class UIPlot_Variable extends UITemplate {
     static template = `<div data-element="color"></div><div data-element="variable"></div><div data-element="min"></div><div data-element="max"></div>`
     variable = new UIParameterWithUnit({ persistValueInOptions: true })
-    min = new UINumberWithUnit()
-    max = new UINumberWithUnit()
+    min = new UINumber()
+    max = new UINumber()
     color = new UIColorPicker()
 
     get valueUnit() { return this.variable.unit }
     get displayUnit() { return this.variable.displayUnit }
     set displayUnit(displayUnit) { this.variable.displayUnit = displayUnit }
 
+    get saveValue() { return super.saveValue }
+    set saveValue(saveValue) {
+        if(saveValue == undefined) return
+        saveValue = { ...saveValue }
+        // Establish the variable and display unit before restoring its limits.
+        if(saveValue.variable !== undefined) {
+            this.variable.saveValue = saveValue.variable
+            delete saveValue.variable
+        }
+        // Older layouts stored limits as UINumberWithUnit objects in the value unit.
+        for(const name of [`min`, `max`]) {
+            const range = saveValue[name]
+            if(range !== null && typeof range === `object`) {
+                saveValue[name] = ConvertValueFromUnitToUnit(
+                    range.value, this.valueUnit, range.displayUnit ?? this.displayUnit)
+            }
+        }
+        super.saveValue = saveValue
+    }
+
     constructor(prop) {
         super()
-        
-        this.min.unitHidden = true;
-        this.max.unitHidden = true;
 
         let previousDisplayUnit
-        let previousValueUnit
         let previousVariable
+        let updatingVariable = false
         this.variable.addEventListener(`change`, () => {
-            if(previousDisplayUnit != this.displayUnit) {
-                previousDisplayUnit = this.displayUnit
-                this.min.displayUnit = this.displayUnit
-                this.max.displayUnit = this.displayUnit
-            }
-            if(previousValueUnit !== this.valueUnit) {
-                previousValueUnit = this.valueUnit
-                this.min.valueUnit = this.valueUnit
-                this.max.valueUnit = this.valueUnit
-            }
-            if(previousVariable !== this.variable.value?.name) {
-                previousVariable = this.variable.value?.name
-                let unitDefaultOptions = GetDefaultMinMaxStepRedlineFromUnit(this.valueUnit)
-                this.min.value = unitDefaultOptions?.min ?? this.min.value
-                this.max.value = unitDefaultOptions?.max ?? this.max.value
+            if(updatingVariable) return
+            updatingVariable = true
+            try {
+                if(previousDisplayUnit !== this.displayUnit) {
+                    const pdu = previousDisplayUnit
+                    previousDisplayUnit = this.displayUnit
+                    if(pdu !== undefined && this.displayUnit !== undefined &&
+                        GetMeasurementNameFromUnitName(pdu) === GetMeasurementNameFromUnitName(this.displayUnit)) {
+                        this.min.value = ConvertValueFromUnitToUnit(this.min.value, pdu, this.displayUnit)
+                        this.max.value = ConvertValueFromUnitToUnit(this.max.value, pdu, this.displayUnit)
+                    }
+                }
+                if(previousVariable !== this.variable.value?.name) {
+                    previousVariable = this.variable.value?.name
+                    const unitDefaultOptions = GetDefaultMinMaxStepRedlineFromUnit(this.displayUnit)
+                    this.min.value = unitDefaultOptions?.min ?? this.min.value
+                    this.max.value = unitDefaultOptions?.max ?? this.max.value
+                }
+            } finally {
+                updatingVariable = false
             }
         })
 
@@ -107,17 +129,15 @@ export default class UIPlot extends UITemplate {
             const newScales = [...this.variablesToPlot.children].map(uiplotvariable => {
                 return { 
                     name: `${uiplotvariable.item.variable.displayUnit}`,
-                    valueUnit: uiplotvariable.item.variable.valueUnit,
-                    displayUnit: uiplotvariable.item.variable.displayUnit,
-                    min: uiplotvariable.item.min.displayValue, 
-                    max: uiplotvariable.item.max.displayValue
+                    min: uiplotvariable.item.min.value,
+                    max: uiplotvariable.item.max.value
                 }
             }).reduce((scales, value) => {
                 scales[value.name] = { 
                     auto: false,
                     range: [ 
-                        Math.min(ConvertValueFromUnitToUnit(value.min, value.valueUnit, value.displayUnit) ?? Infinity, scales[value.name]?.range?.[0] ?? Infinity), 
-                        Math.max(ConvertValueFromUnitToUnit(value.max, value.valueUnit, value.displayUnit) ?? -Infinity, scales[value.name]?.range?.[1] ?? -Infinity) 
+                        Math.min(value.min ?? Infinity, scales[value.name]?.range?.[0] ?? Infinity),
+                        Math.max(value.max ?? -Infinity, scales[value.name]?.range?.[1] ?? -Infinity)
                     ],
                 }
 

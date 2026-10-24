@@ -618,6 +618,11 @@ export default class Dashboard extends UITemplate {
         if((view.visible !== false) === visible) return true
 
         this.#captureActiveView()
+        if(!visible && (view.elements?.length ?? 0) === 0) {
+            this.#deleteView(id)
+            this.#viewBrowser?.updateOptions()
+            return true
+        }
         view.visible = visible
         view.modified = Date.now()
         if(!visible && id === this.#activeViewId) {
