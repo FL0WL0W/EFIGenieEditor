@@ -394,12 +394,14 @@ let types = [
         ]} 
     }},
     { type: `Package`, standalone: true, toDefinition() {
+        const numberOfVariables = (this.outputVariables?.length ?? 0) + (this.inputVariables?.length ?? 0)
         this.value.unshift({ type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.Package }) //Package
-        
+        this.value.push({ type: `UINT8`, value: numberOfVariables }) //VariableCount
+
         const thisValue = this
-        for(let index in this.outputVariables) {
-            thisValue.value.push({ type: `VariableId`, value: this.outputVariables?.[index] })
-        }
+        this.outputVariables?.forEach(outputVariable => {
+            thisValue.value.push({ type: `VariableId`, value: outputVariable })
+        })
 
         delete this.outputUnits
         delete this.outputVariables
@@ -479,6 +481,7 @@ let types = [
             { type: `UINT8`, value: this.table.xAxis.length }, //xResolution
             { type: `UINT8`, value: this.table.yAxis.length }, //yResolution
             { type: `UINT8`, value: typeId }, //Type
+            { type: `UINT8`, value: 0 }, //Reserved
             { type: `FLOAT`, value: this.table.xAxis }, //xAxis
             { type: `FLOAT`, value: this.table.yAxis }, //yAxis
             { type: type, value: this.table.value }, //Table
@@ -494,6 +497,7 @@ let types = [
             { type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.LookupTable }, //factory ID
             { type: `UINT8`, value: this.table.xAxis.length }, //xResolution
             { type: `UINT8`, value: typeId }, //Type
+            { type: `UINT16`, value: 0 }, //Reserved
             { type: `FLOAT`, value: this.table.xAxis }, //xAxis
             { type: type, value: this.table.value }, //Table
         ]}, this)
@@ -631,25 +635,29 @@ let types = [
         return { type: `definition`, value: [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANReadData}, //read factory ID
             { type: `UINT32`, value: (this.canBus << 29) | this.canID}, //bus and identifier
-            { type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.Package}, //package factory ID
-            { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANParseData}, //parse factory ID
-            { type: `UINT8`, value: this.parseData.length }, //number of parse data values
-            ...this.parseData.map(x => { //parse data configuration
-                const isBool = x.bitLength < 2
-                return { type: `definition`, value: [
-                    { type: `FLOAT`, value: x.multiplier}, //muiltiplier
-                    { type: `FLOAT`, value: x.adder}, //adder
-                    { type: `UINT8`, value: (x.bitLocation) }, //bitLocation
-                    { type: `UINT8`, value: (x.bitLength) },
-                    { type: `UINT8`, value: (isBool) | //CastToBool
-                                            (0 << 1)} //CastToInt
-                ]}
-            }),
-            ...this.parseData.map(x => { //parse storage variables
-                const isBool = x.bitLength < 2
-                return { type: `VariableId`, value: { name: `${this.name }.${x.name}`, type: isBool? `bool` : undefined, unit: isBool? undefined : x.unit } }
-            }),
-            { type: `UINT32`, value: 0 } //input data from CAN_READ
+            { type: `Package`, //Package
+                value: [
+                    { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANParseData}, //parse factory ID
+                    { type: `UINT8`, value: this.parseData.length }, //number of parse data values
+                    ...this.parseData.map(x => { //parse data configuration
+                        const isBool = x.bitLength < 2
+                        return { type: `definition`, value: [
+                            { type: `FLOAT`, value: x.multiplier}, //multiplier
+                            { type: `FLOAT`, value: x.adder}, //adder
+                            { type: `UINT8`, value: (x.bitLocation) }, //bitLocation
+                            { type: `UINT8`, value: (x.bitLength) },
+                            { type: `UINT8`, value: (isBool) | //CastToBool
+                                                    (0 << 1) }, //CastToInt
+                            { type: `UINT8`, value: 0 } //Reserved
+                        ]}
+                    })
+                ],
+                outputVariables: this.parseData.map(x =>  { 
+                    const isBool = x.bitLength < 2
+                    return { name: `${this.name }.${x.name}`, type: isBool? `bool` : undefined, unit: isBool? undefined : x.unit } 
+                }),
+                inputVariables: [ 0 ] //input data from CAN_READ
+            }
         ]}
     }},
     { type: `CAN_WriteData`, standalone: true, toDefinition() {
@@ -664,32 +672,33 @@ let types = [
                 ...packData.map(x => { //pack data variable calculations
                     return { ...x.variable, type: `CalculationOrVariableSelection` }
                 }),
-                { type: `definition`, value: [
-                    { type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.Package}, //package factory ID
-                    { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANPackData}, //pack factory ID
-                    { type: `UINT64`, value: 0}, //base data TODO
-                    { type: `UINT8`, value: this.packData.length }, //number of pack data values
-                    ...packData.map(x => { //pack data configuration
-                        const isBool = x.bitLength < 2
-                        return { type: `definition`, value: [
-                            { type: `FLOAT`, value: x.multiplier}, //muiltiplier
-                            { type: `FLOAT`, value: x.adder}, //adder
-                            { type: `UINT8`, value: (x.bitLocation) }, //bitLocation
-                            { type: `UINT8`, value: (x.bitLength) },
-                            { type: `UINT8`, value: (isBool)} //CastToBool
-                        ]}
-                    }),
-                    { type: `VariableId`, value: { name: `temp` }}, //output to temp
-                    ...packData.map(x => { //pack data input variables
-                        return { type: `VariableId`, value: x.variable.outputVariables[0] }
-                    })
-                ]},
-                { type: `definition`, value: [
-                    { type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.Package}, //package factory ID
-                    { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANWriteData}, //write factory ID
-                    { type: `UINT32`, value: (this.canBus << 29) | this.canID}, //bus and identifier
-                    { type: `VariableId`, value: { name: `temp` }} // input from temp
-                ]}
+                { type: `Package`, //Package
+                    value: [
+                        { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANPackData}, //pack factory ID
+                        { type: `UINT64`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: this.packData.length }, //number of pack data values
+                        ...packData.map(x => { //pack data configuration
+                            const isBool = x.bitLength < 2
+                            return { type: `definition`, value: [
+                                { type: `FLOAT`, value: x.multiplier}, //muiltiplier
+                                { type: `FLOAT`, value: x.adder}, //adder
+                                { type: `UINT8`, value: (x.bitLocation) }, //bitLocation
+                                { type: `UINT8`, value: (x.bitLength) },
+                                { type: `UINT8`, value: (isBool)}, //CastToBool
+                                { type: `UINT8`, value: 0 } //Reserved
+                            ]}
+                        })
+                    ],
+                    outputVariables: [ { name: `temp` } ],
+                    inputVariables: packData.map(x => x.variable.outputVariables[0])
+                },
+                { type: `Package`, //Package
+                    value: [
+                        { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANWriteData}, //write factory ID
+                        { type: `UINT32`, value: (this.canBus << 29) | this.canID}, //bus and identifier
+                    ],
+                    inputVariables: [ { name: `temp` } ]
+                }
             ]}
         ]}
     }},
@@ -806,7 +815,8 @@ let types = [
                 { type: `FLOAT`, value: this.firstToothPosition}, //FirstToothPosition
                 { type: `FLOAT`, value: this.toothWidth}, //ToothWidth
                 { type: `UINT8`, value: this.numberOfTeeth}, //NumberOfTeeth
-                { type: `UINT8`, value: this.numberOfTeethMissing} //NumberOfTeethMissing
+                { type: `UINT8`, value: this.numberOfTeethMissing}, //NumberOfTeethMissing
+                { type: `UINT16`, value: 0 }, //Reserved
             ]}
         )
     }},
