@@ -272,6 +272,8 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 .main-content {
     position: relative;
     padding-top: 55px;
+    /* Reserve room for a 400px context menu without changing the scroll range. */
+    padding-bottom: 420px;
 }
 
 .application-toolbar {
