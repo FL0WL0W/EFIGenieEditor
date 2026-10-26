@@ -72,7 +72,8 @@ let EmbeddedOperationsFactoryIDs = {
     CANReadData: 15,
     CANWriteData: 16,
     CANParseData: 17,
-    CANPackData: 18
+    CANPackData: 18,
+    CANCRCJ1850: 19
 }
 let ReluctorFactoryIDs = {
     Offset: 30000,
@@ -532,9 +533,9 @@ let types = [
             ...this.selection, 
             ...this.outputVariables?.[0], 
             ...(this.selection?.name != undefined && { id: this.selection.name }),
-            ...(outputUnit != undefined && { unit: outputUnit })
+            ...(outputUnit !== undefined && { unit: outputUnit })
         })
-        if(outputUnit != undefined && this.selection.unit != outputUnit && !BuildRegister.GetVariableByReference({ ...this.selection, unit: outputUnit })) {
+        if(outputUnit !== undefined && this.selection.unit !== outputUnit && !BuildRegister.GetVariableByReference({ ...this.selection, unit: outputUnit })) {
             return { outputVariables: [ { ...this.selection, unit: outputUnit } ], inputVariables: [ this.selection ], type: `Calculation_UnitConversion` }
         }
     }},
@@ -654,7 +655,7 @@ let types = [
                 ],
                 outputVariables: this.parseData.map(x =>  { 
                     const isBool = x.bitLength < 2
-                    return { name: `${this.name }.${x.name}`, type: isBool? `bool` : undefined, unit: isBool? undefined : x.unit } 
+                    return { name: `${this.name }.${x.name}`, type: isBool? `bool` : (x.unit === undefined? `float` : undefined), unit: isBool? undefined : x.unit } 
                 }),
                 inputVariables: [ 0 ] //input data from CAN_READ
             }
@@ -662,10 +663,16 @@ let types = [
     }},
     { type: `CAN_WriteData`, standalone: true, toDefinition() {
         let tempIndex = 0
-        const packData = this.packData.map(x => { //pack data configuration
-            x.variable.outputVariables = [ { name: `temp${tempIndex++}` } ]
-            return x
-        })
+        const packData = this.packData.filter(x => !x.variable.calculation?.isCANCRC)
+            .map(x => { //pack data configuration
+                x.variable.outputVariables = [ { name: `temp${tempIndex++}` } ]
+                return x
+            })
+        const crcData = this.packData.filter(x => x.variable.calculation?.isCANCRC)
+            .map(x => { //crc configuration
+                x.variable.outputVariables = [ { name: `temp` } ]
+                return x
+            })
         return { type: `definition`, value: [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.Interval}, //interval factory ID
             { type: `FLOAT`, value: 1 / this.interval}, //interval time
@@ -677,7 +684,7 @@ let types = [
                     value: [
                         { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANPackData}, //pack factory ID
                         { type: `UINT64`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: this.packData.length }, //number of pack data values
+                        { type: `UINT8`, value: packData.length }, //number of pack data values
                         ...packData.map(x => { //pack data configuration
                             const isBool = x.bitLength < 2
                             return { type: `definition`, value: [
@@ -693,6 +700,9 @@ let types = [
                     outputVariables: [ { name: `temp` } ],
                     inputVariables: packData.map(x => x.variable.outputVariables[0])
                 },
+                ...crcData.map(x => { //crc data calculations
+                    return { ...x.variable, calculation: { ...x.variable.calculation, bitLocation: x.bitLocation }, type: `CalculationOrVariableSelection` }
+                }),
                 { type: `Package`, //Package
                     value: [
                         { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANWriteData}, //write factory ID
@@ -702,6 +712,14 @@ let types = [
                 }
             ]}
         ]}
+    }},
+    { type: `CAN_CRCJ1850`, toDefinition() {
+        return Packagize({ type: `definition`, value: [
+            { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANCRCJ1850 }, //factory ID
+            { type: `UINT8`, value: this.startLocation}, //start
+            { type: `UINT8`, value: this.endLocation - this.startLocation + 1 }, //length
+            { type: `UINT8`, value: this.bitLocation}, //offset
+        ]}, this)
     }},
     { type: `Input_Analog`, outputUnits: [`V`], toDefinition() {
         return Packagize({ type: `definition`, value: [

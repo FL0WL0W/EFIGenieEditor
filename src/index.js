@@ -69,6 +69,7 @@ import CAN_PackData from "./CAN/CAN_PackData.js"
 import CAN_ParseData from "./CAN/CAN_ParseData.js"
 import CAN_ReadData from "./CAN/CAN_ReadData.js"
 import CAN_WriteData from "./CAN/CAN_WriteData.js"
+import CAN_CRCJ1850 from "./CAN/CAN_CRCJ1850.js"
 
 import CylinderAirmass_AlphaN from "./CylinderAirmass/CylinderAirmass_AlphaN.js"
 import CylinderAirmass_SpeedDensity from "./CylinderAirmass/CylinderAirmass_SpeedDensity.js"

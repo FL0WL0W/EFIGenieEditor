@@ -20,8 +20,10 @@ export default class UIParameterWithUnit extends UITemplate {
             this.unitSelection.measurement = GetMeasurementNameFromUnitName(units)
             if(units !== undefined)
                 this.unitSelection.hidden = this.unitHidden
-            else 
+            else {
+                this.unitSelection.value = undefined
                 this.unitSelection.hidden = true
+            }
         })
         this.Setup(prop)
     }
@@ -32,8 +34,10 @@ export default class UIParameterWithUnit extends UITemplate {
         this.#unitHidden = unitHidden
         if(this.units !== undefined)
             this.unitSelection.hidden = unitHidden
-        else 
+        else {
+            this.unitSelection.value = undefined
             this.unitSelection.hidden = true
+        }
     }
 
     get selectHidden() { return this.parameterSelection.selectHidden }

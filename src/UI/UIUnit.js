@@ -197,7 +197,7 @@ export default class UIUnit extends UISelection {
         return super.saveValue
     }
     set saveValue(saveValue) {
-        if(saveValue == undefined || saveValue === ``) return
+        if(saveValue == undefined) return
         super.saveValue = saveValue
     }
 

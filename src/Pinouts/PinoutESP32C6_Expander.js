@@ -3,6 +3,7 @@ import TopExpander from '../Top/TopExpander';
 import { BurnESP32 } from './BurnESP32';
 import overlayURL from './ESP32C6_Expander.svg';
 import Pinouts from "./Pinouts"
+import { downloadBin } from '../download';
 Pinouts.ESP32C6_Expander = { 
     name: `ESP32C6 Expander`,
     Overlay: overlayURL,
@@ -37,6 +38,8 @@ Pinouts.ESP32C6_Expander = {
     Type: "TopExpander",
     Top: TopExpander,
     Burn: async function(cfg) {
+        // const bin = buildConfig({ ...cfg.value, type: this.Type }, this.ProcessorDefinition);
+        // downloadBin(bin, 'Expander-Config.bin');
         await BurnESP32(cfg, this.Type, this.ProcessorDefinition);
     },
     Connect: function() {

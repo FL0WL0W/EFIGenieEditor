@@ -6,7 +6,7 @@ export default class CAN_PackData extends UITemplate {
     static displayName = `CAN Pack`
     static outputTypes = [ `CANData` ]
     static inputTypes = [ ]
-    static template = `Offset:<div data-element="bitLocation"></div>Length:<div data-element="bitLength"></div><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div><div data-element="variable"></div>`
+    static template = `Offset:<div data-element="bitLocation"></div><div data-element="bitLengthLabel"></div><div data-element="bitLength"></div><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div><div data-element="variable"></div>`
 
     bitLocation = new UINumber({
         min: 0,
@@ -15,6 +15,7 @@ export default class CAN_PackData extends UITemplate {
         value: 0,
         class: `canBitOffset`
     })
+    bitLengthLabel = document.createElement(`span`)
     bitLength = new UINumber({
         min: 1,
         max: 64,
@@ -33,7 +34,7 @@ export default class CAN_PackData extends UITemplate {
         class: `canAdder`
     })
     variable = new CalculationOrVariableSelection({
-        outputTypes: [ `bool` ],
+        outputTypes: [ `bool|CANData` ],
         calculations: GenericConfigs,
         template: `<div data-element="selection"></div><div data-element="liveUpdate"></div><span data-element="calculationContent"></span>`
     })
@@ -41,6 +42,7 @@ export default class CAN_PackData extends UITemplate {
     constructor(prop) {
         super()
         this.variable.style.display = `inline`
+        this.bitLengthLabel.innerText = `Length:`
         this.multiplierLabel.innerText = `Multiplier:`
         this.adderLabel.innerText = `Adder:`
         this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = true
@@ -48,8 +50,17 @@ export default class CAN_PackData extends UITemplate {
             this.bitLength.max = 64-this.bitLocation.value
         })
         this.bitLength.addEventListener(`change`, () => {
-            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2
-            this.variable.outputTypes = [ this.bitLength.value < 2? `bool` : `float` ]
+            const hasBitLength = this.variable.SubConfig?.constructor?.bitLength
+            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2 || hasBitLength
+            this.variable.outputTypes = [ this.bitLength.value < 2? `bool|CANData` : `float|CANData` ]
+        })
+        this.variable.addEventListener(`change`, () => {
+            const hasBitLength = this.variable.SubConfig?.constructor?.bitLength
+            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2 || hasBitLength
+            this.bitLength.hidden = this.bitLengthLabel.hidden = hasBitLength
+            if(hasBitLength) {
+                this.bitLength.value = this.variable.SubConfig.constructor.bitLength
+            }
         })
         this.Setup(prop)
     }
