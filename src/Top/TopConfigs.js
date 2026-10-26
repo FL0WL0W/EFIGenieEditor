@@ -1,4 +1,5 @@
 import Calculation_Static from "../Calculation/Calculation_Static"
+import Calculation_StaticBoolean from "../Calculation/Calculation_StaticBoolean"
 import Calculation_LookupTable from "../Calculation/Calculation_LookupTable"
 import Calculation_2AxisTable from "../Calculation/Calculation_2AxisTable"
 import Calculation_Formula from "../Calculation/Calculation_Formula"
@@ -11,10 +12,12 @@ AFRConfigs.push(Calculation_Formula)
 
 export let InjectorEnableConfigs = []
 InjectorEnableConfigs.push(Calculation_Static)
+InjectorEnableConfigs.push(Calculation_StaticBoolean)
 InjectorEnableConfigs.push(Calculation_Formula)
 
 export let IgnitionEnableConfigs = []
 IgnitionEnableConfigs.push(Calculation_Static)
+IgnitionEnableConfigs.push(Calculation_StaticBoolean)
 IgnitionEnableConfigs.push(Calculation_Formula)
 
 export let IgnitionAdvanceConfigs = []

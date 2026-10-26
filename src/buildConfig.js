@@ -459,6 +459,9 @@ let types = [
 
         return Packagize(this, this)
     }},
+    { type: `Calculation_StaticBoolean`, toDefinition() {
+        return { ...this, type: `Calculation_Static`, toDefinition: undefined }
+    }},
     { type: `Calculation_Static`, toDefinition() {
         var type = GetType(this.value)
         var typeID = GetTypeId(type)
@@ -569,28 +572,34 @@ let types = [
         }
         
         let resultName = this.outputVariables?.[0]?.name
+        let parameterMap = {}
         parameters.forEach(parameter => { 
-            let name = parameter.indexOf(`temp`) === 0 ? parameter : `${resultName}_${parameter}`
-            name = name.substring(0, name.indexOf(`(`) !== -1? name.indexOf(`(`) : name.length)
-            group.value.push({ ...this.parameterValues[parameter], type: `CalculationOrVariableSelection`, outputVariables: [ { name } ] }) 
+            if(parameterMap[parameter] === undefined)
+            {
+                const name = parameter.indexOf(`temp`) === 0 ? parameter : `${resultName}_${parameter}`
+                parameterMap[parameter] = { name: name.substring(0, name.indexOf(`(`) !== -1? name.indexOf(`(`) : name.length) }
+                group.value.push({ ...this.parameterValues[parameter], type: `CalculationOrVariableSelection`, outputVariables: [ parameterMap[parameter] ] })
+            }
         })
+        operations.forEach(operation => {
+            operation.parameters.forEach(parameter => { 
+                if(parameterMap[parameter] !== undefined)
+                    return
+                parameterMap[parameter] = { name: parameter }
+            })
+        })
+        parameterMap[`self`] = this.outputVariables[0]
         for(let operationIndex in operations) {
             let operation = operations[operationIndex]
             let operationValue = { outputVariables: operation.resultInto === `return`? this.outputVariables : [ { name: operation.resultInto } ] }
-            const parameterToInputVariable = parameter => {
-                if(parameter === `self`)
-                    return this.outputVariables[0]
-                const name = parameter.indexOf(`temp`) === 0 ? parameter : `${resultName}_${parameter}`
-                return { name: name.substring(0, name.indexOf(`(`) !== -1? name.indexOf(`(`) : name.length) }
-            }
             if(operation.operator === `s`) {
                 operationValue.type = `Calculation_Static`
                 operationValue.value = operation.parameters[0]
             } else if(operation.operator === `!`) {
                 operationValue.type = `Calculation_Not`
-                operationValue.inputVariables = [ parameterToInputVariable(operation.parameters[1]) ]
+                operationValue.inputVariables = [ parameterMap[operation.parameters[1]] ]
             } else {
-                operationValue.inputVariables = operation.parameters.map(parameterToInputVariable)
+                operationValue.inputVariables = operation.parameters.map(parameter => parameterMap[parameter])
                 switch(operation.operator) {
                     case `*`: 
                         operationValue.type = `Calculation_Multiply`

@@ -62,7 +62,7 @@ export default class VariableRegistry extends EventTarget {
             variable = this[listName].find(a => 
                 a.name === variable.name && 
                 (reference.unit == undefined || a.unit === reference.unit || (a.unit == undefined && typeof a.id === `string`)) && 
-                (reference.type == undefined || (a.unit != undefined && reference.type.split(`|`).indexOf(`float`) !== -1) || a.type?.split(`|`).some(t => reference.type.split(`|`).indexOf(t) !== -1) || (a.type == undefined && typeof a.id === `string`)) &&
+                (reference.type == undefined || (a.unit != undefined && (reference.type.split(`|`).indexOf(`float`) !== -1 || reference.type.split(`|`).indexOf(`enum`) !== -1)) || a.type?.split(`|`).some(t => reference.type.split(`|`).indexOf(t) !== -1) || (a.type == undefined && typeof a.id === `string`)) &&
                 (reference.measurement == undefined || a.unit == undefined || reference.measurement == GetMeasurementNameFromUnitName(a.unit)))
         //variable is an object in this
         } else if (typeof this[reference.name] === `object`) {
@@ -120,7 +120,7 @@ export default class VariableRegistry extends EventTarget {
             const existingIndex = this[listName].findIndex(a => 
                 a.name === reference.name && 
                 (reference.unit == undefined || a.unit === reference.unit || (a.unit == undefined && typeof a.id === `string`)) && 
-                (reference.type == undefined || (a.unit != undefined && reference.type.split(`|`).indexOf(`float`) !== -1) || (a.type == undefined && typeof a.id === `string`) || a.type?.split(`|`).some(t => reference.type.split(`|`).indexOf(t) !== -1)))
+                (reference.type == undefined || (a.unit != undefined && (reference.type.split(`|`).indexOf(`float`) !== -1 || reference.type.split(`|`).indexOf(`enum`) !== -1)) || (a.type == undefined && typeof a.id === `string`) || a.type?.split(`|`).some(t => reference.type.split(`|`).indexOf(t) !== -1)))
             if(existingIndex !== -1) {
                 reference.generatedID ??= this[listName][existingIndex].generatedID
                 reference.id ??= this[listName][existingIndex].id

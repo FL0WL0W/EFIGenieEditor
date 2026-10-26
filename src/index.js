@@ -62,6 +62,7 @@ import Calculation_Formula from "./Calculation/Calculation_Formula.js"
 import Calculation_LookupTable from "./Calculation/Calculation_LookupTable.js"
 import Calculation_Polynomial from "./Calculation/Calculation_Polynomial.js"
 import Calcuation_Static from "./Calculation/Calculation_Static.js"
+import Calculation_StaticBoolean from "./Calculation/Calculation_StaticBoolean.js"
 import CalculationOrVariableSelection from "./Calculation/CalculationOrVariableSelection.js"
 import GenericCalculation from "./Calculation/GenericCalculation.js"
 

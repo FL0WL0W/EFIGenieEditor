@@ -27,7 +27,7 @@ export default class Calculation_Formula extends UITemplate {
             if(parameters !== ``) parameters += `,`
             parameters += parameterSplit[i]
 
-            if(parameterSplit[i].match(/[^,][(]/) && parameterSplit[i][parameterSplit[i].length - 1] !== `)`) {
+            if(parameterSplit[i].match(/[^,()][(]/) && parameterSplit[i][parameterSplit[i].length - 1] !== `)`) {
                 while(++i < parameterSplit.length) {
                     parameters += operatorSplit[i] + parameterSplit[i]
                     if(parameterSplit[i][parameterSplit[i].length - 1] === `)`) break
@@ -36,7 +36,7 @@ export default class Calculation_Formula extends UITemplate {
         }
         parameters = parameters.split(`,`)
         //remove parenthesis operator from parameters
-        parameters = parameters.map(s => s[0] === `(` ? s.substring(1) : s)
+        parameters = parameters.map(s => s.replace(/^\(+/, ``))
         parameters = parameters.map(s => {
             while(s[s.length-1] === `)` && s.split(`)`).length > s.split(`(`).length)
                 s = s.substring(0, s.length-1)
@@ -61,25 +61,37 @@ export default class Calculation_Formula extends UITemplate {
         let tempIndex = 0
 
         //do parenthesis
-        let parenthesisFormulas = formula.split(`)`)
-        if(parenthesisFormulas.length !== formula.split(`(`).length)
-            return `Parenthesis start and end not matching`
+        let parenthesisDepth = 0
+        for(const character of formula) {
+            if(character === `(`) parenthesisDepth++
+            if(character === `)`) parenthesisDepth--
+            if(parenthesisDepth < 0) return `Parenthesis start and end not matching`
+        }
+        if(parenthesisDepth !== 0) return `Parenthesis start and end not matching`
 
-        while(formula.split(`)`).flatMap(p => p.split(`(`)).filter(p => Calculation_Formula.operators.some(o => p.indexOf(o) > -1)).length > 1) {
+        let parenthesisFormula
+        while((parenthesisFormula = formula.match(/\(([^()]*)\)/))) {
+            const tempFormula = parenthesisFormula[1]
+            // Parentheses around a single operand do not need an operation.
+            if(parenthesisFormula[0] === formula || !Calculation_Formula.operators.some(o => tempFormula.includes(o))) {
+                formula = formula.replace(parenthesisFormula[0], tempFormula)
+                continue
+            }
             tempIndex++
-            let tempFormula = formula.split(`)`).filter(p => Calculation_Formula.operators.some(o => p.split(`(`).pop()?.indexOf(o) > -1))[0].split(`(`).pop()
             operations.push({
                 resultInto: `$temp${tempIndex}`,
                 parameters: [tempFormula]
             })
-            formula = formula.replace(`(${tempFormula})`, `$temp${tempIndex}`)
+            formula = formula.replace(parenthesisFormula[0], `$temp${tempIndex}`)
         }
-        if(formula[0] === `(` && formula[formula.length-1] === `)`)
-            formula = formula.substring(1,formula.length-1)
-        operations.push({
-            resultInto: `return`,
-            parameters: [formula]
-        })
+        if(operations.length > 0 && operations[operations.length - 1].resultInto === formula) {
+            operations[operations.length - 1].resultInto = `return`
+        } else {
+            operations.push({
+                resultInto: `return`,
+                parameters: [formula]
+            })
+        }
 
         //do operators
         function splitOnOperators(s) {
@@ -341,6 +353,7 @@ export default class Calculation_Formula extends UITemplate {
                 parameterValue.SubConfig.outputUnits = value.parameterValues[parameter].outputUnits
             parameterValue.value = value.parameterValues[parameter]
         }
+        this.calculateFormula()
     }
 
     get saveValue() {
@@ -379,6 +392,7 @@ export default class Calculation_Formula extends UITemplate {
             }
             parameterValue.saveValue = saveValue.parameterValues[parameter]
         }
+        this.calculateFormula()
     }
 
     constructor(prop) {
@@ -422,13 +436,20 @@ export default class Calculation_Formula extends UITemplate {
                 this.#currentReference = undefined
                 this.parameterValues[this.parameters[0]]?.RegisterVariables(reference)
             } else {
-                this.parameters.forEach(parameter => { this.parameterValues[parameter]?.RegisterVariables({ name: `${reference.name}_${this.parameterValues[parameter].label}`, unit: this.parameterValues[parameter].unit}) })
+                const parameterReferences = this.parameters.flatMap(parameter => {
+                    const parameterValue = this.parameterValues[parameter]
+                    return parameterValue ? [{
+                        parameterValue,
+                        reference: { name: `${reference.name}_${parameterValue.label}`, unit: parameterValue.unit }
+                    }] : []
+                })
+                parameterReferences.forEach(({ parameterValue, reference }) => parameterValue.RegisterVariables(reference))
                 if(!objectTester(this.#currentReference, reference)) {
                     VariableRegister.UnRegisterVariable(this.#currentReference)
                     VariableRegister.RegisterVariable(reference)
                     this.#currentReference = reference
                 }
-                this.parameters.forEach(parameter => { VariableRegister.UnRegisterVariable({ name: `${reference.name}_${this.parameterValues[parameter].label}`, unit: this.parameterValues[parameter].unit}) })
+                parameterReferences.forEach(({ reference }) => VariableRegister.UnRegisterVariable(reference))
             }
         }
     }
