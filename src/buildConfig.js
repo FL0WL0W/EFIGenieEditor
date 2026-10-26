@@ -664,6 +664,7 @@ let types = [
         let tempIndex = 0
         const packData = this.packData.map(x => { //pack data configuration
             x.variable.outputVariables = [ { name: `temp${tempIndex++}` } ]
+            return x
         })
         return { type: `definition`, value: [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.Interval}, //interval factory ID
