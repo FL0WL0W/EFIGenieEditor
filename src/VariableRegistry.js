@@ -82,6 +82,10 @@ export default class VariableRegistry extends EventTarget {
                     return { ...referencedVariable, name: variable.name }
             }
             return variable
+        } else if (this.CreateIfNotFound) {
+            this.RegisterVariable(reference)
+            visitedReferences.delete(reference.name)
+            return this.GetVariableByReference(reference, visitedReferences)
         }
     }
     GetVariableId(reference) {

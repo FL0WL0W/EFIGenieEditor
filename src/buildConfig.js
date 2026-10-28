@@ -692,7 +692,14 @@ let types = [
                 { type: `Package`, //Package
                     value: [
                         { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANPackData}, //pack factory ID
-                        { type: `UINT64`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
+                        { type: `UINT8`, value: 0}, //base data TODO
                         { type: `UINT8`, value: packData.length }, //number of pack data values
                         ...packData.map(x => { //pack data configuration
                             const isBool = x.bitLength < 2
