@@ -4,11 +4,14 @@ import UIText from "../JavascriptUI/UIText"
 import UIDisplayLiveUpdate from "../UI/UIDisplayLiveUpdate"
 import UIUnit from "../UI/UIUnit"
 import { objectTester } from "../JavascriptUI/UIUtils"
+
+import { observeCANDataLayout } from "./CANDataLayout"
+
 export default class CAN_ParseData extends UITemplate {
     static displayName = `CAN Parse`
     static outputTypes = [ `bool|float|enum` ]
     static inputTypes = [ `CANData` ]
-    static template = `<div data-element="name"></div>: Offset:<div data-element="bitLocation"></div>Length:<div data-element="bitLength"></div><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div><div data-element="unit"></div><div data-element="liveUpdate"></div>`
+    static template = `<span class="can-parse-layout"><span class="can-parse-content"><span class="can-parse-label"><div data-element="name"></div><span class="can-parse-colon">:&nbsp;</span></span><span class="can-parse-fields"><span class="can-parse-field-group"><span>Offset:</span><div data-element="bitLocation"></div><span>Length:</span><div data-element="bitLength"></div></span><wbr><span class="can-parse-field-group"><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div></span></span><span class="can-parse-unit"><div data-element="unit"></div></span><span class="can-parse-live"><div data-element="liveUpdate"></div></span></span></span>`
 
     name = new UIText({ class: `canParseDataName` })
     bitLocation = new UINumber({
@@ -64,7 +67,15 @@ export default class CAN_ParseData extends UITemplate {
     }
 
     #currentReference = undefined
+    #stopObservingLayout
+    connectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = observeCANDataLayout(this)
+    }
+
     disconnectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = undefined
         VariableRegister.UnRegisterVariable(this.#currentReference)
         this.#currentReference = undefined
     }

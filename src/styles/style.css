@@ -270,6 +270,7 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 
 .main-content {
+    container-type: inline-size;
     position: relative;
     padding-top: 55px;
     /* Reserve room for a 400px context menu without changing the scroll range. */
@@ -480,7 +481,7 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .itemContainer .item{
     order: 0;
-    min-width: 850px;
+    min-width: 480px;
     width: fit-content;
     box-sizing: border-box;
 }
@@ -492,14 +493,17 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     border-color: #666;
     padding: 2.5px;
     margin: 0px;
-    min-width: 850px;
+    min-width: 480px;
     width: fit-content;
     box-sizing: border-box;
 }
 .itemList {
+    --config-list-control-width: calc(5ch + 0.4em);
     display: grid;
     grid-template-columns: minmax(max-content, 1fr) max-content;
     width: max-content;
+    min-width: 100%;
+    box-sizing: border-box;
     position: relative;
     padding-top: 0.5em;
     padding-bottom: 0em;
@@ -518,12 +522,8 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .configContainer.itemList,
 .configContainer .itemList {
+    --config-list-control-width: calc(1ch + 0.4em);
     grid-template-columns: max-content minmax(max-content, 1fr);
-}
-.itemList .itemList,
-.configContainer .itemList {
-    width: 100%;
-    box-sizing: border-box;
 }
 .itemList > .itemContainer {
     display: grid;
@@ -532,6 +532,26 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .itemList > .itemContainer > .item {
     width: auto;
+}
+/* Only the outer list measures its contents to determine the shared width. */
+:is(.itemList, .configContainer) .itemList {
+    display: block;
+    contain: inline-size;
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+:is(.itemList, .configContainer) .itemList > .itemContainer {
+    display: flex;
+}
+:is(.itemList, .configContainer) .itemList > .itemContainer > .item {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+}
+:is(.itemList, .configContainer) .itemList > .itemContainer > .controlcontainer {
+    flex: 0 0 var(--config-list-control-width);
+    font-family: "Courier New", Courier, "Liberation Mono", monospace;
 }
 .itemContainer:last-child .item .itemContainer .item,
 .itemContainer .item {
@@ -559,6 +579,102 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .inputSpacer {
     height: 25px;
+}
+.can-message-item {
+    contain: inline-size;
+    contain-intrinsic-inline-size: 480px;
+}
+.can-message-layout,
+.can-pack-layout,
+.can-parse-layout {
+    display: block;
+    min-inline-size: 480px;
+}
+.can-message-settings,
+.can-message-settings-content {
+    display: inline-block;
+    white-space: nowrap;
+}
+.can-message-wrapped .can-message-settings {
+    display: block;
+    inline-size: var(--can-message-heading-width);
+    text-align: right;
+}
+.can-message-wrapped .can-message-data {
+    padding-top: 0;
+}
+.can-message-wrapped .can-message-data > .itemContainer:first-child > .item {
+    margin-top: 0;
+}
+.can-pack-field-group,
+.can-parse-field-group,
+.can-parse-label {
+    display: inline-block;
+    white-space: nowrap;
+}
+.can-pack-fields,
+.can-parse-fields,
+.can-pack-selection {
+    display: inline-block;
+    width: max-content;
+    max-width: 100%;
+    vertical-align: top;
+}
+.can-parse-content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+}
+.can-parse-content > * {
+    flex: 0 0 auto;
+}
+.can-parse-fields {
+    order: 1;
+}
+.can-parse-unit {
+    order: 2;
+}
+.can-parse-live {
+    order: 3;
+    margin-inline-start: auto;
+}
+.can-parse-wrapped .can-parse-unit {
+    order: 0;
+}
+.can-parse-wrapped .can-parse-live {
+    order: 1;
+}
+.can-parse-wrapped .can-parse-fields {
+    order: 2;
+    flex-basis: 100%;
+}
+.can-parse-wrapped .can-parse-colon {
+    visibility: hidden;
+}
+.can-parse-aligned .can-parse-field-group,
+.can-pack-aligned .can-pack-field-group {
+    display: inline-grid;
+    grid-template-columns: var(--can-data-first-label-width) max-content var(--can-data-second-label-width) max-content;
+    align-items: center;
+}
+.can-parse-aligned .can-parse-field-group > *,
+.can-pack-aligned .can-pack-field-group > * {
+    justify-self: start;
+}
+.can-parse-aligned .ui.number.canBitOffset,
+.can-parse-aligned .ui.number.canBitLength,
+.can-pack-aligned .ui.number.canBitOffset,
+.can-pack-aligned .ui.number.canBitLength {
+    width: 5em;
+}
+.value-with-unit {
+    display: inline-flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    white-space: nowrap;
+}
+.value-with-unit > * {
+    flex-shrink: 0;
 }
 .ui.number.canMultiplier,
 .ui.number.canAdder {

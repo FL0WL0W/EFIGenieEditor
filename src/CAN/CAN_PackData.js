@@ -2,11 +2,12 @@ import CalculationOrVariableSelection from "../Calculation/CalculationOrVariable
 import UINumber from "../JavascriptUI/UINumber"
 import UITemplate from "../JavascriptUI/UITemplate"
 import GenericConfigs from "../Calculation/GenericConfigs"
+import { observeCANDataLayout } from "./CANDataLayout"
 export default class CAN_PackData extends UITemplate {
     static displayName = `CAN Pack`
     static outputTypes = [ `CANData` ]
     static inputTypes = [ ]
-    static template = `Offset:<div data-element="bitLocation"></div><div data-element="bitLengthLabel"></div><div data-element="bitLength"></div><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div><div data-element="variable"></div>`
+    static template = `<span class="can-pack-layout"><span class="can-pack-fields"><span class="can-pack-field-group"><span>Offset:</span><div data-element="bitLocation"></div><div data-element="bitLengthLabel"></div><div data-element="bitLength"></div></span><wbr><span class="can-pack-field-group"><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div></span></span><wbr><span class="can-pack-selection"><span data-element="variable"></span></span></span>`
 
     bitLocation = new UINumber({
         min: 0,
@@ -63,6 +64,17 @@ export default class CAN_PackData extends UITemplate {
             }
         })
         this.Setup(prop)
+    }
+
+    #stopObservingLayout
+    connectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = observeCANDataLayout(this)
+    }
+
+    disconnectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = undefined
     }
 
     RegisterVariables(reference) {

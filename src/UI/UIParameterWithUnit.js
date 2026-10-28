@@ -13,6 +13,7 @@ export default class UIParameterWithUnit extends UITemplate {
     persistValueInOptions = false
     constructor(prop){
         super()
+        this.classList.add(`value-with-unit`)
         this.style.display = `inline-flex`
         this.style.alignItems = `center`
         this.parameterSelection.addEventListener(`change`, () => {

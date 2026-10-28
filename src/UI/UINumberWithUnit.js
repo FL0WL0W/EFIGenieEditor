@@ -57,6 +57,7 @@ export default class UINumberWithUnit extends UITemplate {
 
     constructor(prop) {
         super()
+        this.classList.add(`value-with-unit`)
         this.displayUnitElement = new UIUnit({
             measurement : prop?.measurement,
             value: prop?.displayUnit ?? prop?.valueUnit

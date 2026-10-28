@@ -5,9 +5,10 @@ import ConfigList from "../Top/ConfigList"
 import UIPinOverlay from "../UI/UIPinOverlay"
 import CAN_PackData from "./CAN_PackData"
 import CANConfigs from "./CANConfigs"
+import { observeCANMessageLayout } from "./CANDataLayout"
 export default class CAN_WriteData extends UITemplate {
     static displayName = `CAN Write`
-    static template = `<div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div>Interval:<div data-element="interval"></div><div data-element="packData"></div>`
+    static template = `<span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div>Interval:<div data-element="interval"></div></span></span><div data-element="packData"></div>`
 
     canIDLabel = document.createElement(`span`)
     canID = new UINumber({
@@ -43,7 +44,7 @@ export default class CAN_WriteData extends UITemplate {
     packData = new ConfigList({
         itemConstructor: CAN_PackData,
         saveValue: [{}],
-        class: `configContainer`
+        class: `configContainer can-message-data`
     })
 
     constructor(prop) {
@@ -74,6 +75,17 @@ export default class CAN_WriteData extends UITemplate {
             this.canBusLabel.hidden = true
             this.canBus.hidden = true
         }
+    }
+
+    #stopObservingLayout
+    connectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = observeCANMessageLayout(this)
+    }
+
+    disconnectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = undefined
     }
 
     RegisterVariables(reference) {

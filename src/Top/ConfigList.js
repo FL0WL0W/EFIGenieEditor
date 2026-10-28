@@ -30,9 +30,122 @@ export default class ConfigList extends HTMLDivElement {
         })
     }
 
+    #dragState
+    #dragFrame
+
+    #startDrag(item, handle, event) {
+        const itemRect = item.getBoundingClientRect()
+        const handleRect = handle.getBoundingClientRect()
+        const listRect = this.getBoundingClientRect()
+        const children = [...this.children]
+        const itemIndex = children.indexOf(item)
+        const listStyle = getComputedStyle(this)
+        const listWidth = listStyle.width
+        const listHeight = listStyle.height
+        this.#dragState = {
+            item,
+            height: itemRect.height,
+            pointerOffset: handleRect.top - itemRect.top + handleRect.height / 2,
+            position: item.style.position,
+            top: item.style.top,
+            width: item.style.width,
+            minWidth: this.style.minWidth,
+            minHeight: this.style.minHeight,
+            maxTop: Math.max(0, this.clientHeight - itemRect.height),
+            rows: children.flatMap((row, index) => {
+                if(row === item)
+                    return []
+                const rect = row.getBoundingClientRect()
+                return [{ row, middle: rect.top - listRect.top + rect.height / 2, before: index < itemIndex }]
+            })
+        }
+        // Keep removing the dragged row from changing the list's measured size.
+        this.style.minWidth = listWidth
+        this.style.minHeight = listHeight
+        item.style.width = `${itemRect.width}px`
+        item.item.classList.add(`dragging`)
+        if(event.dataTransfer) {
+            const dragIcon = new Image()
+            dragIcon.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
+            event.dataTransfer.setDragImage(dragIcon, 0, 0)
+        }
+    }
+
+    #updateDrag() {
+        const state = this.#dragState
+        if(!state || state.clientY === undefined)
+            return
+
+        // Reuse the row bounds measured at drag start; only scrolling changes the list's top.
+        const listTop = this.getBoundingClientRect().top
+        const top = Math.max(0, Math.min(
+            state.clientY - listTop - state.pointerOffset,
+            state.maxTop
+        ))
+        state.afterElement = state.rows.find(({ middle, before }) =>
+            before ? top < middle : top + state.height < middle
+        )?.row ?? null
+
+        const gapElement = state.afterElement ?? state.rows.at(-1)?.row
+        const gapProperty = state.afterElement ? `marginTop` : `marginBottom`
+        if(state.gapElement !== gapElement || state.gapProperty !== gapProperty) {
+            if(state.gapElement)
+                state.gapElement.style[state.gapProperty] = state.gapValue
+            state.gapElement = gapElement
+            state.gapProperty = gapProperty
+            if(gapElement) {
+                state.gapValue = gapElement.style[gapProperty]
+                gapElement.style[gapProperty] = `${state.height}px`
+            }
+        }
+        state.item.style.position = `absolute`
+        state.item.style.top = `${top}px`
+    }
+
+    #endDrag() {
+        const state = this.#dragState
+        if(!state)
+            return
+        if(this.#dragFrame !== undefined) {
+            cancelAnimationFrame(this.#dragFrame)
+            this.#dragFrame = undefined
+            this.#updateDrag()
+        }
+        if(state.gapElement)
+            state.gapElement.style[state.gapProperty] = state.gapValue
+        state.item.item.classList.remove(`dragging`)
+        state.item.style.position = state.position
+        state.item.style.top = state.top
+        state.item.style.width = state.width
+        this.style.minWidth = state.minWidth
+        this.style.minHeight = state.minHeight
+        const moved = state.afterElement !== undefined && state.afterElement !== state.item.nextElementSibling
+        if(moved)
+            this.insertBefore(state.item, state.afterElement)
+        this.#dragState = undefined
+        if(moved) {
+            this.updateControls()
+            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+        }
+    }
+
     constructor(prop) {
         super()
         this.class = `itemList`
+        // One handler per list; adding/removing rows must not add more handlers.
+        this.addEventListener(`dragover`, event => {
+            if(!this.#dragState)
+                return
+            event.preventDefault()
+            event.stopPropagation()
+            this.#dragState.clientY = event.clientY
+            if(this.#dragFrame === undefined) {
+                this.#dragFrame = requestAnimationFrame(() => {
+                    this.#dragFrame = undefined
+                    this.#updateDrag()
+                })
+            }
+        })
         this.newItemElement = new UIButton({className: `controlnew`})
         this.newItemElement.addEventListener(`click`, () => { this.appendNewItem(this.newItem()) })
         prop ??= {}
@@ -126,73 +239,10 @@ export default class ConfigList extends HTMLDivElement {
         let hamburgerElement = itemContainer.controlElement.appendChild(document.createElement(`span`))
         hamburgerElement.className = `controlhamburger`
         hamburgerElement.draggable = true
-        hamburgerElement.addEventListener(`dragstart`, function(event) {
-            this.parentElement.parentElement.children[0].classList.add(`dragging`)
+        hamburgerElement.addEventListener(`dragstart`, event => {
+            this.#startDrag(itemContainer, hamburgerElement, event)
         })
-        let afterElement = undefined
-        hamburgerElement.addEventListener(`dragend`, function(event) {
-            let none = [...this.parentElement.parentElement.parentElement.children].forEach(x => { x.style.marginTop = `0px`; x.style.marginBottom = `0px`; })
-            this.parentElement.parentElement.children[0].classList.remove(`dragging`)
-            this.parentElement.parentElement.style.position = "relative"
-            this.parentElement.parentElement.style.top = "0px"
-            if(afterElement)
-                thisClass.insertBefore(this.parentElement.parentElement, afterElement)
-            else if(afterElement === null)
-                thisClass.appendChild(this.parentElement.parentElement)
-            thisClass.updateControls()
-        })
-        this.addEventListener(`dragover`, function(event) {
-            event.preventDefault()
-            var dragIcon = new Image();
-            dragIcon.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-
-            // Set the drag image to the transparent icon, positioning it off-screen
-            event.dataTransfer.setDragImage(dragIcon, 0, 0);
-
-            const draggingElement = this.querySelector(`.dragging`)?.parentElement
-            //ensure this is a direct child of this list and not a nested list by checking if draggingElement.parentElement is this
-            if(!draggingElement || draggingElement.parentElement !== this)
-                return;
-
-            
-            const hamburgerElement = draggingElement.children[1].children[2]
-
-            //offset clientY to show dom position instead of mouse position
-            const positionY = event.clientY - this.getBoundingClientRect().top
-
-            //move element to mouse cursor position y
-            let dragElementY = positionY - hamburgerElement.clientHeight / 2 - (hamburgerElement.getBoundingClientRect().top - draggingElement.getBoundingClientRect().top);
-            if(dragElementY < 0) dragElementY = 0
-            if(dragElementY > this.clientHeight - draggingElement.clientHeight) dragElementY = this.clientHeight - draggingElement.clientHeight
-
-            //find element before which draggingElement should be placed
-            afterElement = [...this.children].filter(x => x !== draggingElement).find(x => {
-                const rect = x.getBoundingClientRect()
-                const top = rect.top - this.getBoundingClientRect().top
-                const bottom = rect.bottom - this.getBoundingClientRect().top
-                if(dragElementY > top)
-                    return dragElementY < top + rect.height / 2
-                return dragElementY + draggingElement.clientHeight < bottom - rect.height / 2
-            })
-
-            //add space after element to show where draggingElement will be placed
-            //do this by adding a margin to the element
-            let none = [...this.children].forEach(x => { x.style.marginTop = `0px`; x.style.marginBottom = `0px`; })
-            if(afterElement) {
-                afterElement.style.marginTop = `${draggingElement.getBoundingClientRect().height}px`
-            } else {
-                //second to last child
-                let lastChild = this.lastChild
-                if(lastChild === draggingElement)
-                    lastChild = lastChild.previousSibling
-                if(lastChild)
-                    lastChild.style.marginBottom = `${draggingElement.getBoundingClientRect().height}px`
-                afterElement = null
-            }
-
-            draggingElement.style.position = `absolute`
-            draggingElement.style.top = `${dragElementY}px`
-        })
+        hamburgerElement.addEventListener(`dragend`, () => { this.#endDrag() })
         hamburgerElement.addEventListener(`click`, function(event) {
             if(this.disabled)
                 return

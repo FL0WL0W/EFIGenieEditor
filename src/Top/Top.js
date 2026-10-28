@@ -86,6 +86,45 @@ export default class Top extends UITemplate {
         this.Setup(prop) 
     }
 
+    #sidebarIsOpen = false
+    #sidebarAnimations = []
+
+    #setSidebarOpen(open) {
+        const sidebar = this.firstChild
+        const content = this.mainContent
+        const wasHidden = sidebar.hidden
+        const sidebarLeft = sidebar.getBoundingClientRect().left
+        const contentLeft = content.getBoundingClientRect().left
+        const opacity = wasHidden ? 0 : getComputedStyle(sidebar).opacity
+        this.#sidebarAnimations.forEach(animation => animation.cancel())
+        this.#sidebarIsOpen = open
+        window.localStorage.setItem(`expanded`, `${open}`)
+
+        sidebar.hidden = false
+        const width = sidebar.offsetWidth
+        sidebar.style.left = open ? `0px` : `${-width}px`
+        sidebar.style.opacity = open ? `1` : `0`
+        content.style.left = content.style.marginRight = open ? `${width}px` : `0px`
+
+        // Set the final layout width once, then animate only visual transforms.
+        const sidebarOffset = (wasHidden ? -width : sidebarLeft) - sidebar.getBoundingClientRect().left
+        const contentOffset = contentLeft - content.getBoundingClientRect().left
+        const options = { duration: 200, easing: `ease-out` }
+        const sidebarAnimation = sidebar.animate([
+            { transform: `translateX(${sidebarOffset}px)`, opacity },
+            { transform: `translateX(0px)`, opacity: open ? 1 : 0 }
+        ], options)
+        const contentAnimation = content.animate([
+            { transform: `translateX(${contentOffset}px)` },
+            { transform: `translateX(0px)` }
+        ], options)
+        this.#sidebarAnimations = [sidebarAnimation, contentAnimation]
+        sidebarAnimation.onfinish = () => {
+            sidebar.hidden = !open
+            this.#sidebarAnimations = []
+        }
+    }
+
     Setup(prop){
         this.className = `top`
         this.topTitle.className = `w3-bar-item`
@@ -100,55 +139,13 @@ export default class Top extends UITemplate {
             if(event.efigenieSidebarHandled)
                 return
             event.efigenieSidebarHandled = true
-            if(this.firstChild.style.display !== `none`) {
-                this.sidebarClose.dispatchEvent(new Event(`click`))
-                return
-            }
-            window.localStorage.setItem(`expanded`, `true`)
-            var sidebarElement = this.firstChild
-            var containerElement = this.mainContent
-            sidebarElement.hidden = false
-            var width = sidebarElement.offsetWidth
-            var moveamount = 0.005 * width / 0.1
-            var left = parseFloat(containerElement.style.left)
-            if(isNaN(left))
-                left = 0
-            sidebarElement.style.left= `${left-width}px`
-            var intervalId = setInterval(() => {
-                if (left >= width) {
-                    clearInterval(intervalId)
-                } else {
-                    left += moveamount
-                    containerElement.style.marginRight = containerElement.style.left = `${left}px`
-                    sidebarElement.style.left = `${left-width}px`
-                    sidebarElement.style.opacity = left / width
-                }
-            }, 5)
+            this.#setSidebarOpen(!this.#sidebarIsOpen)
         })
         this.sidebarClose.addEventListener(`click`, event => {
             if(event.efigenieSidebarHandled)
                 return
             event.efigenieSidebarHandled = true
-            window.localStorage.setItem(`expanded`, `false`)
-            var sidebarElement = this.firstChild
-            var containerElement = this.mainContent
-            var width = sidebarElement.offsetWidth
-            var moveamount = 0.005 * width / 0.1
-            var left = parseFloat(containerElement.style.left)
-            if(isNaN(left))
-                left = 0
-            sidebarElement.style.left= `${left-width}px`
-            var intervalId = setInterval(() => {
-                if (left <= 0) {
-                    clearInterval(intervalId)
-                    sidebarElement.hidden = true
-                } else {
-                    left -= moveamount
-                    containerElement.style.marginRight = containerElement.style.left = `${left}px`
-                    sidebarElement.style.left = `${left-width}px`
-                    sidebarElement.style.opacity = left / width
-                }
-            }, 5)
+            this.#setSidebarOpen(false)
         })
         let touched = false
         this.sidebarSelection.addEventListener(`touchstart`, () => {

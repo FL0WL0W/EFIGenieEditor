@@ -24,7 +24,13 @@ export default class TopEngine extends Top {
         saveValue: [{}]
     })
     CAN = new ConfigList({
-        newItem() { return new GenericCalculation({ calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
+        newItem() {
+            return new GenericCalculation({
+                calculations: [ {group: `CAN`, calculations: CANConfigs}, {group: `Generic`, calculations: GenericConfigs} ],
+                class: `can-message-item`,
+                template: `<span class="can-message-layout">${GenericCalculation.template}</span>`
+            })
+        }
     })
     Engine = new Engine()
     Fuel = new Fuel()
