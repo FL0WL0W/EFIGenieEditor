@@ -445,9 +445,9 @@ export default class Calculation_Formula extends UITemplate {
                 })
                 parameterReferences.forEach(({ parameterValue, reference }) => parameterValue.RegisterVariables(reference))
                 if(!objectTester(this.#currentReference, reference)) {
-                    VariableRegister.UnRegisterVariable(this.#currentReference)
-                    VariableRegister.RegisterVariable(reference)
+                    const previousReference = this.#currentReference
                     this.#currentReference = reference
+                    VariableRegister.RegisterVariable(reference, previousReference)
                 }
                 parameterReferences.forEach(({ reference }) => VariableRegister.UnRegisterVariable(reference))
             }

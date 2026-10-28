@@ -52,7 +52,11 @@ export default class Calculation_LookupTable extends UITemplate {
                 } 
             }
         })
-        VariableRegister.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        const refreshOptions = throttle(this.RefreshOptions.bind(this), 100)
+        VariableRegister.addEventListener(`change`, ({ detail }) => {
+            this.parameterSelection?.UpdateVariableReference(detail)
+            refreshOptions()
+        })
     }
 
     get label() { return this.table.zLabel }

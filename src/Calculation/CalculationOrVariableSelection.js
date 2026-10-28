@@ -131,7 +131,11 @@ export default class CalculationOrVariableSelection extends UITemplate {
         })
         this.style.display = `block`
         this.Setup(prop)
-        VariableRegister.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        const refreshOptions = throttle(this.RefreshOptions.bind(this), 100)
+        VariableRegister.addEventListener(`change`, ({ detail }) => {
+            this.selection?.UpdateVariableReference(detail)
+            refreshOptions()
+        })
         this.RefreshOptions()
     }
 
@@ -270,9 +274,9 @@ export default class CalculationOrVariableSelection extends UITemplate {
             const hasOutput = o !== undefined && o.length > 0
             if (hasOutput) {
                 if(!objectTester(this.#currentReference, reference)) {
-                    VariableRegister.UnRegisterVariable(this.#currentReference)
-                    VariableRegister.RegisterVariable(reference)
+                    const previousReference = this.#currentReference
                     this.#currentReference = reference
+                    VariableRegister.RegisterVariable(reference, previousReference)
                 }
             } else {
                 VariableRegister.UnRegisterVariable(this.#currentReference)
@@ -282,9 +286,9 @@ export default class CalculationOrVariableSelection extends UITemplate {
         } else {
             reference = { ...this.selection.value, name: reference.name, id: this.selection.value.name }
             if(!objectTester(this.#currentReference, reference)) {
-                VariableRegister.UnRegisterVariable(this.#currentReference)
-                VariableRegister.RegisterVariable(reference)
+                const previousReference = this.#currentReference
                 this.#currentReference = reference
+                VariableRegister.RegisterVariable(reference, previousReference)
             }
         }
 

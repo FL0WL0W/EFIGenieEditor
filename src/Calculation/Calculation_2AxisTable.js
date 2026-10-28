@@ -53,7 +53,12 @@ export default class Calculation_2AxisTable extends UITemplate {
                 } 
             }
         })
-        VariableRegister.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        const refreshOptions = throttle(this.RefreshOptions.bind(this), 100)
+        VariableRegister.addEventListener(`change`, ({ detail }) => {
+            this.XSelection?.UpdateVariableReference(detail)
+            this.YSelection?.UpdateVariableReference(detail)
+            refreshOptions()
+        })
         this.RefreshOptions()
     }
 

@@ -99,9 +99,9 @@ export default class CAN_ParseData extends UITemplate {
         }
 
         if(!objectTester(this.#currentReference, reference)) {
-            VariableRegister.UnRegisterVariable(this.#currentReference)
-            VariableRegister.RegisterVariable(reference)
+            const previousReference = this.#currentReference
             this.#currentReference = reference
+            VariableRegister.RegisterVariable(reference, previousReference)
         }
         this.liveUpdate.RegisterVariables(reference)
     }

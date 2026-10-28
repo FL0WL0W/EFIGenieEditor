@@ -135,9 +135,9 @@ export default class Engine extends ConfigList {
     RegisterVariables() {
         const engineSpeedReference = { name: `EngineParameters.Engine Speed`, unit: `RPM` }
         if(!objectTester(this.#engineSpeedReference, engineSpeedReference)) {
-            VariableRegister.UnRegisterVariable(this.#engineSpeedReference)
-            VariableRegister.RegisterVariable(engineSpeedReference)
+            const previousReference = this.#engineSpeedReference
             this.#engineSpeedReference = engineSpeedReference
+            VariableRegister.RegisterVariable(engineSpeedReference, previousReference)
         }
         super.RegisterVariables({ name: `EngineParameters` })
         super.RegisterVariables({ name: `EngineParameters` })

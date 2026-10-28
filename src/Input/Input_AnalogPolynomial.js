@@ -41,9 +41,9 @@ export default class Input_AnalogPolynomial extends UITemplate {
         delete reference.id
         reference = { ...reference, unit: `V` }
         if(!objectTester(this.#currentReference, reference)) {
-            VariableRegister.UnRegisterVariable(this.#currentReference)
-            VariableRegister.RegisterVariable(reference)
+            const previousReference = this.#currentReference
             this.#currentReference = reference
+            VariableRegister.RegisterVariable(reference, previousReference)
         }
 
         this.voltageLiveUpdate.RegisterVariables(reference)

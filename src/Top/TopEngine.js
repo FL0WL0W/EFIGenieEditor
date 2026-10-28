@@ -75,9 +75,9 @@ export default class TopEngine extends Top {
     RegisterVariables() {
         const currentTickReference = { name: `CurrentTick`, type: `tick` }
         if(!objectTester(this.#currentTickReference, currentTickReference)) {
-            VariableRegister.UnRegisterVariable(this.#currentTickReference)
-            VariableRegister.RegisterVariable(currentTickReference)
+            const previousReference = this.#currentTickReference
             this.#currentTickReference = currentTickReference
+            VariableRegister.RegisterVariable(currentTickReference, previousReference)
         }
         this.Inputs.RegisterVariables()
         this.CAN.RegisterVariables({ name: `CANParameters` })

@@ -4,7 +4,7 @@ import UISelection from "../JavascriptUI/UISelection"
 import UITemplate from "../JavascriptUI/UITemplate"
 import UIGauge from "../UI/UIGauge"
 import UIUnit, { ConvertValueFromUnitToUnit, GetMeasurementNameFromUnitName } from "../UI/UIUnit"
-import { defaultFilter } from "../VariableRegistry"
+import { defaultFilter, renamedVariableReference } from "../VariableRegistry"
 import { communication } from "../communication"
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UIPlot from "../UI/UIPlot"
@@ -151,7 +151,22 @@ export default class Dashboard extends UITemplate {
         })
         this.addEventListener(`playback`, ({ detail }) => this.#updateLoggedValues(detail.values, communication.variableMetadata))
         const refreshListener = throttle(this.RefreshOptions.bind(this), 100)
-        VariableRegister.addEventListener(`change`, refreshListener)
+        VariableRegister.addEventListener(`change`, ({ detail }) => {
+            for(const row of this.loggedVariables.children) {
+                if(row instanceof UILoggedVariable)
+                    row.variable = renamedVariableReference(row.variable, detail)
+            }
+            for(const widget of this.elements.children) {
+                const content = widget.querySelector(`.dashboard-widget-content`)
+                if(widget.dataset.type === `plot`) {
+                    for(const row of content?.variablesToPlot?.children ?? [])
+                        row.item.variable.UpdateVariableReference(detail)
+                } else {
+                    content?.configTemplate?.variable?.UpdateVariableReference(detail)
+                }
+            }
+            refreshListener()
+        })
         communication.variableMetadata.addEventListener(`change`, refreshListener)
     }
 

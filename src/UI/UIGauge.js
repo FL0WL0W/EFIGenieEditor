@@ -182,6 +182,11 @@ export default class UIGauge extends UITemplate {
         let previousVariable
         let updatingVariable = false
         this.configTemplate.variable.addEventListener(`change`, () => {
+            if(this.configTemplate.variable.updatingVariableReference) {
+                previousVariable = this.configTemplate.variable.value?.name
+                previousDisplayUnit = this.displayUnit
+                return
+            }
             if(updatingVariable) return
             updatingVariable = true
             try {

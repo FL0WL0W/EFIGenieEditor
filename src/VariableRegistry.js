@@ -32,7 +32,7 @@ export default class VariableRegistry extends EventTarget {
     }
     set variableReferences(variableReferences) {
         Object.assign(this, variableReferences)
-        this.dispatchEvent(new Event(`change`))
+        this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `replace` } }))
     }
     Clear() {
         Object.entries(this).forEach(([elementname, element]) => {
@@ -40,7 +40,7 @@ export default class VariableRegistry extends EventTarget {
                 return
             delete this[elementname]
         })
-        this.dispatchEvent(new Event(`change`))
+        this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `clear` } }))
     }
     GenerateVariableId() {
         this.VariableIncrement ??= 0
@@ -107,9 +107,12 @@ export default class VariableRegistry extends EventTarget {
 
         return this.GetVariableId(reference)
     }
-    RegisterVariable(reference) {
+    // Pass the previous reference to update or rename a variable atomically.
+    RegisterVariable(reference, previousReference) {
         if(!reference || typeof reference !== `object` || !reference.name) return
         reference = { ...reference }
+        const fullName = reference.name
+        let previous = this.#RemoveVariable(previousReference)
 
         const dotIndex = reference.name.indexOf(`.`)
         if(dotIndex !== -1) {
@@ -122,19 +125,41 @@ export default class VariableRegistry extends EventTarget {
                 (reference.unit == undefined || a.unit === reference.unit || (a.unit == undefined && typeof a.id === `string`)) && 
                 (reference.type == undefined || (a.unit != undefined && (reference.type.split(`|`).indexOf(`float`) !== -1 || reference.type.split(`|`).indexOf(`enum`) !== -1)) || (a.type == undefined && typeof a.id === `string`) || a.type?.split(`|`).some(t => reference.type.split(`|`).indexOf(t) !== -1)))
             if(existingIndex !== -1) {
+                previous ??= { ...this[listName][existingIndex], name: fullName }
                 reference.generatedID ??= this[listName][existingIndex].generatedID
                 reference.id ??= this[listName][existingIndex].id
                 this[listName].splice(existingIndex, 1)
             }
+            reference.generatedID ??= previous?.generatedID
+            reference.id ??= typeof previous?.id === `number` ? previous.id : undefined
             reference.id ??= reference.generatedID ??= this.GenerateVariableId()
             this[listName].push(reference)
         } else {
-            reference.id ??= this.GenerateVariableId()
+            previous ??= this[reference.name] && { ...this[reference.name], name: fullName }
+            reference.id ??= (typeof previous?.id === `number` ? previous.id : undefined) ?? this.GenerateVariableId()
             this[reference.name] = reference
         }
-        this.dispatchEvent(new Event(`change`))
+        const current = { ...reference, name: fullName }
+        const detail = { action: previous ? `update` : `register`, reference: current, previousReference: previous }
+        // Aliases store the target name in id; keep them resolvable before notifying listeners.
+        if(previous && previous.name !== current.name) {
+            for(const value of Object.values(this)) {
+                for(const variable of Array.isArray(value) ? value : [value]) {
+                    if(variable && typeof variable === `object` && typeof variable.id === `string`) {
+                        const target = renamedVariableReference({ ...variable, name: variable.id }, detail)
+                        variable.id = target.name
+                    }
+                }
+            }
+        }
+        this.dispatchEvent(new CustomEvent(`change`, { detail }))
     }
     UnRegisterVariable(reference) {
+        const previousReference = this.#RemoveVariable(reference)
+        if(previousReference)
+            this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `unregister`, previousReference } }))
+    }
+    #RemoveVariable(reference) {
         if(!reference || typeof reference !== `object` || !reference.name) return
         reference = { ...reference }
 
@@ -150,12 +175,14 @@ export default class VariableRegistry extends EventTarget {
                 (reference.unit == undefined || a.unit === reference.unit || (a.unit == undefined && typeof a.id === `string`)) && 
                 (reference.type == undefined || (a.unit != undefined && reference.type.split(`|`).indexOf(`float`) !== -1) || (a.type == undefined && typeof a.id === `string`) || a.type?.split(`|`).some(t => reference.type.split(`|`).indexOf(t) !== -1)))
             if(existingIndex !== -1) {
-                this[listName].splice(existingIndex, 1)
+                const [removed] = this[listName].splice(existingIndex, 1)
+                return { ...removed, name: `${listName}.${removed.name}` }
             }
-        } else {
+        } else if(this[reference.name] !== undefined) {
+            const removed = { ...this[reference.name], name: reference.name }
             delete this[reference.name]
+            return removed
         }
-        this.dispatchEvent(new Event(`change`))
     }
     GetSelections(calculations, filter, ungroupSelections = true) {
         var selections = []
@@ -271,4 +298,25 @@ export function defaultFilter(outputUnits, outputTypes, inputTypes, inputUnits) 
         }
         return true
     }
+}
+
+// Return the original object when it does not refer to the renamed variable.
+export function renamedVariableReference(reference, change) {
+    const previous = change?.previousReference
+    const current = change?.reference
+    if(!previous || !current || previous.name === current.name || reference?.name !== previous.name)
+        return reference
+    if(reference.unit !== undefined && previous.unit !== undefined &&
+        GetMeasurementNameFromUnitName(reference.unit) !== GetMeasurementNameFromUnitName(previous.unit))
+        return reference
+    if(reference.measurement !== undefined && previous.unit !== undefined &&
+        reference.measurement !== GetMeasurementNameFromUnitName(previous.unit))
+        return reference
+    if(reference.type !== undefined && previous.type === undefined && previous.unit !== undefined &&
+        !reference.type.split(`|`).some(type => type === `float` || type === `enum`))
+        return reference
+    if(reference.type !== undefined && previous.type !== undefined &&
+        !reference.type.split(`|`).some(type => previous.type.split(`|`).includes(type)))
+        return reference
+    return { ...reference, name: current.name }
 }
