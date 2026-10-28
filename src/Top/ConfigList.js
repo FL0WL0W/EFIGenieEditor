@@ -112,7 +112,6 @@ export default class ConfigList extends HTMLDivElement {
         newItem = newItem ?? this.newItem()
         let itemContainer = document.createElement(`div`)
         itemContainer.classList.add(`itemContainer`)
-        itemContainer.style.display = `flex`
         itemContainer.item = itemContainer.appendChild(newItem)
         itemContainer.item.classList.add(`item`)
         itemContainer.controlElement = itemContainer.appendChild(document.createElement(`span`))
