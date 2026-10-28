@@ -24,7 +24,8 @@ let MassUnits = [ { name: `g`, SIMultiplier: 1, SIOffset: 0 }, { name: `mg`, SIM
 let Ratio = [ { name: `:1`, SIMultiplier: 1, SIOffset: 0 } ]
 let CycleUnits = [ { name: `Cycles`, SIMultiplier: 1, SIOffset: 0 } ]
 let LambdaUnits = [ { name: `λ`, SIMultiplier: 1, SIOffset: 0 } ]
-let VolumeUnits = [ { name: `L`, SIMultiplier: 1, SIOffset: 0 }, { name: `mL`, SIMultiplier: 1000, SIOffset: 0 } ]
+let VolumeUnits = [ { name: `L`, SIMultiplier: 1, SIOffset: 0 }, { name: `mL`, SIMultiplier: 1000, SIOffset: 0 }, { name: `μL`, SIMultiplier: 1000000, SIOffset: 0 } ]
+let VolumeFlowUnits = [ { name: `L/s`, SIMultiplier: 1, SIOffset: 0 }, { name: `mL/s`, SIMultiplier: 1000, SIOffset: 0 }, { name: `μL/s`, SIMultiplier: 1000000, SIOffset: 0 } ]
 let MassFlowUnits = [ { name: `g/s`, SIMultiplier: 1, SIOffset: 0 }, { name: `g/min`, SIMultiplier: 60, SIOffset: 0 } ]
 let ResistanceUnits = [ { name: `Ω`, SIMultiplier: 1, SIOffset: 0 }, { name: `kΩ`, SIMultiplier: 0.001, SIOffset: 0 } ]
 let TorqueUnits = [ { name: `Nm`, SIMultiplier: 1, SIOffset: 0 }, { name: `lb-ft`, SIMultiplier: 0.737562, SIOffset: 0 } ]
@@ -37,6 +38,7 @@ export let Measurements = {
     Mass: MassUnits,
     MassFlow: MassFlowUnits,
     Volume: VolumeUnits,
+    VolumeFlow: VolumeFlowUnits,
     Speed: SpeedUnits,
     Time: TimeUnits,
     Frequency: FrequencyUnits,
