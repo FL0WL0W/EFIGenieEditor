@@ -6,9 +6,11 @@ import UIPinOverlay from "../UI/UIPinOverlay"
 import CAN_PackData from "./CAN_PackData"
 import CANConfigs from "./CANConfigs"
 import { observeCANMessageLayout } from "./CANDataLayout"
+import CalculationOrVariableSelection from "../Calculation/CalculationOrVariableSelection"
+import GenericConfigs from "../Calculation/GenericConfigs"
 export default class CAN_WriteData extends UITemplate {
     static displayName = `CAN Write`
-    static template = `<span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div>Interval:<div data-element="interval"></div></span></span><div data-element="packData"></div>`
+    static template = `<span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div>Interval:<div data-element="interval"></div>Condition:<div data-element="condition"></div></span></span><div data-element="packData"></div>`
 
     canIDLabel = document.createElement(`span`)
     canID = new UINumber({
@@ -41,6 +43,12 @@ export default class CAN_WriteData extends UITemplate {
         selectHidden: true,
         class: `can-write-interval`
     })
+    condition = new CalculationOrVariableSelection({
+        value: undefined,
+        outputTypes: [ `bool` ],
+        calculations: GenericConfigs,
+        template: `<div data-element="selection"></div><span data-element="calculationContent"></span>`
+    })
     packData = new ConfigList({
         itemConstructor: CAN_PackData,
         saveValue: [{}],
@@ -51,6 +59,7 @@ export default class CAN_WriteData extends UITemplate {
         super()
         this.canBusLabel.innerText = `Bus:`
         this.canIDLabel.innerText = 'Identifier:'
+        this.condition.style.display = `inline`
         document.addEventListener('change', (e) => {
             if(e.target instanceof UIPinOverlay){
                 this.updateOptions(e.target.pinOut)

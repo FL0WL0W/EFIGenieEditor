@@ -51,7 +51,8 @@ let OperationArchitectureFactoryIDs = {
     GreaterThanOrEqual: 19,
     LessThanOrEqual: 20,
     Not: 21,
-    UnitConversion: 22
+    UnitConversion: 22,
+    ConditionExecute: 23
 }
 let EmbeddedOperationsFactoryIDs = {
     Offset: 20000,
@@ -459,6 +460,12 @@ let types = [
 
         return Packagize(this, this)
     }},
+    { type: `ConditionExecute`, toDefinition() {
+        return Packagize({ type: `definition`, value: [ 
+            { type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.ConditionExecute},
+            { ...this.value }
+        ]}, this)
+    }},
     { type: `Calculation_StaticBoolean`, toDefinition() {
         return { ...this, type: `Calculation_Static`, toDefinition: undefined }
     }},
@@ -682,7 +689,7 @@ let types = [
                 x.variable.outputVariables = [ { name: `temp` } ]
                 return x
             })
-        return { type: `definition`, value: [
+        const definitionValue = [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.Interval}, //interval factory ID
             { type: `FLOAT`, value: 1 / this.interval}, //interval time
             { type: `Group`, value: [//group operation to execute during interval
@@ -727,6 +734,22 @@ let types = [
                     inputVariables: [ { name: `temp` } ]
                 }
             ]}
+        ]
+        if(this.condition?.selection === undefined)
+            return { type: `definition`, value: definitionValue }
+        else if(this.condition.selection === `Calculation_Static` || this.condition.selection === `Calculation_StaticBoolean`) {
+            if(this.condition.calculation)
+                return { type: `definition`, value: definitionValue }
+            return undefined
+        }
+        return { type: `Group`, value: [
+            { ...this.condition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `temp`, type: `bool` } ] },
+            { type: `Package`, //Package
+                value: [
+                    { type: `ConditionExecute`, value: definitionValue }
+                ],
+                inputVariables: [ { name: `temp`, type: `bool` } ]
+            }
         ]}
     }},
     { type: `CAN_CRCJ1850`, toDefinition() {
