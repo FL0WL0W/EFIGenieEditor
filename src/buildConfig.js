@@ -39,6 +39,7 @@ let OperationArchitectureFactoryIDs = {
     Polynomial: 4,
     Static: 5,
     FaultDetection: 6,
+    NotEqual: 9,
     Add: 10,
     Subtract: 11,
     Multiply: 12,
@@ -562,6 +563,7 @@ let types = [
     { type: `Calculation_GreaterThan`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.GreaterThan) }},
     { type: `Calculation_LessThan`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.LessThan) }},
     { type: `Calculation_Equal`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.Equal) }},
+    { type: `Calculation_NotEqual`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.NotEqual) }},
     { type: `Calculation_GreaterThanOrEqual`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.GreaterThanOrEqual) }},
     { type: `Calculation_LessThanOrEqual`, inputs: 2, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.LessThanOrEqual) }},
     { type: `Calculation_Not`, inputs: 1, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.Not, 1) }},
@@ -634,6 +636,9 @@ let types = [
                         break
                     case `=`: 
                         operationValue.type = `Calculation_Equal`
+                        break
+                    case `!=`: 
+                        operationValue.type = `Calculation_NotEqual`
                         break
                     case `&`: 
                         operationValue.type = `Calculation_And`

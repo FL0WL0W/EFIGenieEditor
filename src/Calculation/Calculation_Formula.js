@@ -7,7 +7,7 @@ import GenericConfigs from "./GenericConfigs"
 import CalculationOrVariableSelection from "./CalculationOrVariableSelection"
 import { objectTester } from "../JavascriptUI/UIUtils"
 export default class Calculation_Formula extends UITemplate {
-    static operators = [`!`,`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`=`,`&`,`|`]
+    static operators = [`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`!=`,`=`,`&`,`|`,`!`]
     static parametersFromFormula(formula) {
         let parameters = formula.replaceAll(` `, ``)
         for(let operatorIndex in Calculation_Formula.operators) {
