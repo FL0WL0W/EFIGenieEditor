@@ -4,6 +4,7 @@ import UITemplate from "../JavascriptUI/UITemplate"
 import GenericConfigs from "../Calculation/GenericConfigs"
 import { observeCANDataLayout } from "./CANDataLayout"
 import UIText from "../JavascriptUI/UIText"
+import CANPackDataConfigs from "./CANPackDataConfigs"
 export default class CAN_PackData extends UITemplate {
     static displayName = `CAN Pack`
     static outputTypes = [ `CANData` ]
@@ -38,7 +39,7 @@ export default class CAN_PackData extends UITemplate {
     })
     variable = new CalculationOrVariableSelection({
         outputTypes: [ `bool|CANData` ],
-        calculations: GenericConfigs,
+        calculations: [ ...GenericConfigs, ...CANPackDataConfigs ],
         template: `<div data-element="selection"></div><div data-element="liveUpdate"></div><span data-element="calculationContent"></span>`
     })
 

@@ -2,6 +2,7 @@ import UITemplate from "../JavascriptUI/UITemplate"
 import UINumber from "../JavascriptUI/UINumber"
 import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import GenericConfigs from "../Calculation/GenericConfigs"
+import CANPackDataConfigs from "./CANPackDataConfigs"
 export default class CAN_CRCJ1850 extends UITemplate {
     static displayName = `CRCJ1850`
     static outputTypes = [ `CANData` ]
@@ -42,5 +43,5 @@ export default class CAN_CRCJ1850 extends UITemplate {
         super.value = value
     }
 }
-GenericConfigs.push(CAN_CRCJ1850)
+CANPackDataConfigs.push(CAN_CRCJ1850)
 customElements.define(`can-crcj1850`, CAN_CRCJ1850, { extends: `span` })
