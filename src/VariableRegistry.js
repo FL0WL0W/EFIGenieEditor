@@ -49,8 +49,9 @@ export default class VariableRegistry extends EventTarget {
     GetVariableByReference(reference, visitedReferences = new Set()) {
         if(!reference || typeof reference !== `object`) return
         reference = { ...reference }
-        if(reference.unit && reference.type !== `enum`) {
-            delete reference.type
+        if(reference.unit) {
+            if(reference.type !== `enum`)
+                delete reference.type
         } else {
             delete reference.unit
         }
@@ -121,8 +122,9 @@ export default class VariableRegistry extends EventTarget {
     RegisterVariable(reference, previousReference) {
         if(!reference || typeof reference !== `object` || !reference.name) return
         reference = { ...reference }
-        if(reference.unit && reference.type !== `enum`) {
-            delete reference.type
+        if(reference.unit) {
+            if(reference.type !== `enum`)
+                delete reference.type
         } else {
             delete reference.unit
         }

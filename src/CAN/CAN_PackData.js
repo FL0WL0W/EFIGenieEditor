@@ -3,12 +3,14 @@ import UINumber from "../JavascriptUI/UINumber"
 import UITemplate from "../JavascriptUI/UITemplate"
 import GenericConfigs from "../Calculation/GenericConfigs"
 import { observeCANDataLayout } from "./CANDataLayout"
+import UIText from "../JavascriptUI/UIText"
 export default class CAN_PackData extends UITemplate {
     static displayName = `CAN Pack`
     static outputTypes = [ `CANData` ]
     static inputTypes = [ ]
-    static template = `<span class="can-pack-layout"><span class="can-pack-fields"><span class="can-pack-field-group"><span>Offset:</span><div data-element="bitLocation"></div><div data-element="bitLengthLabel"></div><div data-element="bitLength"></div></span><wbr><span class="can-pack-field-group"><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div></span></span><wbr><span class="can-pack-selection"><span data-element="variable"></span></span></span>`
+    static template = `<span class="can-pack-layout"><span class="can-pack-fields"><span class="can-pack-field-group"><div data-element="name"></div><span>Offset:</span><div data-element="bitLocation"></div><div data-element="bitLengthLabel"></div><div data-element="bitLength"></div></span><wbr><span class="can-pack-field-group"><div data-element="multiplierLabel"></div><div data-element="multiplier"></div><div data-element="adderLabel"></div><div data-element="adder"></div></span></span><wbr><span class="can-pack-selection"><span data-element="variable"></span></span></span>`
 
+    name = new UIText({ class: `canPackDataName` })
     bitLocation = new UINumber({
         min: 0,
         max: 63,
@@ -78,6 +80,7 @@ export default class CAN_PackData extends UITemplate {
     }
 
     RegisterVariables(reference) {
+        reference = { ...reference, name: `${reference.name}.${this.name.value}` }
         this.variable.RegisterVariables(reference)
     }
 }

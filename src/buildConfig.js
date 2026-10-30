@@ -464,7 +464,7 @@ let types = [
     { type: `ConditionExecute`, toDefinition() {
         return Packagize({ type: `definition`, value: [ 
             { type: `UINT32`, value: OperationArchitectureFactoryIDs.Offset + OperationArchitectureFactoryIDs.ConditionExecute},
-            { ...this.value }
+            ...this.value
         ]}, this)
     }},
     { type: `Calculation_StaticBoolean`, toDefinition() {
@@ -569,8 +569,6 @@ let types = [
     { type: `Calculation_Not`, inputs: 1, toDefinition() { return Calculation_Math.call(this, OperationArchitectureFactoryIDs.Not, 1) }},
     { type: `Calculation_Formula`, toDefinition() {
         const parameters = Calculation_Formula.parametersFromFormula(this.formula)
-        if(parameters.length === 0)
-            return
 
         const operations = Calculation_Formula.parseFormula(this.formula, parameters)
         if(operations.length == 0 || (operations.length == 1 && operations[0].operator == undefined)) 
@@ -582,13 +580,28 @@ let types = [
         
         let resultName = this.outputVariables?.[0]?.name
         let parameterMap = {}
+        let tempIndex = Math.max(...parameters.filter(p => p.indexOf(`temp`) === 0).map(p => parseInt(p.substring(4))), -1) + 1
         parameters.forEach(parameter => { 
-            if(parameterMap[parameter] === undefined)
-            {
+            if(parameterMap[parameter] !== undefined)
+                return //parameter already mapped
+
+            const parameterValue = this.parameterValues[parameter]
+            if(parameterValue === undefined)
+                throw `parameter ${parameter} has no value` //this shouldn't happen
+            if(resultName.indexOf(`temp`) === 0) {
+                if(parameterValue?.selection === undefined) 
+                    throw `parameter ${parameter} has no selection` //not sure exactly what to do here, probably remove the parameter from the formula and it's associated operations
+                if(parameterValue.calculation === undefined) {
+                    parameterMap[parameter] = parameterValue.selection //variable selected, no reason to make a reference to it with a temp variable
+                    return
+                } else {
+                    parameterMap[parameter] = { name: `temp${tempIndex++}` }
+                }
+            } else {
                 const name = parameter.indexOf(`temp`) === 0 ? parameter : `${resultName}_${parameter}`
                 parameterMap[parameter] = { name: name.substring(0, name.indexOf(`(`) !== -1? name.indexOf(`(`) : name.length) }
-                group.value.push({ ...this.parameterValues[parameter], type: `CalculationOrVariableSelection`, outputVariables: [ parameterMap[parameter] ] })
             }
+            group.value.push({ ...parameterValue, type: `CalculationOrVariableSelection`, outputVariables: [ parameterMap[parameter] ] })
         })
         operations.forEach(operation => {
             operation.parameters.forEach(parameter => { 
@@ -637,7 +650,7 @@ let types = [
                     case `=`: 
                         operationValue.type = `Calculation_Equal`
                         break
-                    case `!=`: 
+                    case `≠`: 
                         operationValue.type = `Calculation_NotEqual`
                         break
                     case `&`: 
@@ -676,7 +689,9 @@ let types = [
                 ],
                 outputVariables: this.parseData.map(x =>  { 
                     const isBool = x.bitLength < 2
-                    return { name: `${this.name }.${x.name}`, type: isBool? `bool` : (x.unit === undefined? `float` : undefined), unit: isBool? undefined : x.unit } 
+                    const type = isBool? `bool` : (x.unit === undefined? `float` : (EnumRegister.isEnum(x.unit)? `enum` : undefined))
+                    const unit = isBool? undefined : x.unit
+                    return { name: `${this.name }.${x.name}`, type, unit }
                 }),
                 inputVariables: [ 0 ] //input data from CAN_READ
             }
@@ -684,23 +699,30 @@ let types = [
     }},
     { type: `CAN_WriteData`, standalone: true, toDefinition() {
         let tempIndex = 0
-        const packData = this.packData.filter(x => !x.variable.calculation?.isCANCRC)
-            .map(x => { //pack data configuration
-                x.variable.outputVariables = [ { name: `temp${tempIndex++}` } ]
-                return x
-            })
-        const crcData = this.packData.filter(x => x.variable.calculation?.isCANCRC)
-            .map(x => { //crc configuration
-                x.variable.outputVariables = [ { name: `temp` } ]
-                return x
-            })
+        if(this.outputVariables?.[0] !== undefined) {
+            this.outputVariables[0].name ??= this.name
+        } else {
+            this.outputVariables = [ { name: this.name } ]
+        }
+        const packData = this.packData.map(x => {
+            if(x?.variable === undefined)
+                return undefined; //skip if no variable
+            if(x.variable.selection === undefined)
+                return undefined; //skip if no selection
+            if(x.variable.calculation === undefined && !x.name) {
+                return { ...x, variable: { outputVariables: [ x.variable.selection ] } }
+            }
+            x.variable.outputVariables = [ { 
+                name: x.name? `${this.outputVariables[0].name}.${x.name}` : `temp${tempIndex++}`,
+                ...(x.variable.outputUnits?.[0] !== undefined && { unit: x.variable.outputUnits?.[0] })
+            } ]
+            return { ...x, variable: { ...x.variable, type: `CalculationOrVariableSelection` } }
+        }).filter(x => x !== undefined)
         const definitionValue = [
             { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.Interval}, //interval factory ID
             { type: `FLOAT`, value: 1 / this.interval}, //interval time
             { type: `Group`, value: [//group operation to execute during interval
-                ...packData.map(x => { //pack data variable calculations
-                    return { ...x.variable, type: `CalculationOrVariableSelection` }
-                }),
+                ...packData.filter(x => x.variable.type === `CalculationOrVariableSelection` && !x.variable.calculation?.isCANCRC).map(x => x.variable),
                 { type: `Package`, //Package
                     value: [
                         { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANPackData}, //pack factory ID
@@ -725,36 +747,42 @@ let types = [
                             ]}
                         })
                     ],
-                    outputVariables: [ { name: `temp` } ],
+                    outputVariables: this.outputVariables,
                     inputVariables: packData.map(x => x.variable.outputVariables[0])
                 },
-                ...crcData.map(x => { //crc data calculations
-                    return { ...x.variable, calculation: { ...x.variable.calculation, bitLocation: x.bitLocation }, type: `CalculationOrVariableSelection` }
+                ...packData.filter(x => x.variable.type === `CalculationOrVariableSelection` && x.variable.calculation?.isCANCRC).map(x => { 
+                    return { ...x.variable, calculation: { ...x.variable.calculation, bitLocation: x.bitLocation } }
                 }),
                 { type: `Package`, //Package
                     value: [
                         { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANWriteData}, //write factory ID
                         { type: `UINT32`, value: (this.canBus << 29) | this.canID}, //bus and identifier
                     ],
-                    inputVariables: [ { name: `temp` } ]
+                    inputVariables: this.outputVariables,
                 }
             ]}
         ]
+
+        //case no selection
         if(this.condition?.selection === undefined)
             return { type: `definition`, value: definitionValue }
-        else if(this.condition.selection === `Calculation_Static` || this.condition.selection === `Calculation_StaticBoolean`) {
+
+        //case static condition
+        if(this.condition.selection === `Calculation_Static` || this.condition.selection === `Calculation_StaticBoolean`) {
             if(this.condition.calculation)
                 return { type: `definition`, value: definitionValue }
             return undefined
         }
+
+        //case variable condition
+        if(this.condition.calculation === undefined) {
+            return { type: `ConditionExecute`, value: definitionValue, inputVariables: [ this.condition.selection ] }
+        }
+
+        //case calculation condition
         return { type: `Group`, value: [
-            { ...this.condition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `temp`, type: `bool` } ] },
-            { type: `Package`, //Package
-                value: [
-                    { type: `ConditionExecute`, value: definitionValue }
-                ],
-                inputVariables: [ { name: `temp`, type: `bool` } ]
-            }
+            { ...this.condition, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `temp0` } ] },
+            { type: `ConditionExecute`, value: definitionValue, inputVariables: [ { name: `temp0` } ] }
         ]}
     }},
     { type: `CAN_CRCJ1850`, toDefinition() {
@@ -822,12 +850,15 @@ let types = [
         ]}, this)
     }},
     { type: `GenericOutput_Digital`, toDefinition() {
-        this.inputVariables ??= [ undefined ]
-        this.inputVariables[0] = { name: `temp0` }
+        if(this.output.selection === undefined)
+            return undefined; //skip if no selection
+        if(this.output.calculation === undefined) {
+            return { ...this, type: `Output_Digital`, inputVariables: [ this.output.selection ]}
+        }
 
         return { type: `Group`, value: [
-            { ...this.output, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },
-            { ...this, type: `Output_Digital`, inputVariables: this.inputVariables }
+            { ...this.output, type: `CalculationOrVariableSelection`, outputVariables: [ { name: `temp0` } ] },
+            { ...this, type: `Output_Digital`, inputVariables: [ { name: `temp0` } ] }
         ]}
     }},
     { type: `Output_PWM`, toDefinition() {
@@ -838,13 +869,19 @@ let types = [
         ]}, this)
     }},
     { type: `GenericOutput_PWM`, toDefinition() {
-        this.inputVariables ??= [ undefined, undefined ]
-        this.inputVariables[0] = { name: `temp0` }
-        this.inputVariables[1] = { name: `temp1` }
+        if(this.period.selection === undefined || this.period.calculation === undefined) 
+            return undefined; //skip if no selection
+        this.inputVariables = [ { name: `temp0` }, { name: `temp1` } ]
+        if(this.period.calculation === undefined) {
+            this.inputVariables[0] = this.period.selection
+        }
+        if(this.pulseWidth.calculation === undefined) {
+            this.inputVariables[1] = this.pulseWidth.selection
+        }
 
         return { type: `Group`, value: [
-            { ...this.period, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] },
-            { ...this.pulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[1] ] },
+            ...(this.period.calculation !== undefined ? [{ ...this.period, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[0] ] }] : []),
+            ...(this.pulseWidth.calculation !== undefined ? [{ ...this.pulseWidth, type: `CalculationOrVariableSelection`, outputVariables: [ this.inputVariables[1] ] }] : []),
             { ...this, type: `Output_PWM`, inputVariables: this.inputVariables }
         ]}
     }},
@@ -994,8 +1031,8 @@ let types = [
                         { ...this, type: `CalculationOrVariableSelection` },
                     ],
                     outputVariables: [ 
-                        { name: `temp` }, //store in temp variable
-                        { name: `temp` } //store in temp variable
+                        { name: `temp0` }, //store in temp variable
+                        { name: `temp0` } //store in temp variable
                     ],
                     inputVariables: [
                         { name: `EnginePositionId`, type: `EnginePosition` },
@@ -1052,8 +1089,8 @@ let types = [
                         { ...this, type: `CalculationOrVariableSelection` },
                     ],
                     outputVariables: [ 
-                        { name: `temp` }, //store in temp variable
-                        { name: `temp` } //store in temp variable
+                        { name: `temp0` }, //store in temp variable
+                        { name: `temp0` } //store in temp variable
                     ],
                     inputVariables: [
                         { name: `EnginePositionId`, type: `EnginePosition` },
@@ -1200,8 +1237,8 @@ let types = [
 
             //sync condition
             { type: `Group`, value: [ 
-                { type: `Calculation_Static`, value: false, outputVariables: [ { name: `temp` } ] }, //store static variable in temp variable
-                { type: `Calculation_Or`, inputVariables: [ { name: `EngineSyncedId` }, { name: `temp` } ] },
+                { type: `Calculation_Static`, value: false, outputVariables: [ { name: `temp0` } ] }, //store static variable in temp variable
+                { type: `Calculation_Or`, inputVariables: [ { name: `EngineSyncedId` }, { name: `temp0` } ] },
             ]},
 
             //main loop execute

@@ -902,12 +902,17 @@ export default class Dashboard extends UITemplate {
             (a?.unit == undefined || b?.unit == undefined || GetMeasurementNameFromUnitName(a?.unit) === GetMeasurementNameFromUnitName(b?.unit))
         let options = VariableRegister.GetSelections(undefined, defaultFilter(undefined, [`float|bool|enum`]), false)
         const metadataOptions = communication.variableMetadata.GetSelections(undefined, defaultFilter(undefined, [`float|bool|enum`]), false)
+        const variableEqualityTester = (a, b) => {
+            if(!objectTester({...a, type: undefined}, {...b, type: undefined})) return false
+            if(a.type !== undefined && b.type !== undefined) return a.type.split(`|`).some(type => b.type.split(`|`).includes(type))
+            return true
+        }
         for(const option of metadataOptions) {
             if(option.group) {
                 const group = options.find(x => x.group === option.group)
                 if(!group) options.push(option)
-                else for(const child of option.options) if(!group.options.find(x => objectTester(x.value, child.value))) group.options.push(child)
-            } else if(!options.find(x => objectTester(x.value, option.value))) options.push(option)
+                else for(const child of option.options) if(!group.options.find(x => variableEqualityTester(x.value, child.value))) group.options.push(child)
+            } else if(!options.find(x => variableEqualityTester(x.value, option.value))) options.push(option)
         }
         const used = [...this.loggedVariables.children].filter(row => row instanceof UILoggedVariable).map(x => x.variable)
         options = options.map(option => option.group? {

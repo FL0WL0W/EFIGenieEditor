@@ -7,15 +7,16 @@ import GenericConfigs from "./GenericConfigs"
 import CalculationOrVariableSelection from "./CalculationOrVariableSelection"
 import { objectTester } from "../JavascriptUI/UIUtils"
 export default class Calculation_Formula extends UITemplate {
-    static operators = [`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`!=`,`=`,`&`,`|`,`!`]
+    static operators = [`!`,`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`≠`,`=`,`&`,`|`,`!`]
     static parametersFromFormula(formula) {
-        let parameters = formula.replaceAll(` `, ``)
+        formula = formula.replaceAll(` `, ``).replaceAll(`!=`, `≠`)
+        let parameters = formula
         for(let operatorIndex in Calculation_Formula.operators) {
             let operator = Calculation_Formula.operators[operatorIndex]
             parameters = parameters.split(operator).join(`,`)
         }
         let parameterSplit = parameters.split(`,`)
-        let operatorSplit = formula.replaceAll(` `, ``)
+        let operatorSplit = formula
         for(let i = 0; i < parameterSplit.length; i++) {
             let loc = operatorSplit.indexOf(parameterSplit[i])
             operatorSplit = operatorSplit.substring(0, loc) + `,` + operatorSplit.substring(loc + parameterSplit[i].length)
@@ -53,7 +54,7 @@ export default class Calculation_Formula extends UITemplate {
         return parameters
     }
     static parseFormula(formula, parameters) {
-        formula = formula.replaceAll(` `, ``)
+        formula = formula.replaceAll(` `, ``).replaceAll(`!=`, `≠`)
         for(let i = 0; i < parameters.length; i++) {
             formula = formula.replaceAll(parameters[i], `param${i}`)
         }
@@ -135,6 +136,13 @@ export default class Calculation_Formula extends UITemplate {
 
             tempIndex++
             operations[operationIndex].parameters[parameterIndex] = `$temp${tempIndex}`
+            //static only formula check
+            if(operations.length === 1 && operations[0].operator === undefined) {
+                operations[0].operator = `s`
+                operations[0].resultInto = `return`
+                operations[0].parameters = [parameter]
+                continue
+            }
             operations.splice(operationIndex, 0, {
                 operator: `s`,
                 resultInto: `$temp${tempIndex}`,
@@ -152,7 +160,7 @@ export default class Calculation_Formula extends UITemplate {
             let nextFormulaParameterIndex
             if  (operations.filter(f => f.parameters.findIndex(p => p === formula.resultInto) > -1).length < 2 && 
                 (nextFormulaParameterIndex = operations[operationIndex+1]?.parameters?.findIndex(p => p === formula.resultInto)) > -1) {
-                    operations[operationIndex+1].parameters[nextFormulaParameterIndex] = formula.resultInto = `temp`
+                    operations[operationIndex+1].parameters[nextFormulaParameterIndex] = formula.resultInto = `temp0`
             } else {
                 tempIndex++
                 operations.filter(f => f.parameters.findIndex(p => p === formula.resultInto) > -1).forEach(f => { for(let parameterIndex in f.parameters) {

@@ -85,7 +85,7 @@ export function GetMeasurementNameFromUnitName(unit){
         }
     }
     // Each user-defined enum is its own measurement, named after itself
-    if(window.EnumRegister?.isEnum(unit)) return unit
+    if(EnumRegister?.isEnum(unit)) return unit
     return `None`
 }
 
@@ -104,7 +104,7 @@ export function ConvertValueFromUnitToUnit(value, fromUnit, toUnit) {
 function GetDefaultUnitFromMeasurement(measurement) {
     if(Array.isArray(measurement)) measurement = measurement[0]
     // For an enum measurement the enum name itself is the sole "unit" value
-    if(window.EnumRegister?.isEnum(measurement)) return measurement
+    if(EnumRegister?.isEnum(measurement)) return measurement
     return Measurements[measurement]?.[0]?.name
 }
 
@@ -121,7 +121,7 @@ export default class UIUnit extends UISelection {
     /** Dynamically generated option entries for all registered user enum types.
      *  Grouped under a single "User Defined" group, always ending with a "+ New" option. */
     static get enumOptions() {
-        const enumEntries = window.EnumRegister?.names?.map(name => ({ name, value: name })) ?? []
+        const enumEntries = EnumRegister?.names?.map(name => ({ name, value: name })) ?? []
         return [{ group: `User Defined`, options: [...enumEntries, { name: `+ New`, value: `__new_enum__` }] }]
     }
 
@@ -168,7 +168,7 @@ export default class UIUnit extends UISelection {
             this.options = [...UIUnit.allMeasurementOptions, ...UIUnit.enumOptions]
         } else {
             // ── User-defined enum: the enum name is measurement and sole value ──\
-            if(!Array.isArray(measurement) && window.EnumRegister?.isEnum(measurement)) {
+            if(!Array.isArray(measurement) && EnumRegister?.isEnum(measurement)) {
                 this.default = measurement
                 this.options = [{ name: measurement, value: measurement }]
                 if(this.selectedOption == undefined)
@@ -210,7 +210,7 @@ export default class UIUnit extends UISelection {
         if(prop?.measurement || prop?.value) this.default = this.value
         this.class = `ui unit`
         this.selectHidden = true
-        window.EnumRegister?.addEventListener(`change`, () => {
+        EnumRegister?.addEventListener(`change`, () => {
             this.refreshOptions()
         })
         this.addEventListener(`change`, (e) => {

@@ -185,17 +185,19 @@ export default class Top extends UITemplate {
 
     get saveValue() {
         const sv = super.saveValue
-        const enums = window.EnumRegister?.saveValue
+        const enums = EnumRegister?.saveValue
         if(enums != null) sv.enums = enums
         return sv
     }
     set saveValue(saveValue) {
         // Restore enum definitions before components re-register variables so
         // that enum-typed CAN parse entries resolve correctly on load.
-        if(saveValue?.enums !== undefined)
-            window.EnumRegister.saveValue = saveValue.enums
-        else
-            window.EnumRegister.saveValue = {}
+        if(EnumRegister) {
+            if(saveValue?.enums !== undefined)
+                EnumRegister.saveValue = saveValue.enums
+            else
+                EnumRegister.saveValue = {}
+        }
         super.saveValue = saveValue
         this.RegisterVariables()
     }

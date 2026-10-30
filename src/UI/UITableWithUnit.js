@@ -16,12 +16,12 @@ export default class UITableWithUnit extends UITemplate {
     set measurement(measurement) { this.displayUnitElement.measurement = measurement }
     get displayUnit() { return this.displayUnitElement.value }
     set displayUnit(displayUnit) { 
-        if(!window.EnumRegister?.isEnum(displayUnit)) {
+        if(!EnumRegister?.isEnum(displayUnit)) {
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
             this.displayValueElement.options = undefined
         } else {
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
-            this.displayValueElement.options = window.EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
+            this.displayValueElement.options = EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
                 return { name: enumEntry.label, value: enumEntry.value }
             })
         }
@@ -37,13 +37,13 @@ export default class UITableWithUnit extends UITemplate {
         let newValue = ConvertValueFromUnitToUnit(this.value, this._valueUnit, valueUnit)
         this._valueUnit = valueUnit
         this.displayUnit ??= valueUnit
-        if(!window.EnumRegister?.isEnum(valueUnit)) {
+        if(!EnumRegister?.isEnum(valueUnit)) {
             this.value = newValue
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
             this.displayValueElement.options = undefined
         } else {
             this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
-            this.displayValueElement.options = window.EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
+            this.displayValueElement.options = EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
                 return { name: enumEntry.label, value: enumEntry.value }
             })
         }
@@ -53,7 +53,7 @@ export default class UITableWithUnit extends UITemplate {
     set value(value) {
         if(objectTester(this.#value, value)) return
         this.#value = value
-        if(!window.EnumRegister?.isEnum(this.valueUnit))
+        if(!EnumRegister?.isEnum(this.valueUnit))
             this.displayValue = ConvertValueFromUnitToUnit(value, this.valueUnit, this.displayUnit)
         else
             this.displayValue = value
@@ -64,7 +64,7 @@ export default class UITableWithUnit extends UITemplate {
     get xResolutionModifiable() { return this._xResolutionModifiable }
     set xResolutionModifiable(xResolutionModifiable) { 
         this._xResolutionModifiable = xResolutionModifiable
-        this.displayValueElement.xResolutionModifiable = window.EnumRegister?.isEnum(this.xUnit) ? false : xResolutionModifiable
+        this.displayValueElement.xResolutionModifiable = EnumRegister?.isEnum(this.xUnit) ? false : xResolutionModifiable
     }
     get xResolution() { return this.displayValueElement.xResolution }
     set xResolution(xResolution) { this.displayValueElement.xResolution = xResolution }
@@ -85,7 +85,7 @@ export default class UITableWithUnit extends UITemplate {
     get xAxisModifiable() { return this._xAxisModifiable }
     set xAxisModifiable(xAxisModifiable) { 
         this._xAxisModifiable = xAxisModifiable
-        this.displayValueElement.xAxisModifiable = window.EnumRegister?.isEnum(this.xUnit) ? false : xAxisModifiable
+        this.displayValueElement.xAxisModifiable = EnumRegister?.isEnum(this.xUnit) ? false : xAxisModifiable
     }
 
     _xUnit
@@ -95,8 +95,8 @@ export default class UITableWithUnit extends UITemplate {
 
         const newUnit = Array.isArray(xUnit)? (xUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.xDisplayUnit)) ?? xUnit[0]) : xUnit
         let newAxis
-        if(window.EnumRegister?.isEnum(newUnit)) {
-            newAxis = window.EnumRegister.getEnum(newUnit)?.map(enumEntry => {
+        if(EnumRegister?.isEnum(newUnit)) {
+            newAxis = EnumRegister.getEnum(newUnit)?.map(enumEntry => {
                 return enumEntry.value
             })
             this.displayValueElement.xResolutionModifiable = false
@@ -122,7 +122,7 @@ export default class UITableWithUnit extends UITemplate {
     get yResolutionModifiable() { return this._yResolutionModifiable }
     set yResolutionModifiable(yResolutionModifiable) { 
         this._yResolutionModifiable = yResolutionModifiable
-        this.displayValueElement.yResolutionModifiable = window.EnumRegister?.isEnum(this.yUnit) ? false : yResolutionModifiable
+        this.displayValueElement.yResolutionModifiable = EnumRegister?.isEnum(this.yUnit) ? false : yResolutionModifiable
     }
     get yResolution() { return this.displayValueElement.yResolution }
     set yResolution(yResolution) { this.displayValueElement.yResolution = yResolution }
@@ -143,7 +143,7 @@ export default class UITableWithUnit extends UITemplate {
     get yAxisModifiable() { return this._yAxisModifiable }
     set yAxisModifiable(yAxisModifiable) { 
         this._yAxisModifiable = yAxisModifiable
-        this.displayValueElement.yAxisModifiable = window.EnumRegister?.isEnum(this.yUnit) ? false : yAxisModifiable
+        this.displayValueElement.yAxisModifiable = EnumRegister?.isEnum(this.yUnit) ? false : yAxisModifiable
     }
 
     _yUnit
@@ -153,8 +153,8 @@ export default class UITableWithUnit extends UITemplate {
 
         const newUnit = Array.isArray(yUnit)? (yUnit.find(x => GetMeasurementNameFromUnitName(x) === GetMeasurementNameFromUnitName(this.yDisplayUnit)) ?? yUnit[0]) : yUnit
         let newAxis
-        if(window.EnumRegister?.isEnum(newUnit)) {
-            newAxis = window.EnumRegister.getEnum(newUnit)?.map(enumEntry => {
+        if(EnumRegister?.isEnum(newUnit)) {
+            newAxis = EnumRegister.getEnum(newUnit)?.map(enumEntry => {
                 return enumEntry.value
             })
             this.displayValueElement.yResolutionModifiable = false
@@ -222,14 +222,14 @@ export default class UITableWithUnit extends UITemplate {
         })
         let oldUnit = this.displayUnit
         this.displayUnitElement.addEventListener(`change`, () => {
-            if(!window.EnumRegister?.isEnum(this.displayUnit)) {
+            if(!EnumRegister?.isEnum(this.displayUnit)) {
                 this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = true
                 this.displayValueElement.options = undefined
                 if(this.displayValue != undefined)
                     this.displayValue = ConvertValueFromUnitToUnit(this.displayValue, oldUnit, this.displayUnit)
             } else {
                 this.displayValueElement.pasteEnabled = this.displayValueElement.modifyEnabled = this.displayValueElement.interpolateEnabled = false
-                this.displayValueElement.options = window.EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
+                this.displayValueElement.options = EnumRegister?.getEnum(this.displayUnit)?.map(enumEntry => {
                     return { name: enumEntry.label, value: enumEntry.value }
                 })
             }
@@ -241,7 +241,7 @@ export default class UITableWithUnit extends UITemplate {
         })
         let xOldUnit = this.xDisplayUnit
         this.xDisplayUnitElement.addEventListener(`change`, () => {
-            if(this.xDisplayAxis != undefined && !window.EnumRegister?.isEnum(this.xUnit))
+            if(this.xDisplayAxis != undefined && !EnumRegister?.isEnum(this.xUnit))
                 this.xDisplayAxis = ConvertValueFromUnitToUnit(this.xDisplayAxis, xOldUnit, this.xDisplayUnit)
             xOldUnit = this.xDisplayUnit
         })
@@ -251,16 +251,16 @@ export default class UITableWithUnit extends UITemplate {
         })
         let yOldUnit = this.yDisplayUnit
         this.yDisplayUnitElement.addEventListener(`change`, () => {
-            if(this.yDisplayAxis != undefined && !window.EnumRegister?.isEnum(this.yUnit))
+            if(this.yDisplayAxis != undefined && !EnumRegister?.isEnum(this.yUnit))
                 this.yDisplayAxis = ConvertValueFromUnitToUnit(this.yDisplayAxis, yOldUnit, this.yDisplayUnit)
             yOldUnit = this.yDisplayUnit
         })
         this.displayValueElement.addEventListener(`change`, () => {
             if(this.displayValue != undefined)
                 this.value = ConvertValueFromUnitToUnit(this.displayValue, this.displayUnit, this.valueUnit)
-            if(this.xDisplayAxis != undefined && !window.EnumRegister?.isEnum(this.xUnit))
+            if(this.xDisplayAxis != undefined && !EnumRegister?.isEnum(this.xUnit))
                 this.xAxis = ConvertValueFromUnitToUnit(this.xDisplayAxis, this.xDisplayUnit, this.xUnit)
-            if(this.yDisplayAxis != undefined && !window.EnumRegister?.isEnum(this.yUnit))
+            if(this.yDisplayAxis != undefined && !EnumRegister?.isEnum(this.yUnit))
                 this.yAxis = ConvertValueFromUnitToUnit(this.yDisplayAxis, this.yDisplayUnit, this.yUnit)
         })
         this.#xLabelElementWithUnit.append(this.#xLabelElement)
@@ -272,14 +272,14 @@ export default class UITableWithUnit extends UITemplate {
         this.#zLabelElementWithUnit.append(this.#zLabelElement)
         this.#zLabelElementWithUnit.append(this.displayUnitElement)
         this.displayValueElement.zLabel = this. #zLabelElementWithUnit
-        window.EnumRegister?.addEventListener(`change`, () => {
-            if(window.EnumRegister?.isEnum(this.xUnit)) {
-                this.xAxis = window.EnumRegister.getEnum(this.xUnit)?.map(enumEntry => {
+        EnumRegister?.addEventListener(`change`, () => {
+            if(EnumRegister?.isEnum(this.xUnit)) {
+                this.xAxis = EnumRegister.getEnum(this.xUnit)?.map(enumEntry => {
                     return enumEntry.value
                 })
             }
-            if(window.EnumRegister?.isEnum(this.yUnit)) {
-                this.yAxis = window.EnumRegister.getEnum(this.yUnit)?.map(enumEntry => {
+            if(EnumRegister?.isEnum(this.yUnit)) {
+                this.yAxis = EnumRegister.getEnum(this.yUnit)?.map(enumEntry => {
                     return enumEntry.value
                 })
             }
@@ -322,23 +322,23 @@ export default class UITableWithUnit extends UITemplate {
     UpdateDisplayValue() {
         const displayUnit = this.displayUnit
         const valueUnit = this.valueUnit
-        if(!window.EnumRegister?.isEnum(this.valueUnit)) {
+        if(!EnumRegister?.isEnum(this.valueUnit)) {
             if(this.value != undefined && this.value.length === this.displayValue.length) 
                 this.displayValue           = ConvertValueFromUnitToUnit(this.value, valueUnit, displayUnit)
             this.displayValueElement.min    = ConvertValueFromUnitToUnit(this.min, valueUnit, displayUnit)     ?? this.displayValueElement.min
             this.displayValueElement.max    = ConvertValueFromUnitToUnit(this.max, valueUnit, displayUnit)     ?? this.displayValueElement.max
             this.displayValueElement.step   = ConvertValueFromUnitToUnit(this.step, valueUnit, displayUnit)    ?? this.displayValueElement.step
         }
-        if(window.EnumRegister?.isEnum(this.xUnit)) {
-            const e = window.EnumRegister.getEnum(this.xUnit)
+        if(EnumRegister?.isEnum(this.xUnit)) {
+            const e = EnumRegister.getEnum(this.xUnit)
             this.xDisplayAxis = this.xAxis.map(x => {
                 return e.find(enumEntry => enumEntry.value === x)?.label ?? x
             })
         } else if(this.xAxis != undefined) {
             this.xDisplayAxis           = ConvertValueFromUnitToUnit(this.xAxis, this.xUnit, this.xDisplayUnit)
         }
-        if(window.EnumRegister?.isEnum(this.yUnit)) {
-            const e = window.EnumRegister.getEnum(this.yUnit)
+        if(EnumRegister?.isEnum(this.yUnit)) {
+            const e = EnumRegister.getEnum(this.yUnit)
             this.yDisplayAxis = this.yAxis.map(y => {
                 return e.find(enumEntry => enumEntry.value === y)?.label ?? y
             })

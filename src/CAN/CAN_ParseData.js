@@ -51,12 +51,12 @@ export default class CAN_ParseData extends UITemplate {
             this.bitLength.max = 64-this.bitLocation.value
         })
         this.bitLength.addEventListener(`change`, () => {
-            const isEnum = window.EnumRegister?.isEnum(this.unit.value)
+            const isEnum = EnumRegister?.isEnum(this.unit.value)
             this.unit.hidden = this.bitLength.value < 2
             this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2 || isEnum
         })
         this.unit.addEventListener(`change`, () => {
-            const isEnum = window.EnumRegister?.isEnum(this.unit.value)
+            const isEnum = EnumRegister?.isEnum(this.unit.value)
             // Multiplier/adder are meaningless for enum types
             if(this.bitLength.value >= 2)
                 this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = isEnum
@@ -84,14 +84,15 @@ export default class CAN_ParseData extends UITemplate {
         reference = { ...reference, name: `${reference.name}.${this.name.value}` }
 
         const selectedUnit = this.unit.value
-        if(window.EnumRegister?.isEnum(selectedUnit) && this.bitLength.value > 1) {
+        if(EnumRegister?.isEnum(selectedUnit) && this.bitLength.value > 1) {
             // Enum type: enum name stored as unit, type is the literal string 'enum'.
             reference.unit = selectedUnit
             reference.type = `enum`
         } else {
             reference.unit = selectedUnit ?? reference.unit
-            if(reference.unit && this.bitLength.value > 1 && reference.type !== `enum`) {
-                delete reference.type
+            if(reference.unit && this.bitLength.value > 1) {
+                if(reference.type !== `enum`)
+                    delete reference.type
             } else {
                 delete reference.unit
                 reference.type = this.bitLength.value < 2? `bool` : `float`

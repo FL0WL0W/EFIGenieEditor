@@ -102,7 +102,7 @@ export default class UIEnumEditor extends UITemplate {
         this.Setup(prop)
         this.class = `itemContainer`
 
-        window.EnumRegister.addEventListener(`change`, () => this.#syncFromRegistry())
+        EnumRegister?.addEventListener(`change`, () => this.#syncFromRegistry())
         this.enumList.addEventListener(`change`, () => this.#syncToRegistry())
 
         this.#syncFromRegistry()
@@ -111,9 +111,9 @@ export default class UIEnumEditor extends UITemplate {
     #syncFromRegistry() {
         if (this.#syncing) return
         this.#syncing = true
-        this.enumList.saveValue = window.EnumRegister.names.map(name => ({
+        this.enumList.saveValue = EnumRegister?.names.map(name => ({
             name: name,
-            entries: window.EnumRegister.getEnum(name)
+            entries: EnumRegister?.getEnum(name)
         }))
         this.#syncing = false
     }
@@ -137,10 +137,10 @@ export default class UIEnumEditor extends UITemplate {
                 value: ec.item.value.value,
                 label: ec.item.label.value
             }))
-            window.EnumRegister.setEnum(name, entries)
+            EnumRegister?.setEnum(name, entries)
         })
-        window.EnumRegister.names.forEach(name => {
-            if (!currentNames.has(name)) window.EnumRegister.deleteEnum(name)
+        EnumRegister?.names.forEach(name => {
+            if (!currentNames.has(name)) EnumRegister?.deleteEnum(name)
         })
         this.#syncing = false
     }

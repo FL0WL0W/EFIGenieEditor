@@ -45,7 +45,7 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
                     if(this._enumType) {
                         // Show the human-readable label instead of the raw integer.
                         const raw = currentVariableValues[variableId]
-                        this.displayElement.textContent = window.EnumRegister.labelForValue(this._enumType, raw) ?? String(raw)
+                        this.displayElement.textContent = EnumRegister?.labelForValue(this._enumType, raw) ?? String(raw)
                         this.displayUnitElement.hidden = true
                     } else {
                         this.value = currentVariableValues[variableId]

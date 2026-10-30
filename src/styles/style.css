@@ -693,6 +693,7 @@ label:has(.ui.text.genericCalculationName:disabled)::before {
 .ui.text.enumEntryLabel,
 .ui.text.enumName,
 .ui.text.canParseDataName,
+.ui.text.canPackDataName,
 .ui.text.genericCalculationName,
 .ui.text.inputName {
     border: 0;
@@ -702,6 +703,7 @@ label:has(.ui.text.genericCalculationName:disabled)::before {
     border-bottom: solid #3590d0;
     width: 250px;
 }
+.ui.text.canPackDataName,
 .ui.text.canParseDataName {
     width: 230px;
 }

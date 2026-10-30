@@ -31,7 +31,7 @@ export default class Calculation_2AxisTable extends UITemplate {
                  this.XSelection.displayUnit = this.table.xDisplayUnit
             if(this.YSelection)
                  this.YSelection.displayUnit = this.table.yDisplayUnit
-            if(window.EnumRegister?.isEnum(this.table.xUnit) || window.EnumRegister?.isEnum(this.table.yUnit) || window.EnumRegister?.isEnum(this.table.valueUnit)) {
+            if(EnumRegister?.isEnum(this.table.xUnit) || EnumRegister?.isEnum(this.table.yUnit) || EnumRegister?.isEnum(this.table.valueUnit)) {
                 this.graph.hidden = true
             } else {
                 this.graph.hidden = false
@@ -241,7 +241,7 @@ export default class Calculation_2AxisTable extends UITemplate {
             this.yMeasurement = GetMeasurementNameFromUnitName(inputUnits?.[1])
     }
     get inputTypes() {
-        return this.inputUnits.map(unit => window.EnumRegister?.isEnum(unit)? `enum` : `float`)
+        return this.inputUnits.map(unit => EnumRegister?.isEnum(unit)? `enum` : `float`)
     }
     _outputUnits
     get outputUnits() { return this._outputUnits ?? [ this.valueUnit ] }
@@ -252,7 +252,7 @@ export default class Calculation_2AxisTable extends UITemplate {
             this.measurement = GetMeasurementNameFromUnitName(outputUnits?.[0])
     }
     get outputTypes() {
-        return this.outputUnits.map(unit => window.EnumRegister?.isEnum(unit)? `enum` : `float`)
+        return this.outputUnits.map(unit => EnumRegister?.isEnum(unit)? `enum` : `float`)
     }
     get displayUnits() { return [ this.displayUnit ] }
     set displayUnits(displayUnits) { this.displayUnit = displayUnits?.[0] }
