@@ -35,11 +35,9 @@ export default class Input_AnalogPolynomial extends UITemplate {
     }
 
     RegisterVariables(reference) {
-        reference = { ...reference }
-        delete reference.unit
+        reference = { ...reference, unit: `V` }
         delete reference.type
         delete reference.id
-        reference = { ...reference, unit: `V` }
         if(!objectTester(this.#currentReference, reference)) {
             const previousReference = this.#currentReference
             this.#currentReference = reference
