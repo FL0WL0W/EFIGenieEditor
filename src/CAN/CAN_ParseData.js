@@ -90,7 +90,7 @@ export default class CAN_ParseData extends UITemplate {
             reference.type = `enum`
         } else {
             reference.unit = selectedUnit ?? reference.unit
-            if(reference.unit && this.bitLength.value > 1) {
+            if(reference.unit && this.bitLength.value > 1 && reference.type !== `enum`) {
                 delete reference.type
             } else {
                 delete reference.unit

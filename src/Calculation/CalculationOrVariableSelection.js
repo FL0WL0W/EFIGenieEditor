@@ -261,7 +261,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
         }
 
         reference.unit = this.outputUnits?.[0] ?? reference.unit
-        if(reference.unit) {
+        if(reference.unit && reference.type !== `enum`) {
             delete reference.type
         } else {
             delete reference.unit
