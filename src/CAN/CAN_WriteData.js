@@ -30,6 +30,7 @@ export default class CAN_WriteData extends UITemplate {
         value: 100,
         options: [
             { name: `100Hz`, value: 100 },
+            { name: `50Hz`, value: 50 },
             { name: `33Hz`, value: 33 },
             { name: `25Hz`, value: 25 },
             { name: `20Hz`, value: 20 },
