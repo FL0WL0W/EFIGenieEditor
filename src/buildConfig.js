@@ -479,6 +479,13 @@ let types = [
             { type: type, value: this.value } //val
         ]}, this)
     }},
+    { type: `Calculation_Counter`, toDefinition() {
+        this.outputVariables[0].type ??= `float`
+        return { type: `definition`, value: [
+            { type: `Calculation_Static`, value: 1, outputVariables: [ { name: `temp0` }] }, //1
+            { type: `Calculation_Add`, outputVariables: this.outputVariables, inputVariables: [ this.outputVariables[0], { name: `temp0` }] }, //adder
+        ]}
+    }},
     { type: `Calculation_2AxisTable`, inputs: 2, toDefinition() {
         this.inputVariables ??= [ undefined, undefined ]
         if(this.XSelection)
