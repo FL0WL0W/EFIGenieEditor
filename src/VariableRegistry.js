@@ -1,8 +1,12 @@
+import { throttle } from "lodash-es"
 export default class VariableRegistry extends EventTarget {
     constructor(prop) {
         super()
         Object.assign(this, prop)
         this.CreateIfNotFound = false
+    }
+    dispatchChangeEvent(detail) {
+        throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { detail })) }, 100)()
     }
     get variableReferences() {
         var variableReferences = {}
@@ -31,8 +35,8 @@ export default class VariableRegistry extends EventTarget {
         return variableReferences
     }
     set variableReferences(variableReferences) {
-        Object.assign(this, variableReferences)
-        this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `replace` } }))
+            Object.assign(this, variableReferences)
+            this.dispatchChangeEvent({ action: `replace` })
     }
     Clear() {
         Object.entries(this).forEach(([elementname, element]) => {
@@ -40,7 +44,7 @@ export default class VariableRegistry extends EventTarget {
                 return
             delete this[elementname]
         })
-        this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `clear` } }))
+        this.dispatchChangeEvent({ action: `clear` })
     }
     GenerateVariableId() {
         this.VariableIncrement ??= 0
@@ -169,12 +173,12 @@ export default class VariableRegistry extends EventTarget {
                 }
             }
         }
-        this.dispatchEvent(new CustomEvent(`change`, { detail }))
+        this.dispatchChangeEvent(detail)
     }
     UnRegisterVariable(reference) {
         const previousReference = this.#RemoveVariable(reference)
         if(previousReference)
-            this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `unregister`, previousReference } }))
+            this.dispatchChangeEvent({ action: `unregister`, previousReference })
     }
     #RemoveVariable(reference) {
         if(!reference || typeof reference !== `object` || !reference.name) return

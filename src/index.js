@@ -143,7 +143,10 @@ window.addEventListener(`load`, function() {
     const loadConfig = (config) => {
         try {
             let saveValue = JSON.parse(config)
-            b.TargetDevice.value = saveValue.TargetDevice
+            if(b.TargetDevice.value !== saveValue.TargetDevice) {
+                b.TargetDevice.value = saveValue.TargetDevice
+                return
+            }
             b.saveValue = saveValue
             let btnLoad = document.querySelector(`#btnLoad`)
             btnLoad.value = ``
