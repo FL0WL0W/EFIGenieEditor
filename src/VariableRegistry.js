@@ -4,9 +4,9 @@ export default class VariableRegistry extends EventTarget {
         super()
         Object.assign(this, prop)
         this.CreateIfNotFound = false
-    }
-    dispatchChangeEvent(detail) {
-        throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { detail })) }, 100)()
+        this.dispatchReplaceEvent = throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `replace` } })) }, 100)
+        this.dispatchClearEvent = throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `clear` } })) }, 100)
+        this.dispatchChangeEvent = throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { })) }, 100)
     }
     get variableReferences() {
         var variableReferences = {}
@@ -36,7 +36,7 @@ export default class VariableRegistry extends EventTarget {
     }
     set variableReferences(variableReferences) {
         Object.assign(this, variableReferences)
-        this.dispatchChangeEvent({ action: `replace` })
+        this.dispatchReplaceEvent()
     }
     Clear() {
         Object.entries(this).forEach(([elementname, element]) => {
@@ -44,7 +44,7 @@ export default class VariableRegistry extends EventTarget {
                 return
             delete this[elementname]
         })
-        this.dispatchChangeEvent({ action: `clear` })
+        this.dispatchClearEvent()
     }
     GenerateVariableId() {
         this.VariableIncrement ??= 0
@@ -173,13 +173,15 @@ export default class VariableRegistry extends EventTarget {
                 }
             }
         }
-        if(!previous || previous.name !== current.name || previous.unit !== current.unit || previous.type !== current.type)
-            this.dispatchChangeEvent(detail)
+        if(!previous)
+            this.dispatchChangeEvent()
+        else if(previous.name !== current.name || previous.unit !== current.unit || previous.type !== current.type)
+            this.dispatchEvent(new CustomEvent(`change`, { detail }))
     }
     UnRegisterVariable(reference) {
         const previousReference = this.#RemoveVariable(reference)
         if(previousReference)
-            this.dispatchChangeEvent({ action: `unregister`, previousReference })
+            this.dispatchChangeEvent()
     }
     #RemoveVariable(reference) {
         if(!reference || typeof reference !== `object` || !reference.name) return
