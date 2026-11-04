@@ -35,8 +35,8 @@ export default class VariableRegistry extends EventTarget {
         return variableReferences
     }
     set variableReferences(variableReferences) {
-            Object.assign(this, variableReferences)
-            this.dispatchChangeEvent({ action: `replace` })
+        Object.assign(this, variableReferences)
+        this.dispatchChangeEvent({ action: `replace` })
     }
     Clear() {
         Object.entries(this).forEach(([elementname, element]) => {
@@ -173,7 +173,8 @@ export default class VariableRegistry extends EventTarget {
                 }
             }
         }
-        this.dispatchChangeEvent(detail)
+        if(!previous || previous.name !== current.name || previous.unit !== current.unit || previous.type !== current.type)
+            this.dispatchChangeEvent(detail)
     }
     UnRegisterVariable(reference) {
         const previousReference = this.#RemoveVariable(reference)
