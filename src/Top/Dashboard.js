@@ -4,7 +4,7 @@ import UISelection from "../JavascriptUI/UISelection"
 import UITemplate from "../JavascriptUI/UITemplate"
 import UIGauge from "../UI/UIGauge"
 import UIUnit, { ConvertValueFromUnitToUnit, GetMeasurementNameFromUnitName } from "../UI/UIUnit"
-import { defaultFilter, renamedVariableReference } from "../VariableRegistry"
+import { defaultFilter, getMatcherForReference } from "../VariableRegistry"
 import { communication } from "../communication"
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UIPlot from "../UI/UIPlot"
@@ -152,9 +152,12 @@ export default class Dashboard extends UITemplate {
         this.addEventListener(`playback`, ({ detail }) => this.#updateLoggedValues(detail.values, communication.variableMetadata))
         const refreshListener = throttle(this.RefreshOptions.bind(this), 100)
         VariableRegister.addEventListener(`change`, ({ detail }) => {
-            for(const row of this.loggedVariables.children) {
-                if(row instanceof UILoggedVariable)
-                    row.variable = renamedVariableReference(row.variable, detail)
+            if(detail?.previousReferences?.length > 0) {
+                for(const row of this.loggedVariables.children) {
+                    if(row instanceof UILoggedVariable) {
+                        row.variable = detail.previousReferences.find(getMatcherForReference(row.variable)) ?? row.variable
+                    }
+                }
             }
             for(const widget of this.elements.children) {
                 const content = widget.querySelector(`.dashboard-widget-content`)

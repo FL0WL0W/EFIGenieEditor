@@ -1,8 +1,8 @@
 import UISelection from "../JavascriptUI/UISelection"
 import UITemplate from "../JavascriptUI/UITemplate"
 import { objectTester } from "../JavascriptUI/UIUtils"
-import { renamedVariableReference } from "../VariableRegistry"
 import UIUnit, { GetMeasurementNameFromUnitName } from "./UIUnit"
+import { getMatcherForReference } from "../VariableRegistry"
 export default class UIParameterWithUnit extends UITemplate {
     static template = `<div data-element="parameterSelection"></div><div data-element="unitSelection"></div>`
 
@@ -85,14 +85,13 @@ export default class UIParameterWithUnit extends UITemplate {
     UpdateVariableReference(change) {
         // Keep pending selections too: options may temporarily be unavailable.
         const value = this.value ?? this.parameterSelection.lastValidValue
-        const renamed = renamedVariableReference(value, change)
-        if(renamed === value) return
+        if(value == undefined) return
+        const renamed = change?.previousReferences?.find(getMatcherForReference(value)) ?? value
+        if(renamed.name === value.name) return
         const renameOptions = options => options.map(option => {
             if(option.group) return { ...option, options: renameOptions(option.options) }
-            const reference = renamedVariableReference(option.value, change)
-            return reference === option.value ? option : {
-                ...option, name: reference.name.substring(reference.name.indexOf(`.`) + 1), value: reference
-            }
+            const reference = change.previousReferences?.find(getMatcherForReference(option.value)) ?? option.value
+            return { ...option, name: reference.name.substring(reference.name.indexOf(`.`) + 1), value: reference }
         })
         const displayUnit = this.displayUnit
         this.updatingVariableReference = true
