@@ -248,7 +248,11 @@ export default class UIGauge extends UITemplate {
             this.RefreshAvailability()
         })
         Dashboard.thisDashboard.addEventListener(`playback`, ({ detail }) => this.#updateFromValues(detail.values, communication.variableMetadata))
-        Dashboard.thisDashboard.addEventListener(`change`, throttle(this.RefreshOptions.bind(this), 100))
+        Dashboard.thisDashboard.addEventListener(`change`, throttle(event => {
+            if(event.target !== Dashboard.thisDashboard)
+                return
+            this.RefreshOptions()
+        }, 100))
         this.RefreshOptions()
         this.RefreshAvailability()
     }
