@@ -6,6 +6,7 @@ import UIPinOverlay from "../UI/UIPinOverlay"
 import CAN_ParseData from "./CAN_ParseData"
 import CANConfigs from "./CANConfigs"
 import { observeCANMessageLayout } from "./CANDataLayout"
+import { mountCANBitMap } from "./CANBitMap"
 export default class CAN_ReadData extends UITemplate {
     static displayName = `CAN Read`
     static template = `<span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div></span></span><div data-element="parseData"></div>`
@@ -61,14 +62,19 @@ export default class CAN_ReadData extends UITemplate {
     }
 
     #stopObservingLayout
+    #removeBitMap
     connectedCallback() {
         this.#stopObservingLayout?.()
         this.#stopObservingLayout = observeCANMessageLayout(this)
+        this.#removeBitMap?.()
+        this.#removeBitMap = mountCANBitMap(this, this.parseData)
     }
 
     disconnectedCallback() {
         this.#stopObservingLayout?.()
         this.#stopObservingLayout = undefined
+        this.#removeBitMap?.()
+        this.#removeBitMap = undefined
     }
 
     RegisterVariables(reference) {

@@ -612,6 +612,85 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     display: inline-block;
     white-space: nowrap;
 }
+.can-bit-map {
+    display: block;
+    position: relative;
+    margin: 0.15em 0.4em 0.5em;
+    color: #dfdfdf;
+}
+.can-bit-axis {
+    position: relative;
+    height: 1.5em;
+    margin-inline: 1px;
+    font: 0.7em/1.5 monospace;
+    color: #aaa;
+}
+.can-bit-axis > span {
+    position: absolute;
+    transform: translateX(-50%);
+}
+.can-bit-axis > span:first-child {
+    transform: none;
+}
+.can-bit-axis > span:last-child {
+    transform: translateX(-100%);
+}
+.can-bit-tooltip {
+    position: absolute;
+    top: calc(100% + 0.25em);
+    left: 0;
+    z-index: 10;
+    max-width: 100%;
+    padding: 0.25em 0.5em;
+    border: 1px solid #65bdff;
+    border-radius: 3px;
+    background: #222629;
+    color: #fff;
+    font-size: 0.8em;
+    overflow-wrap: anywhere;
+    pointer-events: none;
+}
+.can-bit-track {
+    display: grid;
+    grid-template-columns: repeat(64, minmax(0, 1fr));
+    min-height: 1.8em;
+    border: 1px solid #666;
+    background: repeating-linear-gradient(to right, transparent 0 calc(12.5% - 1px), #666  calc(12.5% - 1px) 12.5%), #222629;
+    text-align: center;
+    font-size: 0.8em;
+}
+.can-bit-track + .can-bit-track {
+    border-top: 0;
+}
+.can-bit-track > span {
+    grid-row: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 0.25em 0;
+    border-inline: 1px solid #666;
+}
+.can-bit-field {
+    color: var(--can-field-color);
+    background: #30363a;
+    box-shadow: inset 0 2px var(--can-field-color);
+    cursor: default;
+}
+.can-bit-label {
+    display: inline-block;
+}
+.can-bit-field.can-field-highlight,
+.can-bit-field:focus-visible {
+    color: #fff;
+    background: #275978;
+    outline: 2px solid #65bdff;
+    outline-offset: -2px;
+}
+.can-message-data > .itemContainer > .item.can-field-highlight {
+    border-color: #65bdff;
+    box-shadow: 0 0 0 1px #65bdff;
+    background-color: #27597855;
+}
 .can-pack-fields,
 .can-parse-fields,
 .can-pack-selection {
@@ -684,6 +763,17 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 .ui.number.canBitLength {
     width: 3em;
 }
+input:disabled,
+input.ui:disabled,
+input.ui:disabled:hover {
+    color: #858b90;
+    background-color: #30363a;
+    border-color: #444;
+    cursor: not-allowed;
+}
+span.disabled {
+    color: #858b90;
+}
 .ui.text.genericCalculationName:disabled {
     display: none;
 }
@@ -700,12 +790,17 @@ label:has(.ui.text.genericCalculationName:disabled)::before {
     outline: 0;
     background: transparent;
     border-radius: 0px;
-    border-bottom: solid #3590d0;
+    border-bottom: solid var(--can-field-color, #3590d0);
     width: 250px;
 }
 .ui.text.canPackDataName,
 .ui.text.canParseDataName {
     width: 230px;
+}
+.ui.text:is(.canPackDataName, .canParseDataName, .genericCalculationName):not(:focus) {
+    direction: rtl;
+    text-align: left;
+    text-overflow: ellipsis;
 }
 label:not(.w3-button) {
     font: bold 16px Arial;

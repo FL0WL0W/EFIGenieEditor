@@ -6,6 +6,7 @@ import UIPinOverlay from "../UI/UIPinOverlay"
 import CAN_PackData from "./CAN_PackData"
 import CANConfigs from "./CANConfigs"
 import { observeCANMessageLayout } from "./CANDataLayout"
+import { mountCANBitMap } from "./CANBitMap"
 import CalculationOrVariableSelection from "../Calculation/CalculationOrVariableSelection"
 import GenericConfigs from "../Calculation/GenericConfigs"
 export default class CAN_WriteData extends UITemplate {
@@ -88,14 +89,19 @@ export default class CAN_WriteData extends UITemplate {
     }
 
     #stopObservingLayout
+    #removeBitMap
     connectedCallback() {
         this.#stopObservingLayout?.()
         this.#stopObservingLayout = observeCANMessageLayout(this)
+        this.#removeBitMap?.()
+        this.#removeBitMap = mountCANBitMap(this, this.packData)
     }
 
     disconnectedCallback() {
         this.#stopObservingLayout?.()
         this.#stopObservingLayout = undefined
+        this.#removeBitMap?.()
+        this.#removeBitMap = undefined
     }
 
     RegisterVariables(reference) {

@@ -49,19 +49,31 @@ export default class CAN_PackData extends UITemplate {
         this.bitLengthLabel.innerText = `Length:`
         this.multiplierLabel.innerText = `Multiplier:`
         this.adderLabel.innerText = `Adder:`
-        this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = true
+        this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = true
+        Object.defineProperty(this.multiplierLabel, 'disabled', {
+            get: function() { return this.classList.contains(`disabled`) },
+            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+        })
+        Object.defineProperty(this.adderLabel, 'disabled', {
+            get: function() { return this.classList.contains(`disabled`) },
+            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+        })
         this.bitLocation.addEventListener(`change`, () => {
             this.bitLength.max = 64-this.bitLocation.value
         })
         this.bitLength.addEventListener(`change`, () => {
             const hasBitLength = this.variable.SubConfig?.constructor?.bitLength
-            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2 || hasBitLength
+            this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = this.bitLength.value < 2 || hasBitLength
+            if(this.multiplier.disabled) this.multiplier.value = 1
+            if(this.adder.disabled) this.adder.value = 0
             this.variable.outputTypes = [ this.bitLength.value < 2? `bool|CANData` : `float|CANData` ]
         })
         this.variable.addEventListener(`change`, () => {
             const hasBitLength = this.variable.SubConfig?.constructor?.bitLength
-            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2 || hasBitLength
-            this.bitLength.hidden = this.bitLengthLabel.hidden = hasBitLength
+            this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = this.bitLength.value < 2 || hasBitLength
+            if(this.multiplier.disabled) this.multiplier.value = 1
+            if(this.adder.disabled) this.adder.value = 0
+            this.bitLength.disabled = this.bitLengthLabel.disabled = hasBitLength
             if(hasBitLength) {
                 this.bitLength.value = this.variable.SubConfig.constructor.bitLength
             }
