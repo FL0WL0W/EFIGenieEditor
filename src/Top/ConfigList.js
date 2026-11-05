@@ -32,6 +32,25 @@ export default class ConfigList extends HTMLDivElement {
 
     #dragState
     #dragFrame
+    #itemChangeListeners = new Map()
+
+    #attachItemChangeListener(itemContainer) {
+        if(this.#itemChangeListeners.has(itemContainer) || !itemContainer?.item?.addEventListener)
+            return
+        const listener = () => {
+            this.dispatchEvent(new Event(`change`))
+        }
+        itemContainer.item.addEventListener(`change`, listener)
+        this.#itemChangeListeners.set(itemContainer, listener)
+    }
+
+    #detachItemChangeListener(itemContainer) {
+        const listener = this.#itemChangeListeners.get(itemContainer)
+        if(!listener)
+            return
+        itemContainer.item?.removeEventListener?.(`change`, listener)
+        this.#itemChangeListeners.delete(itemContainer)
+    }
 
     #startDrag(item, handle, event) {
         const itemRect = item.getBoundingClientRect()
@@ -125,7 +144,7 @@ export default class ConfigList extends HTMLDivElement {
         this.#dragState = undefined
         if(moved) {
             this.updateControls()
-            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+            this.dispatchEvent(new Event(`change`))
         }
     }
 
@@ -202,7 +221,7 @@ export default class ConfigList extends HTMLDivElement {
                 tabElement.appendChild(this.tabListNewElement)
             }
         })
-        this.dispatchEvent(new Event(`change`, {bubbles: true}))
+        this.dispatchEvent(new Event(`change`))
     }
 
     updateControls() {
@@ -261,13 +280,15 @@ export default class ConfigList extends HTMLDivElement {
                 e.stopPropagation()
                 const itemContainer = hamburgerElement.parentElement.parentElement
                 // remove the item container
-                if(itemContainer && itemContainer.parentElement)
+                if(itemContainer && itemContainer.parentElement) {
+                    thisClass.#detachItemChangeListener(itemContainer)
                     itemContainer.parentElement.removeChild(itemContainer)
+                }
                 // cleanup menu
                 menu.remove()
                 // refresh controls and emit change
                 thisClass.updateControls()
-                thisClass.dispatchEvent(new Event('change', {bubbles: true}))
+                thisClass.dispatchEvent(new Event('change'))
             })
             menu.appendChild(divDelete)
             this.appendChild(menu)
@@ -299,8 +320,9 @@ export default class ConfigList extends HTMLDivElement {
         } else {
             this.insertBefore(itemContainer, before)
         }
+        this.#attachItemChangeListener(itemContainer)
         this.updateControls()
-        this.dispatchEvent(new Event(`change`, {bubbles: true}))
+        this.dispatchEvent(new Event(`change`))
     }
 
     newItem() {
@@ -312,10 +334,14 @@ export default class ConfigList extends HTMLDivElement {
         //remove all static items from list, we will add them back as we populate
         ;[...this.children].forEach(item => {
             if(this.staticItems.find(x => x.item === item.item) !== undefined) {
+                this.#detachItemChangeListener(item)
                 this.removeChild(item)
             }
         })
-        while(this.children.length > saveValue.length) this.removeChild(this.lastChild)
+        while(this.children.length > saveValue.length) {
+            this.#detachItemChangeListener(this.lastChild)
+            this.removeChild(this.lastChild)
+        }
         for(let i = 0; i < saveValue.length; i++){
             const staticItem = this.staticItems.find(x => Object.keys(saveValue[i]).length === 1 && x.name === Object.keys(saveValue[i])[0])?.item 
             if(!this.children[i] || staticItem !== undefined) {
@@ -329,17 +355,22 @@ export default class ConfigList extends HTMLDivElement {
         }
         this.#addStaticItems();
         this.updateControls()
-        this.dispatchEvent(new Event(`change`, {bubbles: true}))
+        this.dispatchEvent(new Event(`change`))
     }
 
     get value () { return [...this.children].map(e => { return this.staticItems.find(x => x.item === e.item) !== undefined? { [this.staticItems.find(x => x.item === e.item)?.name] : e.item.value } : e.item.value }) }
     set value(value) { 
         //remove all static items from list, we will add them back as we populate
         ;[...this.children].forEach(item => {
-            if(this.staticItems.find(x => x.item === item.item) !== undefined)
+            if(this.staticItems.find(x => x.item === item.item) !== undefined) {
+                this.#detachItemChangeListener(item)
                 this.removeChild(item)
+            }
         })
-        while(this.children.length > value.length) this.removeChild(this.lastChild)
+        while(this.children.length > value.length) {
+            this.#detachItemChangeListener(this.lastChild)
+            this.removeChild(this.lastChild)
+        }
         for(let i = 0; i < value.length; i++){
             const staticItem = this.staticItems.find(x => Object.keys(value[i]).length === 1 && x.name === Object.keys(value[i])[0])?.item 
             if(!this.children[i] || staticItem !== undefined) {

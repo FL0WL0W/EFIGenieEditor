@@ -44,6 +44,9 @@ class InjectorProperties extends ConfigContainer{
             ],
             class: `inject-at`
         })
+        this.InjectorPositionAt.addEventListener(`change`, () => {
+            this.dispatchEvent(new Event(`change`))
+        })
         let span = document.createElement(`span`)
         span.append(`\xa0at`)
         span.append(this.InjectorPositionAt)

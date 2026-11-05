@@ -197,7 +197,7 @@ export default class Dashboard extends UITemplate {
             this.loggedVariables.saveValue = [ ...this.loggedVariables.saveValue,  { ...this.loggedVariableVariableSelection.value, refreshRate: 60 } ]
             communication.variablesToPoll = []
             this.RefreshOptions()
-            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+            this.dispatchEvent(new Event(`change`))
         })
 
         const header = this.loggedVariables.appendChild(document.createElement(`tr`))
@@ -283,7 +283,7 @@ export default class Dashboard extends UITemplate {
             if(!rowMoved) return
             communication.variablesToPoll = []
             this.RefreshOptions()
-            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+            this.dispatchEvent(new Event(`change`))
         })
         Object.defineProperty(this.loggedVariables, 'saveValue', {
             get: function() { return this.variables },
@@ -357,13 +357,13 @@ export default class Dashboard extends UITemplate {
             if(!row) return
             row.refreshRate = this.loggedVariablesRefreshSelection.value
             communication.variablesToPoll = []
-            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+            this.dispatchEvent(new Event(`change`))
         })
         this.loggedVariablesUnitSelection.addEventListener(`change`, () => {
             const row = this.loggedVariables.querySelector(`.selected`)
             if(!row) return
             row.unit = this.loggedVariablesUnitSelection.value
-            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+            this.dispatchEvent(new Event(`change`))
         })
     }
 
@@ -371,7 +371,7 @@ export default class Dashboard extends UITemplate {
         this.loggedVariables.removeChild(row)
         communication.variablesToPoll = []
         this.RefreshOptions()
-        this.dispatchEvent(new Event(`change`, { bubbles: true }))
+        this.dispatchEvent(new Event(`change`))
     }
 
     #setupDashboardControls() {
@@ -986,7 +986,7 @@ export default class Dashboard extends UITemplate {
                     ]
                     communication.variablesToPoll = []
                     this.RefreshOptions()
-                    this.dispatchEvent(new Event(`change`, { bubbles: true }))
+                    this.dispatchEvent(new Event(`change`))
                 })
             }
             this.loggedVariables.insertBefore(row, this.#loggedVariableAddRow)

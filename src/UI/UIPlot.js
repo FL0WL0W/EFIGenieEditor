@@ -162,7 +162,7 @@ export default class UIPlot extends UITemplate {
             this.plot = new uPlot(options, [], this.plotWorkspace)
             this.plot.options = options
             this.RefreshAvailability()
-            this.dispatchEvent(new Event(`change`, { bubbles: true }))
+            this.dispatchEvent(new Event(`change`))
             this.Resize()
         })
 

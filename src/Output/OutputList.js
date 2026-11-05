@@ -19,6 +19,7 @@ export default class OutputList extends ConfigContainer {
             for(let i = newOutputs.length; i < count; i++)
                 newOutputs[i] = {}
                 this.saveValue = newOutputs
+                this.dispatchEvent(new Event(`change`))
         })
         this.Setup(prop)
         if(prop.value === undefined) this.value = new Array(8)

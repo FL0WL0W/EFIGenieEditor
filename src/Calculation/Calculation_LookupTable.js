@@ -27,7 +27,7 @@ export default class Calculation_LookupTable extends UITemplate {
             this.graph.width = Math.min(Math.max(600, this.graph.xResolution * 75), 1000)
         })
         this.table.addEventListener(`change`, () => {
-            this.dispatchEvent(new Event(`change`, {bubbles: true}))
+            this.dispatchEvent(new Event(`change`))
             if(!this.parameterSelection)
                 return
             this.parameterSelection.displayUnit = this.table.xDisplayUnit

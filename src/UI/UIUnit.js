@@ -159,7 +159,7 @@ export default class UIUnit extends UISelection {
         if(objectTester(this._measurement, measurement)) return
         this._measurement = measurement
         this.refreshOptions()
-        this.dispatchEvent(new Event(`change`, {bubbles: true}))
+        this.dispatchEvent(new Event(`change`))
     }
 
     refreshOptions() {
