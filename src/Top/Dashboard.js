@@ -113,6 +113,54 @@ export default class Dashboard extends UITemplate {
     #loggedVariableAddRow
     #viewBrowser
     #viewBrowserDialog
+    #externalListenersAttached = false
+
+    #refreshListener = throttle(this.RefreshOptions.bind(this), 100)
+    #onCommunicationChange = ({ detail }) => {
+        this.#updateLoggedValues(detail.currentVariableValues, detail.variableMetadata)
+        this.RefreshOptions()
+    }
+    #onPlayback = ({ detail }) => this.#updateLoggedValues(detail.values, communication.variableMetadata)
+    #onVariableRegisterChange = ({ detail }) => {
+        if(detail?.previousReferences?.length > 0) {
+            for(const row of this.loggedVariables.children) {
+                if(row instanceof UILoggedVariable) {
+                    row.variable = detail.previousReferences.find(getMatcherForReference(row.variable)) ?? row.variable
+                }
+            }
+        }
+        for(const widget of this.elements.children) {
+            const content = widget.querySelector(`.dashboard-widget-content`)
+            if(widget.dataset.type === `plot`) {
+                for(const row of content?.variablesToPlot?.children ?? [])
+                    row.item.variable.UpdateVariableReference(detail)
+            } else {
+                content?.configTemplate?.variable?.UpdateVariableReference(detail)
+            }
+        }
+        this.#refreshListener()
+    }
+
+    #attachExternalListeners() {
+        if(this.#externalListenersAttached)
+            return
+        communication.addEventListener(`change`, this.#onCommunicationChange)
+        this.addEventListener(`playback`, this.#onPlayback)
+        VariableRegister.addEventListener(`change`, this.#onVariableRegisterChange)
+        communication.variableMetadata.addEventListener(`change`, this.#refreshListener)
+        this.#externalListenersAttached = true
+    }
+
+    #detachExternalListeners() {
+        if(!this.#externalListenersAttached)
+            return
+        communication.removeEventListener(`change`, this.#onCommunicationChange)
+        this.removeEventListener(`playback`, this.#onPlayback)
+        VariableRegister.removeEventListener(`change`, this.#onVariableRegisterChange)
+        communication.variableMetadata.removeEventListener(`change`, this.#refreshListener)
+        this.#refreshListener.cancel?.()
+        this.#externalListenersAttached = false
+    }
 
     get options() { return this.loggedVariableVariableSelection.options }
     set options(options) {
@@ -144,33 +192,15 @@ export default class Dashboard extends UITemplate {
         this.#setupDashboardControls()
         this.#loadLayouts()
         this.#setupViewBrowser()
+        this.#attachExternalListeners()
+    }
 
-        communication.addEventListener(`change`, ({ detail }) => {
-            this.#updateLoggedValues(detail.currentVariableValues, detail.variableMetadata)
-            this.RefreshOptions()
-        })
-        this.addEventListener(`playback`, ({ detail }) => this.#updateLoggedValues(detail.values, communication.variableMetadata))
-        const refreshListener = throttle(this.RefreshOptions.bind(this), 100)
-        VariableRegister.addEventListener(`change`, ({ detail }) => {
-            if(detail?.previousReferences?.length > 0) {
-                for(const row of this.loggedVariables.children) {
-                    if(row instanceof UILoggedVariable) {
-                        row.variable = detail.previousReferences.find(getMatcherForReference(row.variable)) ?? row.variable
-                    }
-                }
-            }
-            for(const widget of this.elements.children) {
-                const content = widget.querySelector(`.dashboard-widget-content`)
-                if(widget.dataset.type === `plot`) {
-                    for(const row of content?.variablesToPlot?.children ?? [])
-                        row.item.variable.UpdateVariableReference(detail)
-                } else {
-                    content?.configTemplate?.variable?.UpdateVariableReference(detail)
-                }
-            }
-            refreshListener()
-        })
-        communication.variableMetadata.addEventListener(`change`, refreshListener)
+    connectedCallback() {
+        this.#attachExternalListeners()
+    }
+
+    disconnectedCallback() {
+        this.#detachExternalListeners()
     }
 
     Setup(prop) {

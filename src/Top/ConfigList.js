@@ -224,6 +224,16 @@ export default class ConfigList extends HTMLDivElement {
         this.dispatchEvent(new Event(`change`))
     }
 
+    connectedCallback() {
+        for(const child of this.children)
+            this.#attachItemChangeListener(child)
+    }
+
+    disconnectedCallback() {
+        for(const child of this.children)
+            this.#detachItemChangeListener(child)
+    }
+
     updateControls() {
         for(let i = 0; i < this.children.length; i++){
             const hamburger = this.children[i].controlElement.children[2]
