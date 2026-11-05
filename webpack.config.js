@@ -2,6 +2,8 @@ const path = require('path')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
+const CompressionPlugin = require('compression-webpack-plugin');
+const zopfli = require('@gfx/zopfli');
 
 module.exports = (env, argv) => { return {
     optimization: {
@@ -148,6 +150,20 @@ module.exports = (env, argv) => { return {
             title: 'EFIGenie Editor',
             filename: 'index.html',
             template: 'src/template.html',
-        })
+        }),
+        ...(argv.mode === 'production' ? [
+            new CompressionPlugin({
+                filename: '../distGZ/[path][base].gz',
+                algorithm(input, options, callback) {
+                    return zopfli.gzip(input, options, callback);
+                },
+                compressionOptions: {
+                    numiterations: 15,
+                },
+                test: /\.(js|css|html|svg)$/,
+                threshold: 0,
+                minRatio: 0.8,
+            }),
+        ] : [])
     ]
 }}
