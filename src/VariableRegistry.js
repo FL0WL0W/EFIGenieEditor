@@ -42,9 +42,8 @@ export default class VariableRegistry extends EventTarget {
         if(visitedReferences.has(reference.name)) return
         visitedReferences.add(reference.name)
 
-        let match = getMatcherForReference(reference)
+        const match = getMatcherForReference(reference)
         
-
         let dotIndex
         let list = this
         let referenceName = reference.name
@@ -63,9 +62,6 @@ export default class VariableRegistry extends EventTarget {
                 variable = { ...map.find(match), name: reference.name }
             else if(map && match(map))
                 variable = { ...map, name: reference.name }
-        //variable points indirectly to another variable by name or is directly the id
-        } else if (typeof list[referenceName] == `string` || typeof list[referenceName] == `number`) {
-            variable = { name: reference.name, id: list[reference.name] }
         }
 
         if(variable) {
@@ -86,41 +82,32 @@ export default class VariableRegistry extends EventTarget {
     }
     GetVariableId(reference) {
         let variable = this.GetVariableByReference(reference)
-        if(variable) return variable.id
-        if(!this.CreateIfNotFound) return
-        if(reference == undefined || reference.name == undefined) return
-        variable = { ...reference }
+        if(variable.id == undefined) {
+            variable.id = this.GenerateVariableId()
+            const match = getMatcherForReference(reference)
 
-        //create variable since it was not found
-        variable.id ??= this.GenerateVariableId()
+            let dotIndex
+            let list = this
+            let referenceName = reference.name
+            while((dotIndex = referenceName.indexOf(`.`)) != -1) {
+                const listName = referenceName.substring(0, dotIndex)
+                list[listName] ??= {}
+                list = list[listName]
+                referenceName = referenceName.substring(dotIndex + 1)
+            }
 
-        const dotIndex = variable.name.indexOf(`.`)
-        if(dotIndex != -1) {
-            const listName = variable.name.substring(0, dotIndex)
-            this[listName] ??= {}
-            const variableName = variable.name.substring(dotIndex + 1)
-            delete variable.name
+            if (typeof list[referenceName] == `object`) {
+                let map = list[referenceName]
 
-            const map = this[listName][variableName]
-            if(!Array.isArray(map))
-                this[listName][variableName] = [ variable ]
-            else if(map)
-                this[listName][variableName] = [ map, variable ]
-            else
-                this[listName][variableName] = variable
-        } else {
-            const variableName = variable.name
-            delete variable.name
-            const map = this[variableName]
-            if(!Array.isArray(map))
-                this[variableName] = [ variable ]
-            else if(map)
-                this[variableName] = [ map, variable ]
-            else
-                this[variableName] = variable
+                if(Array.isArray(map)) {
+                    map = map.find(match)
+                }
+                if(map && match(map)) {
+                    map.id = variable.id
+                }
+            }
         }
-
-        return this.GetVariableId(reference)
+        if(variable) return variable.id
     }
     RegisterVariable(reference, previousReference) {
         if(!reference || typeof reference != `object` || !reference.name || objectTester(reference, previousReference)) return
@@ -146,10 +133,7 @@ export default class VariableRegistry extends EventTarget {
 
         const fullName = reference.name
         let previousVariables = this.#RemoveVariable(previousReference)
-        if(reference.id == undefined && typeof previousVariables[0]?.id == `number`)
-            reference.id = previousVariables[0].id
-        if(reference.id == undefined)
-            reference.id = this.GenerateVariableId()
+        this.#RemoveVariable(reference)
 
         let dotIndex
         let list = this
@@ -205,59 +189,31 @@ export default class VariableRegistry extends EventTarget {
         if(!reference || typeof reference != `object` || !reference.name) return []
         reference = { ...reference }
 
-        let match = getMatcherForReference(reference)
-
-        const dotIndex = reference.name.indexOf(`.`)
-        if(dotIndex != -1) {
-            const listName = reference.name.substring(0, dotIndex)
-            if(this[listName] == undefined)
-                return []
-            reference.name = reference.name.substring(dotIndex + 1)
-
-            const map = this[listName][reference.name]
-            if(Array.isArray(map)){
-                let existingIndex = -1
-                let removedList = []
-                while((existingIndex = map.findIndex(match)) != -1) {
-                    const [removed] = this[listName][reference.name].splice(existingIndex, 1)
-                    const length = this[listName][reference.name].length
-                    if(length == 0)
-                        delete this[listName][reference.name]
-                    else if(length == 1)
-                        this[listName][reference.name] = map[0]
-                    removedList.push({ ...removed, name: `${listName}.${removed.name}` })
-                }
-                if(removedList.length > 0)
-                    return removedList
-            }
-            if(map && match(map)){
-                const removed = this[listName][reference.name]
-                delete this[listName][reference.name]
-                return [ { ...removed, name: `${listName}.${removed.name}` } ]
-            }
-        } else if(this[reference.name] != undefined) {
-            const map = this[reference.name]
-            if(Array.isArray(map)){
-                let existingIndex = -1
-                let removedList = []
-                while((existingIndex = map.findIndex(match)) != -1) {
-                    const [removed] = this[reference.name].splice(existingIndex, 1)
-                    const length = this[reference.name].length
-                    if(length == 0)
-                        delete this[reference.name]
-                    else if(length == 1)
-                        this[reference.name] = map[0]
-                    removedList.push(removed)
-                }
-                if(removedList.length > 0)
-                    return removedList
-            }
-            if(map && match(map)){
-                const removed = this[reference.name]
-                delete this[reference.name]
-                return [ removed ]
-            }
+        const match = getMatcherForReference(reference)
+        
+        let dotIndex
+        let list = this
+        let referenceName = reference.name
+        while((dotIndex = referenceName.indexOf(`.`)) != -1) {
+            const listName = referenceName.substring(0, dotIndex)
+            list[listName] ??= {}
+            list = list[listName]
+            referenceName = referenceName.substring(dotIndex + 1)
         }
+
+        if (typeof list[referenceName] == `object`) {
+            const map = list[referenceName]
+
+            if(Array.isArray(map)) {
+                list[referenceName] = map.filter(variable => match(variable))
+                if(list[referenceName].length == 0)
+                    delete list[referenceName]
+            } else if(map && match(map)) {
+                delete list[referenceName]
+            }
+
+        }
+
         return []
     }
     GetSelections(calculations, filter, ungroupSelections = true) {
@@ -288,7 +244,9 @@ export default class VariableRegistry extends EventTarget {
 
             for (let variableName in list) {
                 for(let variable of Array.isArray(list[variableName])? list[variableName] : [ list[variableName] ]) {
-                    if(variable.id == undefined){
+                    const keys = Object.keys(variable)
+                    const variableKeys = [`unit`, `measurement`, `type`, `id`]
+                    if(keys.some(key => variableKeys.indexOf(key) == -1)) {
                         const subSelections = getSelectionsForList(variable, `${prefix}${variableName}.`)
                         if(subSelections.options.length > 0) {
                             //fix because UISelection does not support nested groups, so we flatten the group hierarchy into the option names
@@ -299,7 +257,7 @@ export default class VariableRegistry extends EventTarget {
                         }
                         continue
                     }
-                    if((!filter || filter(variable)) && variable.id != undefined) {
+                    if((!filter || filter(variable)) && keys.some(key => variableKeys.indexOf(key) != -1)) {
                         listSelections.options.push({
                             name: variableName,
                             info: variable.unit? `[${GetMeasurementNameFromUnitName(variable.unit)}]` : ``,
