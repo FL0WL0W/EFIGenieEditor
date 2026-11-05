@@ -45,7 +45,15 @@ export default class CAN_ParseData extends UITemplate {
         super()
         this.multiplierLabel.innerText = `Multiplier:`
         this.adderLabel.innerText = `Adder:`
-        this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.unit.hidden = true
+        Object.defineProperty(this.multiplierLabel, 'disabled', {
+            get: function() { return this.classList.contains(`disabled`) },
+            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+        })
+        Object.defineProperty(this.adderLabel, 'disabled', {
+            get: function() { return this.classList.contains(`disabled`) },
+            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+        })
+        this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = this.unit.hidden = true
         this.liveUpdate.style.float = `right`
         this.bitLocation.addEventListener(`change`, () => {
             this.bitLength.max = 64-this.bitLocation.value
@@ -53,13 +61,17 @@ export default class CAN_ParseData extends UITemplate {
         this.bitLength.addEventListener(`change`, () => {
             const isEnum = EnumRegister?.isEnum(this.unit.value)
             this.unit.hidden = this.bitLength.value < 2
-            this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = this.bitLength.value < 2 || isEnum
+            this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = this.bitLength.value < 2 || isEnum
+            if(this.multiplier.disabled) this.multiplier.value = 1
+            if(this.adder.disabled) this.adder.value = 0
         })
         this.unit.addEventListener(`change`, () => {
             const isEnum = EnumRegister?.isEnum(this.unit.value)
             // Multiplier/adder are meaningless for enum types
             if(this.bitLength.value >= 2)
-                this.multiplier.hidden = this.multiplierLabel.hidden = this.adder.hidden = this.adderLabel.hidden = isEnum
+                this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = isEnum
+            if(this.multiplier.disabled) this.multiplier.value = 1
+            if(this.adder.disabled) this.adder.value = 0
             // valueUnit only applies to scalar (non-enum) units
             this.liveUpdate.valueUnit = (this.bitLength.value < 2 || isEnum) ? undefined : this.unit.value
         })
