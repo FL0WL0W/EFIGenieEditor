@@ -5,10 +5,14 @@ export default class VariableRegistry extends EventTarget {
         super()
         Object.assign(this, prop)
         this.CreateIfNotFound = false
-        this.dispatchReplaceEvent = throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `replace` } })) }, 100)
-        this.dispatchClearEvent = throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `clear` } })) }, 100)
-        this.dispatchChangeEvent = throttle(() => { this.dispatchEvent(new CustomEvent(`change`, { })) }, 100)
     }
+    #dispatchReplaceEventThrottled = throttle(() => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `replace` } })) }, 100)
+    #dispatchClearEventThrottled = throttle(() => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `clear` } })) }, 100)
+    #dispatchChangeEventThrottled = throttle(() => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { })) }, 100)
+    #dispatchReplaceEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchReplaceEventThrottled() }
+    #dispatchClearEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchClearEventThrottled() }
+    #dispatchChangeEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchChangeEventThrottled() }
+    #dispatchUpdateEvent = (detail) => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { detail })) }
     get variableReferences() {
         var variableReferences = { ...this }
         delete variableReferences.CreateIfNotFound
@@ -16,7 +20,7 @@ export default class VariableRegistry extends EventTarget {
     }
     set variableReferences(variableReferences) {
         Object.assign(this, variableReferences)
-        this.dispatchReplaceEvent()
+        this.#dispatchReplaceEvent()
     }
     Clear() {
         Object.entries(this).forEach(([elementname, element]) => {
@@ -24,7 +28,7 @@ export default class VariableRegistry extends EventTarget {
                 return
             delete this[elementname]
         })
-        this.dispatchClearEvent()
+        this.#dispatchClearEvent()
     }
     GenerateVariableId() {
         this.VariableIncrement ??= 0
@@ -175,15 +179,15 @@ export default class VariableRegistry extends EventTarget {
                     }
                 }
             }
-            this.dispatchEvent(new CustomEvent(`change`, { detail }))
+            this.#dispatchUpdateEvent(detail)
         }
         else 
-            this.dispatchChangeEvent()
+            this.#dispatchChangeEvent()
     }
     UnRegisterVariable(reference) {
         const previousReferences = this.#RemoveVariable(reference)
         if(previousReferences.length > 0)
-            this.dispatchChangeEvent()
+            this.#dispatchChangeEvent()
     }
     #RemoveVariable(reference) {
         if(!reference || typeof reference != `object` || !reference.name) return []
@@ -216,6 +220,50 @@ export default class VariableRegistry extends EventTarget {
 
         return []
     }
+    #cachedSelectionsValid = false
+    #cachedSelections = []
+    #UpdateCachedSelections() {
+        if(this.#cachedSelectionsValid)
+            return
+
+        const getSelectionsForList = function(list, prefix = ``) {
+            let listSelections = { group: prefix.slice(0, -1), options: [] }
+
+            for (let variableName in list) {
+                for(let variable of Array.isArray(list[variableName])? list[variableName] : [ list[variableName] ]) {
+                    const keys = Object.keys(variable)
+                    const variableKeys = [`unit`, `measurement`, `type`, `id`]
+                    if(keys.some(key => variableKeys.indexOf(key) == -1)) {
+                        const subSelections = getSelectionsForList(variable, `${prefix}${variableName}.`)
+                        if(subSelections.options.length > 0) {
+                            //fix because UISelection does not support nested groups, so we flatten the group hierarchy into the option names
+                            if(listSelections.group.length > 0)
+                                listSelections.options.push(...subSelections.options.map(option => ({ ...option, name: `${subSelections.group.substring(subSelections.group.indexOf('.') + 1)}.${option.name}` })))
+                            else
+                                listSelections.options.push(subSelections)
+                        }
+                        continue
+                    }
+                    if(keys.some(key => variableKeys.indexOf(key) != -1)) {
+                        listSelections.options.push({
+                            name: variableName,
+                            info: variable.unit? `[${GetMeasurementNameFromUnitName(variable.unit)}]` : ``,
+                            value: { 
+                                name: `${prefix}${variableName}`,
+                                ...( variable.type == undefined? undefined :{ type: variable.type } ),
+                                ...( variable.unit == undefined? undefined :{ unit: variable.unit } )
+                            }
+                        })
+                    }
+                }
+            }
+
+            return listSelections
+        }
+
+        this.#cachedSelections = getSelectionsForList(this).options
+        this.#cachedSelectionsValid = true
+    }
     GetSelections(calculations, filter, ungroupSelections = true) {
         var selections = []
         if (calculations?.length > 0) {
@@ -239,42 +287,12 @@ export default class VariableRegistry extends EventTarget {
             }
         }
 
-        const getSelectionsForList = function(list, prefix = ``) {
-            let listSelections = { group: prefix.slice(0, -1), options: [] }
-
-            for (let variableName in list) {
-                for(let variable of Array.isArray(list[variableName])? list[variableName] : [ list[variableName] ]) {
-                    const keys = Object.keys(variable)
-                    const variableKeys = [`unit`, `measurement`, `type`, `id`]
-                    if(keys.some(key => variableKeys.indexOf(key) == -1)) {
-                        const subSelections = getSelectionsForList(variable, `${prefix}${variableName}.`)
-                        if(subSelections.options.length > 0) {
-                            //fix because UISelection does not support nested groups, so we flatten the group hierarchy into the option names
-                            if(listSelections.group.length > 0)
-                                listSelections.options.push(...subSelections.options.map(option => ({ ...option, name: `${subSelections.group.substring(subSelections.group.indexOf('.') + 1)}.${option.name}` })))
-                            else
-                                listSelections.options.push(subSelections)
-                        }
-                        continue
-                    }
-                    if((!filter || filter(variable)) && keys.some(key => variableKeys.indexOf(key) != -1)) {
-                        listSelections.options.push({
-                            name: variableName,
-                            info: variable.unit? `[${GetMeasurementNameFromUnitName(variable.unit)}]` : ``,
-                            value: { 
-                                name: `${prefix}${variableName}`,
-                                ...( variable.type == undefined? undefined :{ type: variable.type } ),
-                                ...( variable.unit == undefined? undefined :{ unit: variable.unit } )
-                            }
-                        })
-                    }
-                }
-            }
-
-            return listSelections
+        this.#UpdateCachedSelections()
+        let variableSelections = this.#cachedSelections
+        if(filter) {
+            variableSelections = variableSelections.map(x => x.group? { ...x, options: x.options.filter(y => filter(y.value)) } : x).filter(x => (x.group && x.options.length > 0) || (!x.group && filter(x.value)))
         }
-
-        selections.push(...getSelectionsForList(this).options)
+        selections.push(...variableSelections)
     
         if(selections.length == 1 && ungroupSelections)
             return selections[0].options
