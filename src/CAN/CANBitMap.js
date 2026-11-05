@@ -6,6 +6,8 @@ export function mountCANBitMap(message, list) {
     map.setAttribute(`aria-label`, `CAN payload bit map`)
     const interactionRoot = message.closest(`.can-message-layout`) ?? message
     interactionRoot.prepend(map)
+    if(message.baseData)
+        map.after(message.baseData)
     const tooltip = document.createElement(`span`)
     tooltip.className = `can-bit-tooltip`
     tooltip.hidden = true
@@ -189,6 +191,8 @@ export function mountCANBitMap(message, list) {
             field.item.classList.remove(`can-field-highlight`)
             field.item.name.style.removeProperty(`--can-field-color`)
         })
+        if(message.baseData)
+            message.prepend(message.baseData)
         map.remove()
     }
 }

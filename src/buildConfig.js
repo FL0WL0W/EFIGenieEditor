@@ -2,6 +2,7 @@ import { gzip } from "pako"
 import VariableRegistry from "./VariableRegistry"
 import { GetUnitFromName } from "./UI/UIUnit"
 import Calculation_Formula from "./Calculation/Calculation_Formula"
+import { getCANBaseBytes } from "./CAN/CANPayload"
 
 export default function buildConfig(obj, processorDefinition) {
     processorDefinition ??= [
@@ -733,14 +734,7 @@ let types = [
                 { type: `Package`, //Package
                     value: [
                         { type: `UINT32`, value: EmbeddedOperationsFactoryIDs.Offset + EmbeddedOperationsFactoryIDs.CANPackData}, //pack factory ID
-                        { type: `UINT8`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: 0}, //base data TODO
-                        { type: `UINT8`, value: 0}, //base data TODO
+                        ...getCANBaseBytes(this.baseData, packData).map(value => ({ type: `UINT8`, value })),
                         { type: `UINT8`, value: packData.length }, //number of pack data values
                         ...packData.map(x => { //pack data configuration
                             const isBool = x.bitLength < 2

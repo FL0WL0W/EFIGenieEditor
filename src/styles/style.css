@@ -618,12 +618,36 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     margin: 0.15em 0.4em 0.5em;
     color: #dfdfdf;
 }
+.can-bit-map:has(+ .can-base-data) {
+    margin-bottom: 0.1em;
+}
 .can-bit-axis {
     position: relative;
     height: 1.5em;
     margin-inline: 1px;
     font: 0.7em/1.5 monospace;
     color: #aaa;
+}
+.can-base-data {
+    margin: 0 0.4em 0.5em;
+}
+.can-base-data-caption {
+    display: block;
+    color: #aaa;
+    font-size: 0.7em;
+    line-height: 1;
+}
+.can-base-data-bytes {
+    display: grid;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+}
+.can-base-data-bytes > .can-base-byte {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    margin: 0;
+    text-align: center;
+    font-family: monospace;
 }
 .can-bit-axis > span {
     position: absolute;
