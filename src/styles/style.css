@@ -619,7 +619,11 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     color: #dfdfdf;
 }
 .can-bit-map:has(+ .can-base-data) {
-    margin-bottom: 0.1em;
+    margin-bottom: 0;
+}
+.can-bit-map:has(+ .can-base-data) .can-bit-axis {
+    height: 1.2em;
+    line-height: 1.2;
 }
 .can-bit-axis {
     position: relative;
@@ -630,6 +634,9 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .can-base-data {
     margin: 0 0.4em 0.5em;
+}
+.can-base-data + .can-message-data {
+    padding-top: 0;
 }
 .can-base-data-caption {
     display: block;
@@ -649,15 +656,23 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     text-align: center;
     font-family: monospace;
 }
-.can-bit-axis > span {
+.can-bit-axis > .can-bit-marker {
     position: absolute;
     transform: translateX(-50%);
 }
-.can-bit-axis > span:first-child {
+.can-bit-axis > .can-bit-marker[data-bit="0"] {
     transform: none;
 }
-.can-bit-axis > span:last-child {
+.can-bit-axis > .can-bit-marker[data-bit="64"] {
     transform: translateX(-100%);
+}
+.can-bit-axis > .can-base-data-caption {
+    position: absolute;
+    left: 6.25%;
+    transform: translateX(-50%);
+    font: bold 0.9em Arial, sans-serif;
+    line-height: inherit;
+    white-space: nowrap;
 }
 .can-bit-tooltip {
     position: absolute;

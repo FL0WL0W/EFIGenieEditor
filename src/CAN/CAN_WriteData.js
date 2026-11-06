@@ -12,7 +12,7 @@ import GenericConfigs from "../Calculation/GenericConfigs"
 import CANBaseData from "./CANBaseData"
 export default class CAN_WriteData extends UITemplate {
     static displayName = `CAN Write`
-    static template = `<div data-element="baseData"></div><span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div>Interval:<div data-element="interval"></div>Condition:<div data-element="condition"></div></span></span><div data-element="packData"></div>`
+    static template = `<span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div>Interval:<div data-element="interval"></div>Condition:<div data-element="condition"></div></span></span><div data-element="baseData"></div><div data-element="packData"></div>`
 
     baseData = new CANBaseData()
 

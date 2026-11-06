@@ -5,7 +5,7 @@ export function mountCANBitMap(message, list) {
     map.setAttribute(`role`, `group`)
     map.setAttribute(`aria-label`, `CAN payload bit map`)
     const interactionRoot = message.closest(`.can-message-layout`) ?? message
-    interactionRoot.prepend(map)
+    list.before(map)
     if(message.baseData)
         map.after(message.baseData)
     const tooltip = document.createElement(`span`)
@@ -110,11 +110,12 @@ export function mountCANBitMap(message, list) {
         axis.setAttribute(`aria-hidden`, `true`)
         for(let bit = 0; bit <= 64; bit += 8) {
             const marker = document.createElement(`span`)
+            marker.className = `can-bit-marker`
+            marker.dataset.bit = bit
             marker.textContent = bit
             marker.style.left = `${bit / 64 * 100}%`
             axis.append(marker)
         }
-        content.append(axis)
         const lanes = [[]]
         fields.forEach(field => {
             if(!Number.isInteger(field.start) || !Number.isInteger(field.length) || field.length < 1)
@@ -153,6 +154,9 @@ export function mountCANBitMap(message, list) {
             })
             content.append(track)
         })
+        if(message.baseData)
+            axis.append(message.baseData.caption)
+        content.append(axis)
         map.replaceChildren(content, tooltip)
         if(labelFrame !== undefined)
             cancelAnimationFrame(labelFrame)
@@ -192,7 +196,7 @@ export function mountCANBitMap(message, list) {
             field.item.name.style.removeProperty(`--can-field-color`)
         })
         if(message.baseData)
-            message.prepend(message.baseData)
+            message.baseData.prepend(message.baseData.caption)
         map.remove()
     }
 }

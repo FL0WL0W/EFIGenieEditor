@@ -3,13 +3,14 @@ import { getCANBaseBytes, getCANBaseValue } from "./CANPayload"
 export default class CANBaseData extends HTMLDivElement {
     #bytes = Array(8).fill(0)
     #inputs = []
+    caption = document.createElement(`span`)
 
     constructor() {
         super()
         this.className = `can-base-data`
         this.setAttribute(`role`, `group`)
         this.setAttribute(`aria-label`, `Base data`)
-        const caption = document.createElement(`span`)
+        const caption = this.caption
         caption.className = `can-base-data-caption`
         caption.textContent = `Base data`
         const inputs = document.createElement(`div`)
@@ -57,7 +58,7 @@ export default class CANBaseData extends HTMLDivElement {
             this.#inputs.push(input)
             inputs.append(input)
         }
-        this.append(inputs, caption)
+        this.append(caption, inputs)
     }
 
     #format(byte) { return `0x${byte.toString(16).toUpperCase().padStart(2, `0`)}` }
