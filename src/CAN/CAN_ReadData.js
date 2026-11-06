@@ -1,13 +1,13 @@
 import UINumber from "../JavascriptUI/UINumber"
 import UISelection from "../JavascriptUI/UISelection"
-import UITemplate from "../JavascriptUI/UITemplate"
+import CANMessage from "./CANMessage"
 import ConfigList from "../Top/ConfigList"
 import UIPinOverlay from "../UI/UIPinOverlay"
 import CAN_ParseData from "./CAN_ParseData"
 import CANConfigs from "./CANConfigs"
 import { observeCANMessageLayout } from "./CANDataLayout"
 import { mountCANBitMap } from "./CANBitMap"
-export default class CAN_ReadData extends UITemplate {
+export default class CAN_ReadData extends CANMessage {
     static displayName = `CAN Read`
     static template = `<span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div></span></span><div data-element="parseData"></div>`
 

@@ -1,4 +1,6 @@
 // A view of the existing configuration list; it never participates in serialization.
+let nextConfigurationId = 0
+
 export function mountCANBitMap(message, list) {
     const map = document.createElement(`div`)
     map.className = `can-bit-map`
@@ -12,6 +14,29 @@ export function mountCANBitMap(message, list) {
     tooltip.className = `can-bit-tooltip`
     tooltip.hidden = true
     tooltip.setAttribute(`role`, `tooltip`)
+    const toggle = document.createElement(`button`)
+    toggle.type = `button`
+    toggle.className = `can-configuration-toggle`
+    list.id ||= `can-configurations-${nextConfigurationId++}`
+    const controls = [list.id]
+    if(message.baseData) {
+        message.baseData.id ||= `${list.id}-base`
+        controls.push(message.baseData.id)
+    }
+    toggle.setAttribute(`aria-controls`, controls.join(` `))
+    const updateToggle = () => {
+        const expanded = message.configurationsExpanded
+        toggle.setAttribute(`aria-expanded`, String(expanded))
+        toggle.classList.toggle(`can-configuration-toggle-open`, expanded)
+        const label = expanded ? `Minimize CAN configuration` : `Expand CAN configuration`
+        toggle.setAttribute(`aria-label`, label)
+        toggle.title = label
+    }
+    toggle.addEventListener(`click`, () => {
+        message.configurationsExpanded = !message.configurationsExpanded
+    })
+    message.addEventListener(`can-configuration-toggle`, updateToggle)
+    updateToggle()
 
     let fields = []
     let segments = new Map()
@@ -176,7 +201,7 @@ export function mountCANBitMap(message, list) {
         if(message.baseData)
             axis.append(message.baseData.caption)
         content.append(axis)
-        map.replaceChildren(content, tooltip)
+        map.replaceChildren(toggle, content, tooltip)
         if(labelFrame !== undefined)
             cancelAnimationFrame(labelFrame)
         fitLabels()
@@ -204,6 +229,7 @@ export function mountCANBitMap(message, list) {
         if(labelFrame !== undefined)
             cancelAnimationFrame(labelFrame)
         labelObserver.disconnect()
+        message.removeEventListener(`can-configuration-toggle`, updateToggle)
         interactionRoot.removeEventListener(`pointermove`, onMove)
         interactionRoot.removeEventListener(`pointerover`, onPointer)
         interactionRoot.removeEventListener(`pointerout`, onPointer)

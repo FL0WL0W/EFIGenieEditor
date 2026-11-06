@@ -1,6 +1,6 @@
 import UINumber from "../JavascriptUI/UINumber"
 import UISelection from "../JavascriptUI/UISelection"
-import UITemplate from "../JavascriptUI/UITemplate"
+import CANMessage from "./CANMessage"
 import ConfigList from "../Top/ConfigList"
 import UIPinOverlay from "../UI/UIPinOverlay"
 import CAN_PackData from "./CAN_PackData"
@@ -10,7 +10,7 @@ import { mountCANBitMap } from "./CANBitMap"
 import CalculationOrVariableSelection from "../Calculation/CalculationOrVariableSelection"
 import GenericConfigs from "../Calculation/GenericConfigs"
 import CANBaseData from "./CANBaseData"
-export default class CAN_WriteData extends UITemplate {
+export default class CAN_WriteData extends CANMessage {
     static displayName = `CAN Write`
     static template = `<span class="can-message-settings"><span class="can-message-settings-content"><div data-element="canBusLabel"></div><div data-element="canBus"></div><div data-element="canIDLabel"></div><div data-element="canID"></div>Interval:<div data-element="interval"></div>Condition:<div data-element="condition"></div></span></span><div data-element="baseData"></div><div data-element="packData"></div>`
 

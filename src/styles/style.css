@@ -615,7 +615,7 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 .can-bit-map {
     display: block;
     position: relative;
-    margin: 0.15em 0.4em 0.5em;
+    margin: 0.15em 0.4em 0.5em 1.6em;
     color: #dfdfdf;
 }
 .can-bit-map:has(+ .can-base-data) {
@@ -633,7 +633,37 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
     color: #aaa;
 }
 .can-base-data {
-    margin: 0 0.4em 0.5em;
+    margin: 0 0.4em 0.5em 1.6em;
+}
+.can-configuration-toggle {
+    position: absolute;
+    left: -1.4em;
+    top: 0;
+    width: 1.3em;
+    height: 1.7em;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+.can-configuration-toggle::before {
+    display: inline-block;
+    content: "▶";
+}
+.can-configuration-toggle-open::before {
+    transform: rotate(90deg);
+}
+.can-configuration-toggle:hover,
+.can-configuration-toggle:focus-visible {
+    color: #65bdff;
+}
+.can-configurations-collapsed > .can-message-data,
+.can-configurations-collapsed > .can-base-data,
+.can-configurations-collapsed > .controlnew,
+.can-configurations-collapsed .can-base-data-caption {
+    display: none;
 }
 .can-base-data + .can-message-data {
     padding-top: 0;
