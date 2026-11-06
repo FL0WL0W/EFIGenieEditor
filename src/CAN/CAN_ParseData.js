@@ -47,11 +47,11 @@ export default class CAN_ParseData extends UITemplate {
         this.adderLabel.innerText = `Adder:`
         Object.defineProperty(this.multiplierLabel, 'disabled', {
             get: function() { return this.classList.contains(`disabled`) },
-            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+            set: function(disabled) { if(disabled == this.disabled) return; if(disabled) this.classList.add(`disabled`); else this.classList.remove(`disabled`) }
         })
         Object.defineProperty(this.adderLabel, 'disabled', {
             get: function() { return this.classList.contains(`disabled`) },
-            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+            set: function(disabled) { if(disabled == this.disabled) return; if(disabled) this.classList.add(`disabled`); else this.classList.remove(`disabled`) }
         })
         this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = this.unit.hidden = true
         this.liveUpdate.style.float = `right`

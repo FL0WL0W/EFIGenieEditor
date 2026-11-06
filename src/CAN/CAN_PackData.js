@@ -52,11 +52,11 @@ export default class CAN_PackData extends UITemplate {
         this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = true
         Object.defineProperty(this.multiplierLabel, 'disabled', {
             get: function() { return this.classList.contains(`disabled`) },
-            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+            set: function(disabled) { if(disabled == this.disabled) return; if(disabled) this.classList.add(`disabled`); else this.classList.remove(`disabled`) }
         })
         Object.defineProperty(this.adderLabel, 'disabled', {
             get: function() { return this.classList.contains(`disabled`) },
-            set: function(disabled) { this.classList.toggle(`disabled`, disabled) }
+            set: function(disabled) { if(disabled == this.disabled) return; if(disabled) this.classList.add(`disabled`); else this.classList.remove(`disabled`) }
         })
         this.bitLocation.addEventListener(`change`, () => {
             this.bitLength.max = 64-this.bitLocation.value
