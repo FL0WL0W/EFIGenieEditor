@@ -20,6 +20,23 @@ export function mountCANBitMap(message, list) {
     let focused
     let frame
     let labelFrame
+    const positionTooltip = () => {
+        if(tooltip.hidden)
+            return
+        const active = hovered ?? focused
+        const segment = [...segments].find(([, item]) => item === active)?.[0]
+        if(!segment) {
+            tooltip.hidden = true
+            return
+        }
+        const mapRect = map.getBoundingClientRect()
+        const fieldRect = segment.getBoundingClientRect()
+        const axisRect = map.querySelector(`.can-bit-axis`).getBoundingClientRect()
+        const width = tooltip.getBoundingClientRect().width
+        const left = Math.max(0, Math.min(fieldRect.left - mapRect.left, mapRect.width - width))
+        tooltip.style.left = `${left}px`
+        tooltip.style.top = `${axisRect.top - mapRect.top}px`
+    }
     const fitLabels = () => {
         labelFrame = undefined
         labels.forEach((field, label) => {
@@ -44,6 +61,7 @@ export function mountCANBitMap(message, list) {
             if(width > available && available > 0)
                 label.style.fontSize = `${fontSize * available / width}px`
         })
+        positionTooltip()
     }
     const labelObserver = new ResizeObserver(() => {
         if(labelFrame === undefined)
@@ -61,6 +79,7 @@ export function mountCANBitMap(message, list) {
         const field = fields.find(field => field.item === active)
         tooltip.hidden = !field
         tooltip.textContent = field ? `${field.name} · ${field.length === 1 ? `Bit ${field.start}` : `Bits ${field.start}–${field.start + field.length - 1}`}` : ``
+        positionTooltip()
     }
     const fieldAt = target => {
         if(!(target instanceof Element))

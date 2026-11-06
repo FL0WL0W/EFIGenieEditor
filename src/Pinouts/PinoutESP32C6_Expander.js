@@ -38,9 +38,9 @@ Pinouts.ESP32C6_Expander = {
     Type: "TopExpander",
     Top: TopExpander,
     Burn: async function(cfg) {
-        const bin = buildConfig({ ...cfg.value, type: this.Type }, this.ProcessorDefinition);
-        downloadBin(bin, 'Expander-Config.bin');
-        // await BurnESP32(cfg, this.Type, this.ProcessorDefinition);
+        // const bin = buildConfig({ ...cfg.value, type: this.Type }, this.ProcessorDefinition);
+        // downloadBin(bin, 'Expander-Config.bin');
+        await BurnESP32(cfg, this.Type, this.ProcessorDefinition);
     },
     Connect: function() {
         // Pausing stops polling but keeps the transport open. Reuse it on resume.

@@ -676,9 +676,11 @@ body {background-color: #222629; color: #eee; font-weight:bold;}
 }
 .can-bit-tooltip {
     position: absolute;
-    top: calc(100% + 0.25em);
+    top: 0;
     left: 0;
     z-index: 10;
+    box-sizing: border-box;
+    width: max-content;
     max-width: 100%;
     padding: 0.25em 0.5em;
     border: 1px solid #65bdff;
