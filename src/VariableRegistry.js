@@ -1,5 +1,5 @@
 import { throttle } from "lodash-es"
-import { objectTester } from "./JavascriptUI/UIUtils"
+import { objectTester } from "./JavascriptUI/UIUtils.js"
 export default class VariableRegistry extends EventTarget {
     constructor(prop) {
         super()
@@ -62,10 +62,9 @@ export default class VariableRegistry extends EventTarget {
         if (typeof list[referenceName] == `object`) {
             const map = list[referenceName]
 
-            if(Array.isArray(map))
-                variable = { ...map.find(match), name: reference.name }
-            else if(map && match(map))
-                variable = { ...map, name: reference.name }
+            const matched = Array.isArray(map) ? map.find(match) : (map && match(map) ? map : undefined)
+            if(matched)
+                variable = { ...matched, name: reference.name }
         }
 
         if(variable) {
@@ -162,23 +161,15 @@ export default class VariableRegistry extends EventTarget {
         const detail = { action: `update`, reference: current, previousReferences: previousVariables }
         // update all aliases
         if(previousVariables.length > 0) {
-            for(const value of Object.values(this)) {
-                if(value == undefined)
-                    continue
-                for(const map of Object.values(map?.name != undefined? { value } : value)) {
-                    if(Array.isArray(map)) {
-                        for(const variable of map) {
-                            if(typeof variable.id == `string` && previousVariables.find(previous => previous.name == variable.id)) {
-                                variable.id = current.name
-                            }
-                        }
-                    } else if(typeof map == `object`) {
-                        if(typeof map.id == `string` && previousVariables.find(previous => previous.name == map.id)) {
-                            map.id = current.name
-                        }
-                    }
-                }
+            const updateAliases = value => {
+                if(!value || typeof value !== `object`)
+                    return
+                if(typeof value.id === `string` && previousVariables.some(previous => previous.name === value.id))
+                    value.id = current.name
+                else
+                    Object.values(value).forEach(updateAliases)
             }
+            Object.values(this).forEach(updateAliases)
             this.#dispatchUpdateEvent(detail)
         }
         else 
@@ -205,20 +196,23 @@ export default class VariableRegistry extends EventTarget {
             referenceName = referenceName.substring(dotIndex + 1)
         }
 
+        let removed = []
         if (typeof list[referenceName] == `object`) {
             const map = list[referenceName]
 
             if(Array.isArray(map)) {
-                list[referenceName] = map.filter(variable => match(variable))
+                removed = map.filter(match)
+                list[referenceName] = map.filter(variable => !match(variable))
                 if(list[referenceName].length == 0)
                     delete list[referenceName]
             } else if(map && match(map)) {
+                removed = [map]
                 delete list[referenceName]
             }
 
         }
 
-        return []
+        return removed.map(variable => ({ ...variable, name: reference.name }))
     }
     #cachedSelectionsValid = false
     #cachedSelections = []
