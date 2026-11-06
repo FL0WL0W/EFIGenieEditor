@@ -1,4 +1,4 @@
-import { getCANBaseBytes } from "./CANPayload"
+import { getCANBaseBytes, getCANBaseValue } from "./CANPayload"
 
 export default class CANBaseData extends HTMLDivElement {
     #bytes = Array(8).fill(0)
@@ -30,7 +30,7 @@ export default class CANBaseData extends HTMLDivElement {
                 event.stopPropagation()
                 const byte = this.#parseByte(input.value.trim())
                 if(byte !== undefined) {
-                    const bytes = this.value
+                    const bytes = [...this.#bytes]
                     bytes[index] = byte
                     this.value = bytes
                 }
@@ -69,7 +69,7 @@ export default class CANBaseData extends HTMLDivElement {
         return byte <= 255 ? byte : undefined
     }
 
-    get value() { return [...this.#bytes] }
+    get value() { return `0x${getCANBaseValue(this.#bytes).toString(16).toUpperCase().padStart(16, `0`)}` }
     set value(value) {
         const bytes = getCANBaseBytes(value)
         const changed = bytes.some((byte, index) => byte !== this.#bytes[index])
