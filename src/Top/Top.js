@@ -201,8 +201,5 @@ export default class Top extends UITemplate {
         super.saveValue = saveValue
         this.RegisterVariables()
     }
-
-    RegisterVariables() {
-    }
 }
 customElements.define(`top-top`, Top, { extends: `span` })

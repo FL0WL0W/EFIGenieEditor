@@ -46,6 +46,14 @@ export default class TopExpander extends Top {
         this.PinOverlay.pinOut = Pinouts[this.TargetDevice.value]
         this.Setup(prop)
     }
+    
+    static currentTickReference = { name: `CurrentTick`, type: `tick` }
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(TopExpander.currentTickReference)
+    }
+    connectedCallback() {
+        VariableRegister.RegisterVariable(TopExpander.currentTickReference)
+    }
 
     RegisterVariables() {
         this.Inputs.RegisterVariables()

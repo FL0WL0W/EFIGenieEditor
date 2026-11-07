@@ -221,7 +221,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
 
     RefreshOptions() {
         const outputReferenceName = this.#outputReference?.name
-        const filterSelfReference = options => options.flatMap(option => {
+        const filterSelfReference = options => options?.flatMap(option => {
             if(option.group) {
                 const filteredOptions = filterSelfReference(option.options ?? [])
                 return filteredOptions.length > 0? [{ ...option, options: filteredOptions }] : []
