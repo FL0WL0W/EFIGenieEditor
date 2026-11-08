@@ -3,23 +3,30 @@ import { objectTester } from "../JavascriptUI/UIUtils"
 export default class Reluctor_Template extends Input_DigitalRecord {
     static outputTypes = [ `ReluctorResult` ]
     static template = Input_DigitalRecord.template.substring(0, Input_DigitalRecord.template.lastIndexOf(`Inverted`) + 8)
+    
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        reference = { ...reference, type: `Record` }
+        delete reference.unit
+        delete reference.id
+        if(objectTester(this.reference, reference)) return
+        const oldReference = this.reference
+        this.#reference = reference
+        if(this.isConnected)
+            VariableRegister.RegisterVariable(reference, oldReference)
+    }
 
-    #currentReference = undefined
+    connectedCallback() {
+        VariableRegister.RegisterVariable(this.reference)
+    }
+
     disconnectedCallback() {
-        VariableRegister.UnRegisterVariable(this.#currentReference)
-        this.#currentReference = undefined
+        VariableRegister.UnRegisterVariable(this.reference)
     }
 
     RegisterVariables(reference) {
-        reference = { ...reference }
-        delete reference.unit
-        delete reference.id
-        reference.type = `Record`
-        if(!objectTester(this.#currentReference, reference)) {
-            const previousReference = this.#currentReference
-            this.#currentReference = reference
-            VariableRegister.RegisterVariable(reference, previousReference)
-        }
+        this.reference = reference
     }
 }
 customElements.define(`reluctor-template`, Reluctor_Template, { extends: `span` })

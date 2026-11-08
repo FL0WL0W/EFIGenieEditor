@@ -92,7 +92,9 @@ export default class CAN_ParseData extends UITemplate {
         this.#currentReference = undefined
     }
 
-    RegisterVariables(reference) {
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
         reference = { ...reference, name: `${reference.name}.${this.name.value}` }
 
         const selectedUnit = this.unit.value
@@ -110,13 +112,24 @@ export default class CAN_ParseData extends UITemplate {
                 reference.type = this.bitLength.value < 2? `bool` : `float`
             }
         }
+        
+        if(objectTester(this.reference, reference)) return
+        const oldReference = this.reference
+        this.liveUpdate.reference = this.#reference = reference
+        if(this.isConnected)
+            VariableRegister.RegisterVariable(reference, oldReference)
+    }
 
-        if(!objectTester(this.#currentReference, reference)) {
-            const previousReference = this.#currentReference
-            this.#currentReference = reference
-            VariableRegister.RegisterVariable(reference, previousReference)
-        }
-        this.liveUpdate.RegisterVariables(reference)
+    connectedCallback() {
+        VariableRegister.RegisterVariable(this.reference)
+    }
+
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.reference)
+    }
+
+    RegisterVariables(reference) {
+        this.reference = reference
     }
 }
 customElements.define(`can-parse-data`, CAN_ParseData, { extends: `span` })

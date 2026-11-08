@@ -429,36 +429,34 @@ export default class Calculation_Formula extends UITemplate {
 
     RegisterVariables(reference) {
         reference = { ...reference }
-        if (reference) {
-            reference.unit = this.outputUnits?.[0] ?? reference.unit
-            if(reference.unit) {
-                delete reference.type
-            } else {
-                delete reference.unit
-                reference.type = this.outputTypes?.[0] ?? reference.type
-            }
 
-            let operators = [`*`,`/`,`+`,`-`,`>=`,`<=`,`>`,`<`,`=`,`&`,`|`]
-            if(!operators.some(o => this.formula.value.indexOf(o) > -1)) {
-                VariableRegister.UnRegisterVariable(this.#currentReference)
-                this.#currentReference = undefined
-                this.parameterValues[this.parameters[0]]?.RegisterVariables(reference)
-            } else {
-                const parameterReferences = this.parameters.flatMap(parameter => {
-                    const parameterValue = this.parameterValues[parameter]
-                    return parameterValue ? [{
-                        parameterValue,
-                        reference: { name: `${reference.name}_${parameterValue.label}`, unit: parameterValue.unit }
-                    }] : []
-                })
-                parameterReferences.forEach(({ parameterValue, reference }) => parameterValue.RegisterVariables(reference))
-                if(!objectTester(this.#currentReference, reference)) {
-                    const previousReference = this.#currentReference
-                    this.#currentReference = reference
-                    VariableRegister.RegisterVariable(reference, previousReference)
-                }
-                parameterReferences.forEach(({ reference }) => VariableRegister.UnRegisterVariable(reference))
+        reference.unit = this.outputUnits?.[0] ?? reference.unit
+        if(reference.unit) {
+            delete reference.type
+        } else {
+            delete reference.unit
+            reference.type = this.outputTypes?.[0] ?? reference.type
+        }
+
+        if(!Calculation_Formula.operators.some(o => this.formula.value.indexOf(o) > -1)) {
+            VariableRegister.UnRegisterVariable(this.#currentReference)
+            this.#currentReference = undefined
+            this.parameterValues[this.parameters[0]]?.RegisterVariables(reference)
+        } else {
+            const parameterReferences = this.parameters.flatMap(parameter => {
+                const parameterValue = this.parameterValues[parameter]
+                return parameterValue ? [{
+                    parameterValue,
+                    reference: { name: `${reference.name}_${parameterValue.label}`, unit: parameterValue.unit }
+                }] : []
+            })
+            parameterReferences.forEach(({ parameterValue, reference }) => parameterValue.RegisterVariables(reference))
+            if(!objectTester(this.#currentReference, reference)) {
+                const previousReference = this.#currentReference
+                this.#currentReference = reference
+                VariableRegister.RegisterVariable(reference, previousReference)
             }
+            parameterReferences.forEach(({ reference }) => VariableRegister.UnRegisterVariable(reference))
         }
     }
 }

@@ -192,13 +192,14 @@ export default class ConfigList extends HTMLDivElement {
                 let tabElement = this.tabListElement.children[iL++]
                 if(!tabElement) {
                     tabElement = this.tabListElement.appendChild(document.createElement(`div`))
+                    //TODO: This is a hack to add a live update to the tab for Input items. We should probably have a more generic way to do this in the future.
                     if(this.children[i].item.constructor === Input) {
                         tabElement.appendChild(new UIDisplayLiveUpdate()).style.float = `right`
                         tabElement.RegisterVariables = function() {
                             const input = thisClass.children[this.childIndex]
                             const unit = input.translationConfig.outputUnits?.[0] ?? input.rawConfig.outputUnits?.[0];
                             if(unit)
-                                this.firstChild.RegisterVariables({ name: `Inputs.${input.name.value}`, unit: unit })
+                                this.firstChild.reference = { name: `Inputs.${input.name.value}`, unit: unit }
                         }
                     }
                     tabElement.append(document.createElement(`div`))

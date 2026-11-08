@@ -3,6 +3,7 @@ import UIButton from "../JavascriptUI/UIButton"
 import UINumberWithUnit from "../UI/UINumberWithUnit"
 import TPSConfigs from "./TPSConfigs"
 import { communication } from "../communication"
+import { objectTester } from "../JavascriptUI/UIUtils.js"
 export default class TPS_Linear extends Input_AnalogPolynomial {
     static displayName = `Linear TPS`
     static outputUnits = [ `[0.0-1.0]` ]
@@ -63,12 +64,6 @@ export default class TPS_Linear extends Input_AnalogPolynomial {
             this.voltage0.value = this.voltage100.value
             this.voltage100.value = temp
         })
-        this.Setup(prop)
-        this.outputUnits = this.constructor.outputUnits
-    }
-
-    RegisterVariables(reference) {
-        super.RegisterVariables(reference)
         this.voltageLiveUpdate.addEventListener(`change`, () => {
             const liveValue = this.voltageLiveUpdate.value
             const calibrating = this.calibrate.label == `Stop`
@@ -90,6 +85,8 @@ export default class TPS_Linear extends Input_AnalogPolynomial {
                 this.calibrate.hidden = true
             }
         })
+        this.Setup(prop)
+        this.outputUnits = this.constructor.outputUnits
     }
 
     updatePolynomial() {

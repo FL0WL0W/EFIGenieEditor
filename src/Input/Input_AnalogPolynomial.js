@@ -28,23 +28,29 @@ export default class Input_AnalogPolynomial extends UITemplate {
         this.style.display = `block`
     }
 
-    #currentReference = undefined
-    disconnectedCallback() {
-        VariableRegister.UnRegisterVariable(this.#currentReference)
-        this.#currentReference = undefined
-    }
-
-    RegisterVariables(reference) {
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
         reference = { ...reference, unit: `V` }
         delete reference.type
         delete reference.id
-        if(!objectTester(this.#currentReference, reference)) {
-            const previousReference = this.#currentReference
-            this.#currentReference = reference
-            VariableRegister.RegisterVariable(reference, previousReference)
-        }
+        if(objectTester(this.reference, reference)) return
+        const oldReference = this.reference
+        this.voltageLiveUpdate.reference = this.#reference = reference
+        if(this.isConnected)
+            VariableRegister.RegisterVariable(reference, oldReference)
+    }
 
-        this.voltageLiveUpdate.RegisterVariables(reference)
+    connectedCallback() {
+        VariableRegister.RegisterVariable(this.reference)
+    }
+
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.reference)
+    }
+
+    RegisterVariables(reference) {
+        this.reference = reference
     }
 }
 customElements.define(`input-analogpolynomial`, Input_AnalogPolynomial, { extends: `span` })

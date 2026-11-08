@@ -293,7 +293,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
             }
         }
 
-        this.liveUpdate.RegisterVariables(reference)
+        this.liveUpdate.reference = reference
     }
 
     get SubConfig() {
