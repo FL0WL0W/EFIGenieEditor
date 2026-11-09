@@ -51,8 +51,15 @@ export default class Calculation_2AxisTable extends UITemplate {
                 } 
             }
         })
-        VariableRegister.addEventListener(`change`, this.RefreshOptions.bind(this))
         this.RefreshOptions()
+    }
+
+    connectedCallback() {
+        VariableRegister.addEventListener(`change`, this.RefreshOptions)
+    }
+
+    disconnectedCallback() {
+        VariableRegister.removeEventListener(`change`, this.RefreshOptions)
     }
 
     get label() { return this.table.zLabel }
@@ -250,7 +257,7 @@ export default class Calculation_2AxisTable extends UITemplate {
     get displayUnits() { return [ this.displayUnit ] }
     set displayUnits(displayUnits) { this.displayUnit = displayUnits?.[0] }
 
-    RefreshOptions() {
+    RefreshOptions = () => {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float|enum` ]))
         this.yOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[1], [ `float|enum` ]))
     }

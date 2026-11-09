@@ -131,7 +131,6 @@ export default class CalculationOrVariableSelection extends UITemplate {
         })
         this.style.display = `block`
         this.Setup(prop)
-        VariableRegister.addEventListener(`change`, this.RefreshOptions.bind(this))
         this.RefreshOptions()
     }
 
@@ -215,7 +214,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
         this.selection.displayUnit = value?.outputUnits?.[0]
     }
 
-    RefreshOptions() {
+    RefreshOptions = () => {
         const outputReferenceName = this.reference?.name
         const filterSelfReference = options => options?.flatMap(option => {
             if(option.group) {
@@ -281,10 +280,12 @@ export default class CalculationOrVariableSelection extends UITemplate {
     }
 
     connectedCallback() {
+        VariableRegister.addEventListener(`change`, this.RefreshOptions)
         this.#registerVariable()
     }
 
     disconnectedCallback() {
+        VariableRegister.removeEventListener(`change`, this.RefreshOptions)
         VariableRegister.UnRegisterVariable(this.reference)
     }
 

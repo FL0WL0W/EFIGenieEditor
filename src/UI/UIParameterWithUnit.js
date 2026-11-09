@@ -27,19 +27,28 @@ export default class UIParameterWithUnit extends UITemplate {
                 this.unitSelection.hidden = true
             }
         })
-        VariableRegister.addEventListener(`change`, ({ detail }) => {
-            let reference = this.parameterSelection.valueWithoutSelectionVerification
-            if(reference?.name == undefined) return
-            let matcher = getMatcherForReference(reference)
-            let referenceIndex
-            while((referenceIndex = detail?.findIndex(detail => detail?.previousReferences?.filter(previousReference => previousReference?.name == reference.name)?.some(matcher)) ?? -1) >= 0) {
-                reference = detail[referenceIndex].reference
-                matcher = getMatcherForReference(reference)
-                detail = detail.slice(referenceIndex + 1)
-            }
-            this.parameterSelection.value = reference
-        })
         this.Setup(prop)
+    }
+
+    connectedCallback() {
+        VariableRegister.addEventListener(`change`, this.#variableRegisterListener)
+    }
+
+    disconnectedCallback() {
+        VariableRegister.removeEventListener(`change`, this.#variableRegisterListener)
+    }
+
+    #variableRegisterListener = ({ detail }) => {
+        let reference = this.parameterSelection.valueWithoutSelectionVerification
+        if(reference?.name == undefined) return
+        let matcher = getMatcherForReference(reference)
+        let referenceIndex
+        while((referenceIndex = detail?.findIndex(detail => detail?.previousReferences?.filter(previousReference => previousReference?.name == reference.name)?.some(matcher)) ?? -1) >= 0) {
+            reference = detail[referenceIndex].reference
+            matcher = getMatcherForReference(reference)
+            detail = detail.slice(referenceIndex + 1)
+        }
+        this.parameterSelection.value = reference
     }
 
     #unitHidden = false

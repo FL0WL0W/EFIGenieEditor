@@ -50,7 +50,14 @@ export default class Calculation_LookupTable extends UITemplate {
                 } 
             }
         })
-        VariableRegister.addEventListener(`change`, this.RefreshOptions.bind(this))
+    }
+
+    connectedCallback() {
+        VariableRegister.addEventListener(`change`, this.RefreshOptions)
+    }
+
+    disconnectedCallback() {
+        VariableRegister.removeEventListener(`change`, this.RefreshOptions)
     }
 
     get label() { return this.table.zLabel }
@@ -191,7 +198,7 @@ export default class Calculation_LookupTable extends UITemplate {
     get displayUnits() { return [ this.displayUnit ] }
     set displayUnits(displayUnits) { this.displayUnit = displayUnits?.[0] }
 
-    RefreshOptions() {
+    RefreshOptions = () => {
         this.xOptions = VariableRegister.GetSelections(undefined, defaultFilter(this._inputUnits?.[0], [ `float|enum` ]))
     }
 }
