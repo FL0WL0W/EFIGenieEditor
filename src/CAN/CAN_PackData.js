@@ -78,6 +78,7 @@ export default class CAN_PackData extends UITemplate {
                 this.bitLength.value = this.variable.SubConfig.constructor.bitLength
             }
         })
+        this.name.addEventListener(`change`, this.#refreshReference)
         this.Setup(prop)
     }
 
@@ -92,9 +93,17 @@ export default class CAN_PackData extends UITemplate {
         this.#stopObservingLayout = undefined
     }
 
-    RegisterVariables(reference) {
-        reference = { ...reference, name: `${reference.name}.${this.name.value}` }
-        this.variable.RegisterVariables(reference)
+    #refreshReference = () => {
+        let reference = { ...this.#baseReference, name: this.#baseReference != undefined? `${this.#baseReference.name}.${this.name.value}` : this.name.value }
+        this.variable.reference = this.#reference = reference
+    }
+
+    #baseReference = undefined
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#baseReference = reference
+        this.#refreshReference()
     }
 }
 customElements.define(`can-pack-data`, CAN_PackData, { extends: `span` })

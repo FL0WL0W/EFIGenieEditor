@@ -35,10 +35,10 @@ export default class Input_AnalogPolynomial extends UITemplate {
         delete reference.type
         delete reference.id
         if(objectTester(this.reference, reference)) return
-        const oldReference = this.reference
+        const previousReference = this.reference
         this.voltageLiveUpdate.reference = this.#reference = reference
-        if(this.isConnected)
-            VariableRegister.RegisterVariable(reference, oldReference)
+        if(!this.isConnected) return
+        VariableRegister.RegisterVariable(reference, previousReference)
     }
 
     connectedCallback() {
@@ -47,10 +47,6 @@ export default class Input_AnalogPolynomial extends UITemplate {
 
     disconnectedCallback() {
         VariableRegister.UnRegisterVariable(this.reference)
-    }
-
-    RegisterVariables(reference) {
-        this.reference = reference
     }
 }
 customElements.define(`input-analogpolynomial`, Input_AnalogPolynomial, { extends: `span` })

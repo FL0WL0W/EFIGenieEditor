@@ -35,9 +35,12 @@ export default class InjectorPulseWidth_DeadTime extends UITemplate {
         this.Setup(prop)
     }
 
-    RegisterVariables() {
-        this.DeadTime.RegisterVariables({ name: `FuelParameters.Injector Dead Time` })
-        this.FlowRate.RegisterVariables({ name: `FuelParameters.Injector Flow Rate` })
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#reference = reference
+        this.DeadTime.reference = { ...reference, name: reference?.name? `${reference.name}.Injector Dead Time` : `Injector Dead Time` }
+        this.FlowRate.reference = { ...reference, name: reference?.name? `${reference.name}.Injector Flow Rate` : `Injector Flow Rate` }
     }
 }
 InjectorPulseWidthConfigs.push(InjectorPulseWidth_DeadTime)

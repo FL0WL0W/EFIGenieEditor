@@ -106,9 +106,10 @@ export default class CAN_WriteData extends CANMessage {
         this.#removeBitMap?.()
         this.#removeBitMap = undefined
     }
-
-    RegisterVariables(reference) {
-        this.packData.RegisterVariables(reference)
+    
+    get reference() { return this.packData.reference }
+    set reference(reference) {
+        this.packData.reference = reference
     }
 }
 CANConfigs.push(CAN_WriteData)

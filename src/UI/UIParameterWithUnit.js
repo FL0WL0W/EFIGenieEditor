@@ -27,6 +27,11 @@ export default class UIParameterWithUnit extends UITemplate {
                 this.unitSelection.hidden = true
             }
         })
+        VariableRegister.addEventListener(`change`, ({ detail }) => {
+            const valueWithoutSelectionVerification = this.parameterSelection.valueWithoutSelectionVerification
+            if(valueWithoutSelectionVerification?.name == undefined) return
+            this.parameterSelection.value = detail?.previousReferences?.filter(previousReference => previousReference?.name == valueWithoutSelectionVerification.name)?.find(getMatcherForReference(valueWithoutSelectionVerification))? detail.reference : valueWithoutSelectionVerification
+        })
         this.Setup(prop)
     }
 
@@ -79,30 +84,6 @@ export default class UIParameterWithUnit extends UITemplate {
             this.parameterSelection.value = value
         } else {
             this.parameterSelection.value = value
-        }
-    }
-
-    UpdateVariableReference(change) {
-        // Keep pending selections too: options may temporarily be unavailable.
-        const value = this.value ?? this.parameterSelection.lastValidValue
-        if(value == undefined) return
-        const renamed = change?.previousReferences?.find(getMatcherForReference(value)) ?? value
-        if(renamed.name === value.name) return
-        const renameOptions = options => options.map(option => {
-            if(option.group) return { ...option, options: renameOptions(option.options) }
-            const reference = change.previousReferences?.find(getMatcherForReference(option.value)) ?? option.value
-            return { ...option, name: reference.name.substring(reference.name.indexOf(`.`) + 1), value: reference }
-        })
-        const displayUnit = this.displayUnit
-        this.updatingVariableReference = true
-        try {
-            this.parameterSelection.lastValidValue = { ...renamed }
-            delete this.parameterSelection.lastValidValue.unit
-            this.options = renameOptions(this.options)
-            this.value = renamed
-            this.displayUnit = displayUnit
-        } finally {
-            this.updatingVariableReference = false
         }
     }
 

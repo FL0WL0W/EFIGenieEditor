@@ -22,14 +22,22 @@ export default class GenericCalculation extends CalculationOrVariableSelection {
         this.labelElement.replaceWith(this.name)
         this.name.addEventListener(`change`, () =>{
             this.label = this.name.value
-            this.name.parentElement.setAttribute('label', this.label);
+            this.name.parentElement.setAttribute('label', this.label)
+            this.#refreshReference()
         })
         this.name.value = nameValue
     }
 
-    RegisterVariables(reference) {
-        reference = { ...reference, name: reference?.name === undefined? this.name.value : `${reference.name}.${this.name.value}` }
-        super.RegisterVariables(reference)
+    #refreshReference = () => {
+        let reference = { ...this.#baseReference, name: this.#baseReference != undefined? `${this.#baseReference.name}.${this.name.value}` : this.name.value }
+        super.reference = reference
+    }
+
+    #baseReference = undefined
+    get reference() { return super.reference }
+    set reference(reference) {
+        this.#baseReference = reference
+        this.#refreshReference()
     }
 
     get saveValue() {

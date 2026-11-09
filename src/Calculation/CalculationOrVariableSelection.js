@@ -3,7 +3,6 @@ import UIDisplayLiveUpdate from "../UI/UIDisplayLiveUpdate"
 import UIParameterWithUnit from "../UI/UIParameterWithUnit"
 import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import { defaultFilter } from "../VariableRegistry"
-import { throttle } from "lodash-es"
 import { objectTester } from "../JavascriptUI/UIUtils"
 export default class CalculationOrVariableSelection extends UITemplate {
     static template = `<label><span data-element="labelElement"></span>:</label><div data-element="selection"></div><div data-element="liveUpdate"></div><span data-element="calculationContent"></span>`
@@ -59,6 +58,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
                 calculationValue.outputTypes = outputTypes
         })
         this.RefreshOptions()
+        this.#refreshReference()
     }
 
     get outputUnits() {
@@ -75,6 +75,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
                 calculationValue.outputUnits = outputUnits
         })
         this.RefreshOptions()
+        this.#refreshReference()
     }
 
     get inputTypes() {
@@ -108,8 +109,6 @@ export default class CalculationOrVariableSelection extends UITemplate {
     get options() { return this.selection.options }    
     set options(options) {
         this.selection.options = options
-        if(this.selection.selectedOption === undefined) 
-            this.selection.value = this.selection.selectValue
     }
 
     selection = new UIParameterWithUnit({ selectDisabled: false, selectName: `None` })
@@ -128,14 +127,11 @@ export default class CalculationOrVariableSelection extends UITemplate {
                 this.selection.unitHidden = false
             else
                 this.selection.unitHidden = true
+            this.#refreshReference()
         })
         this.style.display = `block`
         this.Setup(prop)
-        const refreshOptions = throttle(this.RefreshOptions.bind(this), 100)
-        VariableRegister.addEventListener(`change`, ({ detail }) => {
-            this.selection?.UpdateVariableReference(detail)
-            refreshOptions()
-        })
+        VariableRegister.addEventListener(`change`, this.RefreshOptions.bind(this))
         this.RefreshOptions()
     }
 
@@ -220,7 +216,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
     }
 
     RefreshOptions() {
-        const outputReferenceName = this.#outputReference?.name
+        const outputReferenceName = this.reference?.name
         const filterSelfReference = options => options?.flatMap(option => {
             if(option.group) {
                 const filteredOptions = filterSelfReference(option.options ?? [])
@@ -233,34 +229,13 @@ export default class CalculationOrVariableSelection extends UITemplate {
             this.calculations,
             this.selectionFilter(this._outputUnits, this._outputTypes, this._inputTypes, this._inputUnits)
         ))
-        const selectionValueName = this.selection.value?.name
-        if(selectionValueName !== undefined && outputReferenceName !== undefined && selectionValueName === outputReferenceName) {
-            this.selection.parameterSelection.lastValidValue = undefined
-            this.selection.value = undefined
-        }
         this.options = options
     }
 
-    #currentReference = undefined
-    #outputReference = undefined
-    disconnectedCallback() {
-        VariableRegister.UnRegisterVariable(this.#currentReference)
-        this.#currentReference = undefined
-        this.#outputReference = undefined
-    }
+    #refreshReference = () => {
+        if(this.#baseReference?.name == undefined || this.selection.value == undefined) return
+        let reference = { ...this.#baseReference, unit: this.outputUnits?.[0] ?? this.#baseReference.unit }
 
-    RegisterVariables(reference) {
-        reference = { ...reference }
-        this.#outputReference = reference
-        this.RefreshOptions()
-
-        if(!this.selection.value || !reference.name) {
-            VariableRegister.UnRegisterVariable(this.#currentReference)
-            this.#currentReference = undefined
-            return
-        }
-
-        reference.unit = this.outputUnits?.[0] ?? reference.unit
         if(reference.unit) {
             if(reference.type !== `enum`)
                 delete reference.type
@@ -268,32 +243,49 @@ export default class CalculationOrVariableSelection extends UITemplate {
             delete reference.unit
             reference.type = this.outputTypes?.[0] ?? reference.type
         }
+
+        const subConfig = this.SubConfig
+        Object.keys(this.calculationValues).map(x=>this.calculationValues[x]).forEach(calculationValue => { calculationValue.reference = reference })
+        if(subConfig == undefined) reference = { ...this.selection.value, name: reference.name, id: this.selection.value.name }
         
+        if(objectTester(this.reference, reference)) return
+        this.RefreshOptions()
+
+        const previousReference = this.reference
+        this.liveUpdate.reference = this.#reference = reference
+
+        if(!this.isConnected) return
+        this.#registerVariable(reference, previousReference)
+    }
+
+    #registerVariable(reference = this.reference, previousReference = undefined) {
         const subConfig = this.SubConfig
         if(subConfig != undefined) {
             const o = (this.GetSubConfigProperty(`outputUnits`) ?? this.GetSubConfigProperty(`outputTypes`))
-            const hasOutput = o !== undefined && o.length > 0
-            if (hasOutput) {
-                if(!objectTester(this.#currentReference, reference)) {
-                    const previousReference = this.#currentReference
-                    this.#currentReference = reference
-                    VariableRegister.RegisterVariable(reference, previousReference)
-                }
-            } else {
-                VariableRegister.UnRegisterVariable(this.#currentReference)
-                this.#currentReference = undefined
-            }
-            subConfig.RegisterVariables?.(reference)
-        } else {
-            reference = { ...this.selection.value, name: reference.name, id: this.selection.value.name }
-            if(!objectTester(this.#currentReference, reference)) {
-                const previousReference = this.#currentReference
-                this.#currentReference = reference
+            const hasOutput = o != undefined && o.length > 0
+            if (hasOutput)
                 VariableRegister.RegisterVariable(reference, previousReference)
-            }
+            else
+                VariableRegister.UnRegisterVariable(previousReference)
+        } else {
+            VariableRegister.RegisterVariable(reference, previousReference)
         }
+    }
 
-        this.liveUpdate.reference = reference
+    #baseReference = undefined
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#baseReference = reference
+        this.#refreshReference()
+    }
+
+    connectedCallback() {
+        this.#registerVariable()
+    }
+
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.reference)
     }
 
     get SubConfig() {
@@ -325,6 +317,8 @@ export default class CalculationOrVariableSelection extends UITemplate {
                 if(this.calculationSaveValueCache[this.selection.value] != undefined)
                     this.calculationValues[this.selection.value].saveValue = this.calculationSaveValueCache[this.selection.value]
                 delete this.calculationSaveValueCache[this.selection.value]
+                this.calculationValues[this.selection.value].addEventListener(`change`, this.#refreshReference)
+                this.#refreshReference()
                 return this.calculationValues[this.selection.value]
             }
         }

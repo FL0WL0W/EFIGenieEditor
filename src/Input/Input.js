@@ -5,7 +5,7 @@ import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import InputConfigs from "./InputConfigs"
 import { defaultNoVariables } from "../VariableRegistry"
 export default class Input extends UITemplate {
-    static template = `<div style="float: right;"></div><div data-element="translationConfig"></div><div data-element="hr"></div><div data-element="rawConfig"></div>`
+    static template = `<div style="float: right;"></div><div data-element="translationConfig"></div><div data-element="hr"></div><div data-element="rawConfigContainer"></div>`
 
     get outputTypes() { return this.translationConfig.outputTypes }
     set outputTypes(outputTypes) { this.translationConfig.outputTypes = outputTypes }
@@ -25,29 +25,29 @@ export default class Input extends UITemplate {
         },
         noParameterSelection:   true
     })
+    rawConfigContainer = document.createElement(`div`)
     rawConfig = new CalculationOrVariableSelection({
         calculations:           InputConfigs,
         selectionFilter:        defaultNoVariables,
         label:                  `Source`,
         inputTypes:             [],
-        noParameterSelection:   true,
-        hidden:                 true
+        noParameterSelection:   true
     })
     constructor(prop) {
         super()
         this.style.display = `block`
         this.name.addEventListener(`change`, () =>{
             this.translationConfig.label = this.name.value
+            this.#refreshReference()
         })
         this.translationConfig.addEventListener(`change`, () => {
-            this.translationConfig.inputUnits = this.translationConfig.inputTypes = undefined
             if((this.translationConfig.inputUnits?.length ?? this.translationConfig.inputTypes?.length ?? 0) === 0) {
                 this.hr.hidden = true
-                this.rawConfig.hidden = true
+                this.rawConfigContainer.innerHTML = ``
                 this.rawConfig.selection.value = undefined
             } else {
                 this.hr.hidden = false
-                this.rawConfig.hidden = false
+                this.rawConfigContainer.replaceChildren(this.rawConfig)
             }
         })
         this.translationConfig.labelElement.replaceWith(this.name)
@@ -65,12 +65,18 @@ export default class Input extends UITemplate {
         this.Setup(prop)
     }
 
-    RegisterVariables() {
-        const reference = { name: `Inputs.${this.name.value}` }
-        
-        this.translationConfig.RegisterVariables?.(reference)
-        if(!((this.translationConfig.inputUnits?.length ?? this.translationConfig.inputTypes?.length ?? 0) === 0))
-            this.rawConfig.RegisterVariables?.(reference)
+    #refreshReference = () => {
+        const reference = this.#reference = { ...this.#baseReference, name: this.#baseReference != undefined? `${this.#baseReference.name}.${this.name.value}` : this.name.value }
+        this.translationConfig.reference = reference
+        this.rawConfig.reference = reference
+    }
+
+    #baseReference = undefined
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#baseReference = reference
+        this.#refreshReference()
     }
 }
 customElements.define('config-input', Input, { extends: `span` })

@@ -7,7 +7,6 @@ import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import GenericConfigs from "./GenericConfigs"
 import { defaultFilter } from "../VariableRegistry"
 import { communication } from "../communication"
-import { throttle } from "lodash-es"
 export default class Calculation_LookupTable extends UITemplate {
     static displayName = `Lookup Table`
     static outputTypes = [ `float|enum` ]
@@ -52,11 +51,7 @@ export default class Calculation_LookupTable extends UITemplate {
                 } 
             }
         })
-        const refreshOptions = throttle(this.RefreshOptions.bind(this), 100)
-        VariableRegister.addEventListener(`change`, ({ detail }) => {
-            this.parameterSelection?.UpdateVariableReference(detail)
-            refreshOptions()
-        })
+        VariableRegister.addEventListener(`change`, this.RefreshOptions.bind(this))
     }
 
     get label() { return this.table.zLabel }

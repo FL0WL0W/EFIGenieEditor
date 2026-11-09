@@ -18,7 +18,8 @@ export default class TopExpander extends Top {
     })
     Inputs = new ConfigList({
         itemConstructor: Input,
-        saveValue: [{}]
+        saveValue: [{}],
+        reference: { name: `Inputs` }
     })
     CAN = new ConfigList({
         newItem() {
@@ -27,10 +28,12 @@ export default class TopExpander extends Top {
                 class: `can-message-item`,
                 template: `<span class="can-message-layout">${GenericCalculation.template}</span>`
             })
-        }
+        },
+        reference: { name: `CANParameters` }
     })
     Outputs = new ConfigList({
-        newItem() { return new GenericCalculation({ calculations: [ {group: `Output`, calculations: GenericOutputConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) }
+        newItem() { return new GenericCalculation({ calculations: [ {group: `Output`, calculations: GenericOutputConfigs}, {group: `Generic`, calculations: GenericConfigs} ]  }) },
+        reference: { name: `Outputs` }
     })
 
     constructor(prop) {
@@ -53,13 +56,6 @@ export default class TopExpander extends Top {
     }
     connectedCallback() {
         VariableRegister.RegisterVariable(TopExpander.currentTickReference)
-    }
-
-    RegisterVariables() {
-        this.Inputs.RegisterVariables()
-        this.CAN.RegisterVariables({ name: `CANParameters` })
-        this.Outputs.RegisterVariables({ name: `Outputs` })
-        this.PinOverlay.update();
     }
 }
 customElements.define(`top-topexpander`, TopExpander, { extends: `span` })

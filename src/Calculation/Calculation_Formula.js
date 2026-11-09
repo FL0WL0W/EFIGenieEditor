@@ -189,7 +189,11 @@ export default class Calculation_Formula extends UITemplate {
     static template = `<div data-element="editFormula"></div><div data-element="editFormulaContent"><div style="display: flex; width: 100%"><div style="margin: auto; margin-right: 1em; width: fit-content; white-space: nowrap;"><div data-element="labelElement"></div> <div data-element="formulaUnit"></div> = </div><div data-element="formula"></div></div><div data-element="parameterElements"></div></div><div data-element="parameterValueElements"></div>`
 
     get outputUnits() { return [ this.formulaUnit.textContent ] }
-    set outputUnits(outputUnits) { this.formulaUnit.textContent = outputUnits?.[0] }
+    set outputUnits(outputUnits) { this.formulaUnit.textContent = outputUnits?.[0]; this.#refreshReference() }
+
+    #outputTypes = undefined
+    get outputTypes() { return this.#outputTypes }
+    set outputTypes(outputTypes) { this.#outputTypes = outputTypes; this.#refreshReference() }
 
     labelElement = document.createElement(`span`)
     formulaUnit = document.createElement(`span`)
@@ -235,6 +239,7 @@ export default class Calculation_Formula extends UITemplate {
                     displayUnits: this.outputUnits
                 })
                 parameterValue.style.display = `inline`
+                parameterValue.addEventListener(`change`, this.#refreshReference)
             }
             let parameterUnit = this.parameterUnits[parameters[i]]
             if(!parameterUnit) {
@@ -318,6 +323,7 @@ export default class Calculation_Formula extends UITemplate {
             this.parameterValueElements.classList.add(`configContainer`)
             this.parameterValueElements.hidden = false
         }
+        this.#refreshReference()
     }
 
     get label() {
@@ -353,6 +359,7 @@ export default class Calculation_Formula extends UITemplate {
                 displayUnits: this.outputUnits
             })
             parameterValue.style.display = `inline`
+            parameterValue.addEventListener(`change`, this.#refreshReference)
 
             parameterValue.value = value.parameterValues[parameter]
             if(this.parameterUnits[parameter])
@@ -362,6 +369,7 @@ export default class Calculation_Formula extends UITemplate {
             parameterValue.value = value.parameterValues[parameter]
         }
         this.calculateFormula()
+        this.#refreshReference()
     }
 
     get saveValue() {
@@ -390,6 +398,7 @@ export default class Calculation_Formula extends UITemplate {
                 displayUnits: this.outputUnits,
             })
             parameterValue.style.display = `inline`
+            parameterValue.addEventListener(`change`, this.#refreshReference)
 
             parameterValue.saveValue = saveValue.parameterValues[parameter]
             if(saveValue.parameterUnits?.[parameter] != undefined) {
@@ -401,6 +410,7 @@ export default class Calculation_Formula extends UITemplate {
             parameterValue.saveValue = saveValue.parameterValues[parameter]
         }
         this.calculateFormula()
+        this.#refreshReference()
     }
 
     constructor(prop) {
@@ -421,14 +431,16 @@ export default class Calculation_Formula extends UITemplate {
         this.editFormula.content.append(this.querySelector(`[data-element="editFormulaContent"]`))
     }
 
-    #currentReference = undefined
-    disconnectedCallback() {
-        VariableRegister.UnRegisterVariable(this.#currentReference)
-        this.#currentReference = undefined
+    connectedCallback() {
+        this.#registerVariable()
     }
 
-    RegisterVariables(reference) {
-        reference = { ...reference }
+    disconnectedCallback() {
+        VariableRegister.UnRegisterVariable(this.reference)
+    }
+
+    #refreshReference = () => {
+        let reference = { ...this.#baseReference }
 
         reference.unit = this.outputUnits?.[0] ?? reference.unit
         if(reference.unit) {
@@ -439,25 +451,41 @@ export default class Calculation_Formula extends UITemplate {
         }
 
         if(!Calculation_Formula.operators.some(o => this.formula.value.indexOf(o) > -1)) {
-            VariableRegister.UnRegisterVariable(this.#currentReference)
-            this.#currentReference = undefined
-            this.parameterValues[this.parameters[0]]?.RegisterVariables(reference)
+            if(this.parameterValues[this.parameters[0]] != undefined)
+                this.parameterValues[this.parameters[0]].reference = reference
         } else {
             const parameterReferences = this.parameters.flatMap(parameter => {
                 const parameterValue = this.parameterValues[parameter]
                 return parameterValue ? [{
                     parameterValue,
-                    reference: { name: `${reference.name}_${parameterValue.label}`, unit: parameterValue.unit }
+                    reference: { name: `${reference.name}_${parameterValue.label}` }
                 }] : []
             })
-            parameterReferences.forEach(({ parameterValue, reference }) => parameterValue.RegisterVariables(reference))
-            if(!objectTester(this.#currentReference, reference)) {
-                const previousReference = this.#currentReference
-                this.#currentReference = reference
-                VariableRegister.RegisterVariable(reference, previousReference)
-            }
-            parameterReferences.forEach(({ reference }) => VariableRegister.UnRegisterVariable(reference))
+            parameterReferences.forEach(({ parameterValue, reference }) => parameterValue.reference = reference)
         }
+
+        if(objectTester(this.reference, reference)) return
+        const previousReference = this.reference
+        this.#reference = reference
+
+        if(!this.isConnected) return
+        this.#registerVariable(reference, previousReference)
+    }
+
+    #registerVariable(reference = this.reference, previousReference = undefined) {
+        if(!Calculation_Formula.operators.some(o => this.formula.value.indexOf(o) > -1)) {
+            VariableRegister.UnRegisterVariable(previousReference)
+        } else {
+            VariableRegister.RegisterVariable(reference, previousReference)
+        }
+    }
+
+    #baseReference = undefined
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#baseReference = reference
+        this.#refreshReference()
     }
 }
 GenericConfigs.push(Calculation_Formula)

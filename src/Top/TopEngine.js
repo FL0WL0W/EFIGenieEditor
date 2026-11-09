@@ -21,7 +21,8 @@ export default class TopEngine extends Top {
     })
     Inputs = new ConfigList({
         itemConstructor: Input,
-        saveValue: [{}]
+        saveValue: [{}],
+        reference: { name: `Inputs` }
     })
     CAN = new ConfigList({
         newItem() {
@@ -30,11 +31,12 @@ export default class TopEngine extends Top {
                 class: `can-message-item`,
                 template: `<span class="can-message-layout">${GenericCalculation.template}</span>`
             })
-        }
+        },
+        reference: { name: `CANParameters` },
     })
-    Engine = new Engine()
-    Fuel = new Fuel()
-    Ignition = new Ignition()
+    Engine = new Engine({ reference: { name: `EngineParameters` } })
+    Fuel = new Fuel({ reference: { name: `FuelParameters` } })
+    Ignition = new Ignition({ reference: { name: `IgnitionParameters` } })
 
     constructor(prop) {
         super()
@@ -72,15 +74,6 @@ export default class TopEngine extends Top {
     }
     connectedCallback() {
         VariableRegister.RegisterVariable(TopEngine.currentTickReference)
-    }
-
-    RegisterVariables() {
-        this.Inputs.RegisterVariables()
-        this.CAN.RegisterVariables({ name: `CANParameters` })
-        this.Engine.RegisterVariables()
-        this.Fuel.RegisterVariables()
-        this.Ignition.RegisterVariables()
-        this.PinOverlay.update();
     }
 }
 customElements.define(`top-topengine`, TopEngine, { extends: `span` })

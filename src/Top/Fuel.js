@@ -53,11 +53,14 @@ class InjectorProperties extends ConfigContainer{
         super.Setup(prop)
         this.InjectorPosition.labelElement.parentElement.append(span)
     }
-
-    RegisterVariables() {
-        this.InjectorEnable.RegisterVariables({ name: `FuelParameters.Injector Enable` })
-        this.InjectorPulseWidth.RegisterVariables({ name: `FuelParameters.Injector Pulse Width` })
-        this.InjectorPosition.RegisterVariables({ name: `FuelParameters.Injector Position` })
+    
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#reference = reference
+        this.InjectorEnable.reference = { ...reference, name: reference?.name? `${reference.name}.Injector Enable` : `Injector Enable` }
+        this.InjectorPulseWidth.reference = { ...reference, name: reference?.name? `${reference.name}.Injector Pulse Width` : `Injector Pulse Width` }
+        this.InjectorPosition.reference = { ...reference, name: reference?.name? `${reference.name}.Injector Position` : `Injector Position` }
     }
 }
 customElements.define(`top-injector-properties`, InjectorProperties, { extends: `span` })
@@ -91,14 +94,12 @@ export default class Fuel extends ConfigList {
 
     static cylinderFuelMassReference = { name: `FuelParameters.Cylinder Fuel Mass`, unit: `g` }
     disconnectedCallback() {
+        super.disconnectedCallback()
         VariableRegister.UnRegisterVariable(Fuel.cylinderFuelMassReference)
     }
     connectedCallback() {
+        super.connectedCallback()
         VariableRegister.RegisterVariable(Fuel.cylinderFuelMassReference)
-    }
-
-    RegisterVariables() {
-        super.RegisterVariables({ name: `FuelParameters` })
     }
 }
 customElements.define(`top-fuel`, Fuel, { extends: `div` })

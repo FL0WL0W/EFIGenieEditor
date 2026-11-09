@@ -77,8 +77,9 @@ export default class CAN_ReadData extends CANMessage {
         this.#removeBitMap = undefined
     }
 
-    RegisterVariables(reference) {
-        this.parseData.RegisterVariables(reference)
+    get reference() { return this.parseData.reference }
+    set reference(reference) {
+        this.parseData.reference = reference
     }
 }
 CANConfigs.push(CAN_ReadData)

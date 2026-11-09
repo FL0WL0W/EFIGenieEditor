@@ -202,7 +202,6 @@ window.addEventListener(`load`, function() {
         workspace.innerHTML = ``
         workspace.append(b)
         b.querySelector(`.application-header`).append(applicationToolbar)
-        b.addEventListener(`change`, (e) => { b.RegisterVariables() })//this is a hack but oh well
     }
     setupTop()
 

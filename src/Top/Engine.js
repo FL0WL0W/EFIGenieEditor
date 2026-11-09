@@ -43,31 +43,19 @@ class EngineSensors extends ConfigContainer
     get value() {
         let value = super.value
         value.CrankPriority = 1
-        if(this.ManifoldAbsolutePressure.hidden) 
-            delete value.ManifoldAbsolutePressure
-        if(this.ThrottlePosition.hidden) 
-            delete value.ThrottlePosition
-        if(this.CylinderAirTemperature.hidden) 
-            delete value.CylinderAirTemperature
         return value;
     }
     set value(value) { super.value = value }
 
-    RegisterVariables() {
-        this.CrankPosition.RegisterVariables({ name: `EngineParameters.Crank Position` })
-        this.CamPosition.RegisterVariables({ name: `EngineParameters.Cam Position` })
-
-        this.ManifoldAbsolutePressure.hidden = (EngineRequirements?.indexOf(`Manifold Absolute Pressure`) ?? -1) === -1
-        if(!this.ManifoldAbsolutePressure.hidden) 
-            this.ManifoldAbsolutePressure.RegisterVariables({ name: `EngineParameters.Manifold Absolute Pressure` })
-
-        this.ThrottlePosition.hidden = (EngineRequirements?.indexOf(`Throttle Position`) ?? -1) === -1
-        if(!this.ThrottlePosition.hidden) 
-            this.ThrottlePosition.RegisterVariables({ name: `EngineParameters.Throttle Position` })
-        
-        this.CylinderAirTemperature.hidden = (EngineRequirements?.indexOf(`Cylinder Air Temperature`) ?? -1) === -1
-        if(!this.CylinderAirTemperature.hidden) 
-            this.CylinderAirTemperature.RegisterVariables({ name: `EngineParameters.Cylinder Air Temperature` })
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#reference = reference
+        this.CrankPosition.reference = { ...reference, name: reference?.name? `${reference.name}.Crank Position` : `Crank Position` }
+        this.CamPosition.reference = { ...reference, name: reference?.name? `${reference.name}.Cam Position` : `Cam Position` }
+        this.ManifoldAbsolutePressure.reference = { ...reference, name: reference?.name? `${reference.name}.Manifold Absolute Pressure` : `Manifold Absolute Pressure` }
+        this.ThrottlePosition.reference = { ...reference, name: reference?.name? `${reference.name}.Throttle Position` : `Throttle Position` }
+        this.CylinderAirTemperature.reference = { ...reference, name: reference?.name? `${reference.name}.Cylinder Air Temperature` : `Cylinder Air Temperature` }
     }
 }
 customElements.define(`top-engine-sensors`, EngineSensors, { extends: `span` })
@@ -96,20 +84,16 @@ class EngineCalculations extends ConfigContainer
     }
     get value() {
         let value = super.value
-        if(this.VolumetricEfficiency.hidden) 
-            delete value.VolumetricEfficiency
         return value;
     }
     set value(value) { super.value = value }
 
-    RegisterVariables() {
-        this.CylinderAirmass.RegisterVariables({ name: `EngineParameters.Cylinder Air Mass` })
-
-        EngineRequirements = this.CylinderAirmass.GetSubConfigProperty(`Requirements`)
-        
-        this.VolumetricEfficiency.hidden = (EngineRequirements?.indexOf(`Volumetric Efficiency`) ?? -1) === -1
-        if(!this.VolumetricEfficiency.hidden) 
-            this.VolumetricEfficiency.RegisterVariables({ name: `EngineParameters.Volumetric Efficiency` })
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#reference = reference
+        this.CylinderAirmass.reference = { ...reference, name: reference?.name? `${reference.name}.Cylinder Air Mass` : `Cylinder Air Mass` }
+        this.VolumetricEfficiency.reference = { ...reference, name: reference?.name? `${reference.name}.Volumetric Efficiency` : `Volumetric Efficiency` }
     }
 }
 customElements.define(`top-engine-calculations`, EngineCalculations, { extends: `span` })
@@ -125,18 +109,14 @@ export default class Engine extends ConfigList {
         super(prop)
     }
 
-
     static engineSpeedReference = { name: `EngineParameters.Engine Speed`, unit: `RPM` }
     disconnectedCallback() {
+        super.disconnectedCallback()
         VariableRegister.UnRegisterVariable(Engine.engineSpeedReference)
     }
     connectedCallback() {
+        super.connectedCallback()
         VariableRegister.RegisterVariable(Engine.engineSpeedReference)
-    }
-
-    RegisterVariables() {
-        super.RegisterVariables({ name: `EngineParameters` })
-        super.RegisterVariables({ name: `EngineParameters` })
     }
 }
 customElements.define(`top-engine`, Engine, { extends: `div` })

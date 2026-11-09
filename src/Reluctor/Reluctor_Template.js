@@ -11,10 +11,10 @@ export default class Reluctor_Template extends Input_DigitalRecord {
         delete reference.unit
         delete reference.id
         if(objectTester(this.reference, reference)) return
-        const oldReference = this.reference
+        const previousReference = this.reference
         this.#reference = reference
-        if(this.isConnected)
-            VariableRegister.RegisterVariable(reference, oldReference)
+        if(!this.isConnected) return
+        VariableRegister.RegisterVariable(reference, previousReference)
     }
 
     connectedCallback() {
@@ -23,10 +23,6 @@ export default class Reluctor_Template extends Input_DigitalRecord {
 
     disconnectedCallback() {
         VariableRegister.UnRegisterVariable(this.reference)
-    }
-
-    RegisterVariables(reference) {
-        this.reference = reference
     }
 }
 customElements.define(`reluctor-template`, Reluctor_Template, { extends: `span` })

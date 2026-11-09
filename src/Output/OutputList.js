@@ -58,9 +58,12 @@ export default class OutputList extends ConfigContainer {
         this.labelAndCountElement.append(this.OutputCount)
     }
 
-    RegisterVariables() {
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#reference = reference
         for(let i = 0; i < this.Outputs.children.length; i++){
-            this.Outputs.children[i].RegisterVariables()
+            this.Outputs.children[i].reference = reference
         }
     }
 }

@@ -167,16 +167,6 @@ export default class ConfigList extends HTMLDivElement {
         })
         this.newItemElement = new UIButton({className: `controlnew`})
         this.newItemElement.addEventListener(`click`, () => { this.appendNewItem(this.newItem()) })
-        prop ??= {}
-        const propSaveValue = prop.saveValue ?? []
-        const propValue = prop.value
-        delete prop.saveValue
-        delete prop.value
-        Object.assign(this, prop)
-        if(propSaveValue != undefined)
-            this.saveValue = propSaveValue
-        if(propValue != undefined)
-            this.value = propValue
 
         this.tabListElement = document.createElement(`div`)
         this.tabListNewElement = document.createElement(`div`)
@@ -192,16 +182,12 @@ export default class ConfigList extends HTMLDivElement {
                 let tabElement = this.tabListElement.children[iL++]
                 if(!tabElement) {
                     tabElement = this.tabListElement.appendChild(document.createElement(`div`))
-                    //TODO: This is a hack to add a live update to the tab for Input items. We should probably have a more generic way to do this in the future.
-                    if(this.children[i].item.constructor === Input) {
-                        tabElement.appendChild(new UIDisplayLiveUpdate()).style.float = `right`
-                        tabElement.RegisterVariables = function() {
-                            const input = thisClass.children[this.childIndex]
-                            const unit = input.translationConfig.outputUnits?.[0] ?? input.rawConfig.outputUnits?.[0];
-                            if(unit)
-                                this.firstChild.reference = { name: `Inputs.${input.name.value}`, unit: unit }
-                        }
-                    }
+                    //TODO: add live update display to tab element, right now this causes major slow down for some reason
+                    // tabElement.appendChild(new UIDisplayLiveUpdate()).style.float = `right`
+                    // Object.defineProperty(tabElement, `reference`, {
+                    //     get: function() { return this.firstChild.reference },
+                    //     set: function(reference) { this.firstChild.reference = reference }
+                    // })
                     tabElement.append(document.createElement(`div`))
                     tabElement.class = `w3-bar-subitem w3-button`
                     const thisClass = this
@@ -222,6 +208,18 @@ export default class ConfigList extends HTMLDivElement {
                 tabElement.appendChild(this.tabListNewElement)
             }
         })
+        
+        prop ??= {}
+        const propSaveValue = prop.saveValue ?? []
+        const propValue = prop.value
+        delete prop.saveValue
+        delete prop.value
+        Object.assign(this, prop)
+        if(propSaveValue != undefined)
+            this.saveValue = propSaveValue
+        if(propValue != undefined)
+            this.value = propValue
+
         this.dispatchEvent(new Event(`change`))
     }
 
@@ -317,7 +315,11 @@ export default class ConfigList extends HTMLDivElement {
         })
         itemContainer.controlElement.appendChild(document.createElement(`span`)).className = `controldummyfill`
 
-        itemContainer.RegisterVariables = function(reference) { this.item.RegisterVariables?.(reference) }
+        Object.defineProperty(itemContainer, `reference`, {
+            get: function() { return this.item.reference },
+            set: function(reference) { this.item.reference = reference }
+        })
+        itemContainer.reference = this.reference
         Object.entries(itemContainer.item).forEach(function([elementName, element]) {
             if(itemContainer[elementName] !== undefined)
                 return
@@ -396,13 +398,16 @@ export default class ConfigList extends HTMLDivElement {
         this.#addStaticItems();
     }
 
-    RegisterVariables(reference) {
-        this.updateControls()
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        if(objectTester(this.reference, reference)) return
+        this.#reference = reference
         for(var i = 0; i < this.children.length; i++){
-            this.children[i].RegisterVariables(reference)
+            this.children[i].reference = reference
         }
         for(var i = 0; i < this.tabListElement.children.length; i++){
-            this.tabListElement.children[i].RegisterVariables?.()
+            this.tabListElement.children[i].reference = reference
         }
     }
 }

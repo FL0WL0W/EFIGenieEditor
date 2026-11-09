@@ -35,11 +35,16 @@ class IgnitionProperties extends ConfigContainer{
         this.label = `Ignition Properties`
         this.Setup(prop)
     }
-    RegisterVariables() {
-        this.IgnitionEnable.RegisterVariables({ name: `IgnitionParameters.Ignition Enable` })
-        this.IgnitionAdvance.RegisterVariables({ name: `IgnitionParameters.Ignition Advance` })
-        this.IgnitionDwell.RegisterVariables({ name: `IgnitionParameters.Ignition Dwell` })
-        this.IgnitionDwellDeviation.RegisterVariables({ name: `IgnitionParameters.Ignition Dwell Deviation` })
+
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#reference = reference
+        this.IgnitionEnable.reference = { ...reference, name: reference?.name? `${reference.name}.Ignition Enable` : `Ignition Enable` }
+        this.IgnitionAdvance.reference = { ...reference, name: reference?.name? `${reference.name}.Ignition Advance` : `Ignition Advance` }
+        this.IgnitionDwell.reference = { ...reference, name: reference?.name? `${reference.name}.Ignition Dwell` : `Ignition Dwell` }
+        this.IgnitionDwellDeviation.reference = { ...reference, name: reference?.name? `${reference.name}.Ignition Dwell Deviation` : `Ignition Dwell Deviation` }
+
     }
 }
 customElements.define(`top-ignition-properties`, IgnitionProperties, { extends: `span` })
@@ -60,10 +65,6 @@ export default class Ignition extends ConfigList {
             itemConstructor: GenericCalculation
         }
         super(prop)
-    }
-
-    RegisterVariables() {
-        super.RegisterVariables({ name: `IgnitionParameters` })
     }
 }
 customElements.define(`top-ignition`, Ignition, { extends: `div` })

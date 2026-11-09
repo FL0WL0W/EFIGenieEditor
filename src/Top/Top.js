@@ -199,7 +199,6 @@ export default class Top extends UITemplate {
                 EnumRegister.saveValue = {}
         }
         super.saveValue = saveValue
-        this.RegisterVariables()
     }
 }
 customElements.define(`top-top`, Top, { extends: `span` })

@@ -125,17 +125,9 @@ export default class Dashboard extends UITemplate {
         if(detail?.previousReferences?.length > 0) {
             for(const row of this.loggedVariables.children) {
                 if(row instanceof UILoggedVariable) {
-                    row.variable = detail.previousReferences.find(getMatcherForReference(row.variable)) ?? row.variable
+                    if(row?.variable?.name == undefined) continue
+                    row.variable = detail.previousReferences.filter(previousReference => previousReference?.name == row.variable.name).find(getMatcherForReference(row.variable)) ?? row.variable
                 }
-            }
-        }
-        for(const widget of this.elements.children) {
-            const content = widget.querySelector(`.dashboard-widget-content`)
-            if(widget.dataset.type === `plot`) {
-                for(const row of content?.variablesToPlot?.children ?? [])
-                    row.item.variable.UpdateVariableReference(detail)
-            } else {
-                content?.configTemplate?.variable?.UpdateVariableReference(detail)
             }
         }
         this.#refreshListener()

@@ -45,7 +45,7 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
     get reference() { return this.#reference }
     set reference(reference) {
         if(objectTester(this.reference, reference)) return
-        this.#reference = { ...reference }
+        this.#reference = reference
         this.#refreshReference()
     }
 
@@ -88,10 +88,6 @@ export default class UIDisplayLiveUpdate extends UIDisplayNumberWithUnit {
     disconnectedCallback() {
         VariableRegister.removeEventListener(`change`, this.#refreshReference)
         communication.removeEventListener(`change`, this.#communicationChange)
-    }
-
-    RegisterVariables(reference) {
-        this.reference = reference
     }
 }
 customElements.define(`ui-displayliveupdate`, UIDisplayLiveUpdate, { extends: `span` })

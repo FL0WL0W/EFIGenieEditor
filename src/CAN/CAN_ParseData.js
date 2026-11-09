@@ -64,6 +64,7 @@ export default class CAN_ParseData extends UITemplate {
             this.multiplier.disabled = this.multiplierLabel.disabled = this.adder.disabled = this.adderLabel.disabled = this.bitLength.value < 2 || isEnum
             if(this.multiplier.disabled) this.multiplier.value = 1
             if(this.adder.disabled) this.adder.value = 0
+            this.#refreshReference()
         })
         this.unit.addEventListener(`change`, () => {
             const isEnum = EnumRegister?.isEnum(this.unit.value)
@@ -74,28 +75,14 @@ export default class CAN_ParseData extends UITemplate {
             if(this.adder.disabled) this.adder.value = 0
             // valueUnit only applies to scalar (non-enum) units
             this.liveUpdate.valueUnit = (this.bitLength.value < 2 || isEnum) ? undefined : this.unit.value
+            this.#refreshReference()
         })
+        this.name.addEventListener(`change`, this.#refreshReference)
         this.Setup(prop)
     }
 
-    #currentReference = undefined
-    #stopObservingLayout
-    connectedCallback() {
-        this.#stopObservingLayout?.()
-        this.#stopObservingLayout = observeCANDataLayout(this)
-    }
-
-    disconnectedCallback() {
-        this.#stopObservingLayout?.()
-        this.#stopObservingLayout = undefined
-        VariableRegister.UnRegisterVariable(this.#currentReference)
-        this.#currentReference = undefined
-    }
-
-    #reference = undefined
-    get reference() { return this.#reference }
-    set reference(reference) {
-        reference = { ...reference, name: `${reference.name}.${this.name.value}` }
+    #refreshReference = () => {
+        let reference = { ...this.#baseReference, name: this.#baseReference != undefined? `${this.#baseReference.name}.${this.name.value}` : this.name.value }
 
         const selectedUnit = this.unit.value
         if(EnumRegister?.isEnum(selectedUnit) && this.bitLength.value > 1) {
@@ -114,22 +101,31 @@ export default class CAN_ParseData extends UITemplate {
         }
         
         if(objectTester(this.reference, reference)) return
-        const oldReference = this.reference
+        const previousReference = this.reference
         this.liveUpdate.reference = this.#reference = reference
-        if(this.isConnected)
-            VariableRegister.RegisterVariable(reference, oldReference)
+        if(!this.isConnected) return
+        VariableRegister.RegisterVariable(reference, previousReference)
     }
 
+    #baseReference = undefined
+    #reference = undefined
+    get reference() { return this.#reference }
+    set reference(reference) {
+        this.#baseReference = reference
+        this.#refreshReference()
+    }
+
+    #stopObservingLayout
     connectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = observeCANDataLayout(this)
         VariableRegister.RegisterVariable(this.reference)
     }
 
     disconnectedCallback() {
+        this.#stopObservingLayout?.()
+        this.#stopObservingLayout = undefined
         VariableRegister.UnRegisterVariable(this.reference)
-    }
-
-    RegisterVariables(reference) {
-        this.reference = reference
     }
 }
 customElements.define(`can-parse-data`, CAN_ParseData, { extends: `span` })
