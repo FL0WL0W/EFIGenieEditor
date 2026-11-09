@@ -4,6 +4,7 @@ import CalculationOrVariableSelection from "../Calculation/CalculationOrVariable
 import { GetMeasurementNameFromUnitName } from "../UI/UIUnit"
 import InputConfigs from "./InputConfigs"
 import { defaultNoVariables } from "../VariableRegistry"
+import { objectTester } from "../JavascriptUI/UIUtils"
 export default class Input extends UITemplate {
     static template = `<div style="float: right;"></div><div data-element="translationConfig"></div><div data-element="hr"></div><div data-element="rawConfigContainer"></div>`
 
@@ -76,6 +77,7 @@ export default class Input extends UITemplate {
     get reference() { return this.#reference }
     set reference(reference) {
         this.#baseReference = reference
+        if(objectTester(reference, this.#baseReference)) return
         this.#refreshReference()
     }
 }

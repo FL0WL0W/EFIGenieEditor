@@ -1,4 +1,5 @@
 import UIText from "../JavascriptUI/UIText"
+import { objectTester } from "../JavascriptUI/UIUtils"
 import CalculationOrVariableSelection from "./CalculationOrVariableSelection"
 import GenericConfigs from "./GenericConfigs"
 import { defaultNoVariables } from "../VariableRegistry"
@@ -37,6 +38,7 @@ export default class GenericCalculation extends CalculationOrVariableSelection {
     get reference() { return super.reference }
     set reference(reference) {
         this.#baseReference = reference
+        if(objectTester(reference, this.#baseReference)) return
         this.#refreshReference()
     }
 

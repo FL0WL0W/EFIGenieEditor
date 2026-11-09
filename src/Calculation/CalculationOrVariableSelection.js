@@ -276,6 +276,7 @@ export default class CalculationOrVariableSelection extends UITemplate {
     get reference() { return this.#reference }
     set reference(reference) {
         this.#baseReference = reference
+        if(objectTester(reference, this.#baseReference)) return
         this.#refreshReference()
     }
 

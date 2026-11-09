@@ -5,6 +5,7 @@ import GenericConfigs from "../Calculation/GenericConfigs"
 import { observeCANDataLayout } from "./CANDataLayout"
 import UIText from "../JavascriptUI/UIText"
 import CANPackDataConfigs from "./CANPackDataConfigs"
+import { objectTester } from "../JavascriptUI/UIUtils"
 export default class CAN_PackData extends UITemplate {
     static displayName = `CAN Pack`
     static outputTypes = [ `CANData` ]
@@ -103,6 +104,7 @@ export default class CAN_PackData extends UITemplate {
     get reference() { return this.#reference }
     set reference(reference) {
         this.#baseReference = reference
+        if(objectTester(reference, this.#baseReference)) return
         this.#refreshReference()
     }
 }

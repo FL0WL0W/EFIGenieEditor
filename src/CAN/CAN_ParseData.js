@@ -112,6 +112,7 @@ export default class CAN_ParseData extends UITemplate {
     get reference() { return this.#reference }
     set reference(reference) {
         this.#baseReference = reference
+        if(objectTester(reference, this.#baseReference)) return
         this.#refreshReference()
     }
 
