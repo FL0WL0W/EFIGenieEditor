@@ -53,13 +53,16 @@ export default class VariableRegistry extends EventTarget {
         let referenceName = reference.name
         while((dotIndex = referenceName.indexOf(`.`)) != -1) {
             const listName = referenceName.substring(0, dotIndex)
-            list[listName] ??= {}
+            if(list[listName] == undefined) {
+                list = undefined
+                break;
+            }
             list = list[listName]
             referenceName = referenceName.substring(dotIndex + 1)
         }
 
         let variable
-        if (typeof list[referenceName] == `object`) {
+        if (list != undefined && typeof list[referenceName] == `object`) {
             const map = list[referenceName]
 
             const matched = Array.isArray(map) ? map.find(match) : (map && match(map) ? map : undefined)
@@ -191,7 +194,7 @@ export default class VariableRegistry extends EventTarget {
         let referenceName = reference.name
         while((dotIndex = referenceName.indexOf(`.`)) != -1) {
             const listName = referenceName.substring(0, dotIndex)
-            list[listName] ??= {}
+            if(list[listName] == undefined) return []
             list = list[listName]
             referenceName = referenceName.substring(dotIndex + 1)
         }
@@ -225,6 +228,8 @@ export default class VariableRegistry extends EventTarget {
 
             for (let variableName in list) {
                 for(let variable of Array.isArray(list[variableName])? list[variableName] : [ list[variableName] ]) {
+                    if(typeof variable != `object`)
+                        continue
                     const keys = Object.keys(variable)
                     const variableKeys = [`unit`, `measurement`, `type`, `id`]
                     if(keys.some(key => variableKeys.indexOf(key) == -1)) {
