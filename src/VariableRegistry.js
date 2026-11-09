@@ -1,4 +1,3 @@
-import { throttle } from "lodash-es"
 import { objectTester } from "./JavascriptUI/UIUtils.js"
 export default class VariableRegistry extends EventTarget {
     constructor(prop) {
@@ -6,13 +5,24 @@ export default class VariableRegistry extends EventTarget {
         Object.assign(this, prop)
         this.CreateIfNotFound = false
     }
-    #dispatchReplaceEventThrottled = throttle(() => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `replace` } })) }, 100)
-    #dispatchClearEventThrottled = throttle(() => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { detail: { action: `clear` } })) }, 100)
-    #dispatchChangeEventThrottled = throttle(() => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { })) }, 100)
-    #dispatchReplaceEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchReplaceEventThrottled() }
-    #dispatchClearEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchClearEventThrottled() }
-    #dispatchChangeEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchChangeEventThrottled() }
-    #dispatchUpdateEvent = (detail) => { this.#cachedSelectionsValid = false; this.dispatchEvent(new CustomEvent(`change`, { detail })) }
+    #dispatchWaiting = false
+    #dispatchDetails = []
+    #dispatchEvent = (detail) => {
+        this.#dispatchDetails.push(detail)
+        if(!this.#dispatchWaiting) {
+            this.#dispatchWaiting = true
+            setTimeout(() => {
+                this.#dispatchWaiting = false
+                const details = this.#dispatchDetails
+                this.#dispatchDetails = []
+                this.dispatchEvent(new CustomEvent(`change`, { detail: details }))
+            }, 50)
+        }
+    }
+    #dispatchReplaceEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchEvent({ action: `replace` }) }
+    #dispatchClearEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchEvent({ action: `clear` }) }
+    #dispatchChangeEvent = () => { this.#cachedSelectionsValid = false; this.#dispatchEvent({ action: `change` }) }
+    #dispatchUpdateEvent = (detail) => { this.#cachedSelectionsValid = false; this.#dispatchEvent(detail) }
     get variableReferences() {
         var variableReferences = { ...this }
         delete variableReferences.CreateIfNotFound
