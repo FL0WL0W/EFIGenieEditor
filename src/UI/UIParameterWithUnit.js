@@ -28,10 +28,16 @@ export default class UIParameterWithUnit extends UITemplate {
             }
         })
         VariableRegister.addEventListener(`change`, ({ detail }) => {
-            const valueWithoutSelectionVerification = this.parameterSelection.valueWithoutSelectionVerification
-            if(valueWithoutSelectionVerification?.name == undefined) return
-            const matcher = getMatcherForReference(valueWithoutSelectionVerification)
-            this.parameterSelection.value = detail?.findLast(detail => detail?.previousReferences?.filter(previousReference => previousReference?.name == valueWithoutSelectionVerification.name)?.some(matcher))?.reference ?? valueWithoutSelectionVerification
+            let reference = this.parameterSelection.valueWithoutSelectionVerification
+            if(reference?.name == undefined) return
+            let matcher = getMatcherForReference(reference)
+            let referenceIndex
+            while((referenceIndex = detail?.findIndex(detail => detail?.previousReferences?.filter(previousReference => previousReference?.name == reference.name)?.some(matcher)) ?? -1) >= 0) {
+                reference = detail[referenceIndex].reference
+                matcher = getMatcherForReference(reference)
+                detail = detail.slice(referenceIndex + 1)
+            }
+            this.parameterSelection.value = reference
         })
         this.Setup(prop)
     }
