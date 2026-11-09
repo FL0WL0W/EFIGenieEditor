@@ -225,6 +225,27 @@ export default class VariableRegistry extends EventTarget {
 
         }
 
+        //cleanup empty lists
+        const isEmpty = (obj) => {
+            if(obj == undefined) return true
+            if(typeof obj != `object`) return false
+            if(Array.isArray(obj)) return obj.length == 0
+            const keys = Object.keys(obj)
+            if(keys.length == 0) return true
+            return keys.every(key => isEmpty(obj[key]))
+        }
+        list = this
+        referenceName = reference.name
+        while((dotIndex = referenceName.indexOf(`.`)) != -1) {
+            const listName = referenceName.substring(0, dotIndex)
+            if(isEmpty(list[listName])) {
+                delete list[listName]
+                break
+            }
+            list = list[listName]
+            referenceName = referenceName.substring(dotIndex + 1)
+        }
+
         return removed.map(variable => ({ ...variable, name: reference.name }))
     }
     #cachedSelectionsValid = false
