@@ -238,7 +238,7 @@ export default class UIGauge extends UITemplate {
             this.configTemplate.step.min = (this.max - this.min) / 25
             this.#updateGauge()
             this.RefreshAvailability()
-            this.dispatchEvent(new Event(`change`))
+            this.dispatchEvent(new Event(`change`, { bubbles: true }))
         })
         this.configDialog = new UIDialog({ title: `Edit Gauge` })
         this.configDialog.content.append(this.configTemplate)

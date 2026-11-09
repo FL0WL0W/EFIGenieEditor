@@ -44,9 +44,6 @@ class InjectorProperties extends ConfigContainer{
             ],
             class: `inject-at`
         })
-        this.InjectorPositionAt.addEventListener(`change`, () => {
-            this.dispatchEvent(new Event(`change`))
-        })
         let span = document.createElement(`span`)
         span.append(`\xa0at`)
         span.append(this.InjectorPositionAt)
@@ -94,11 +91,9 @@ export default class Fuel extends ConfigList {
 
     static cylinderFuelMassReference = { name: `FuelParameters.Cylinder Fuel Mass`, unit: `g` }
     disconnectedCallback() {
-        super.disconnectedCallback()
         VariableRegister.UnRegisterVariable(Fuel.cylinderFuelMassReference)
     }
     connectedCallback() {
-        super.connectedCallback()
         VariableRegister.RegisterVariable(Fuel.cylinderFuelMassReference)
     }
 }

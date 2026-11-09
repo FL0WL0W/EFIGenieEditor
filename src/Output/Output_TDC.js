@@ -23,7 +23,7 @@ export default class Output_TDC extends CalculationOrVariableSelection {
                 this.SubConfig.style.display = `block`
             }
         })
-        this.selection.dispatchEvent(new Event(`change`))
+        this.selection.dispatchEvent(new Event(`change`, { bubbles: true }))
     }
 
     Setup(prop) {
@@ -33,9 +33,6 @@ export default class Output_TDC extends CalculationOrVariableSelection {
             min:    0,
             max:    720,
             class: `tdc`
-        })
-        this.TDC.addEventListener(`change`, () => {
-            this.dispatchEvent(new Event(`change`))
         })
         let span = document.createElement(`span`)
         span.append(`\xa0\xa0\xa0\xa0\xa0\xa0TDC:`)

@@ -77,7 +77,7 @@ export default class CANBaseData extends HTMLDivElement {
         this.#bytes = bytes
         this.#inputs.forEach((input, index) => { input.value = this.#format(bytes[index]) })
         if(changed)
-            this.dispatchEvent(new Event(`change`))
+            this.dispatchEvent(new Event(`change`, { bubbles: true }))
     }
 
     get saveValue() { return this.value }

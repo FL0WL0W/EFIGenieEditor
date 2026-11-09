@@ -111,11 +111,9 @@ export default class Engine extends ConfigList {
 
     static engineSpeedReference = { name: `EngineParameters.Engine Speed`, unit: `RPM` }
     disconnectedCallback() {
-        super.disconnectedCallback()
         VariableRegister.UnRegisterVariable(Engine.engineSpeedReference)
     }
     connectedCallback() {
-        super.connectedCallback()
         VariableRegister.RegisterVariable(Engine.engineSpeedReference)
     }
 }

@@ -25,7 +25,6 @@ export default class Calculation_2AxisTable extends UITemplate {
             this.graph.width = Math.min(Math.max(600, this.graph.xResolution * 75), 1000)
         })
         this.table.addEventListener(`change`, () => {
-            this.dispatchEvent(new Event(`change`))
             if(this.XSelection)
                  this.XSelection.displayUnit = this.table.xDisplayUnit
             if(this.YSelection)
