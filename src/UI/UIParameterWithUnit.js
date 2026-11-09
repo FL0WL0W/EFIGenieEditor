@@ -20,7 +20,7 @@ export default class UIParameterWithUnit extends UITemplate {
         this.parameterSelection.addEventListener(`change`, () => {
             const units = this.units
             this.unitSelection.measurement = GetMeasurementNameFromUnitName(units)
-            if(units !== undefined)
+            if(units != undefined)
                 this.unitSelection.hidden = this.unitHidden
             else {
                 this.unitSelection.value = undefined
@@ -34,7 +34,7 @@ export default class UIParameterWithUnit extends UITemplate {
     get unitHidden() { return this.#unitHidden }
     set unitHidden(unitHidden) { 
         this.#unitHidden = unitHidden
-        if(this.units !== undefined)
+        if(this.units != undefined)
             this.unitSelection.hidden = unitHidden
         else {
             this.unitSelection.value = undefined
@@ -50,12 +50,12 @@ export default class UIParameterWithUnit extends UITemplate {
     set selectValue(selectValue) { this.parameterSelection.selectValue = selectValue }
 
     get selectedOption() {
-        return (typeof this.parameterSelection.selectedOption === `object` && this.optionUnits[this.parameterSelection.selectedOption.name] !== undefined)? 
+        return (typeof this.parameterSelection.selectedOption === `object` && this.optionUnits[this.parameterSelection.selectedOption.name] != undefined)? 
             { ...this.parameterSelection.selectedOption, unit: this.unitSelection.selectedOption } : this.parameterSelection.selectedOption
     }
     set selectedOption(selectedOption) {
         if(typeof selectedOption === `object`) {
-            if(this.optionUnits[selectedOption.name] !== undefined)
+            if(this.optionUnits[selectedOption.name] != undefined)
                 this.unitSelection.selectedOption = selectedOption.unit
             delete selectedOption.unit
             this.parameterSelection.selectedOption = selectedOption
@@ -65,7 +65,7 @@ export default class UIParameterWithUnit extends UITemplate {
     }
 
     get value() {
-        return (typeof this.parameterSelection.value === `object` && this.optionUnits[this.parameterSelection.value.name] !== undefined)? 
+        return (typeof this.parameterSelection.value === `object` && this.optionUnits[this.parameterSelection.value.name] != undefined)? 
             { ...this.parameterSelection.value, unit: this.unit } : this.parameterSelection.value
     }
     set value(value) {
@@ -73,7 +73,7 @@ export default class UIParameterWithUnit extends UITemplate {
             value = {...value}
             if(this.persistValueInOptions)
                 this.#addPersistedOption(value)
-            if(this.optionUnits[value.name] !== undefined)
+            if(this.optionUnits[value.name] != undefined)
                 this.unitSelection.value = value.unit
             delete value.unit
             this.parameterSelection.value = value
@@ -107,7 +107,7 @@ export default class UIParameterWithUnit extends UITemplate {
     }
 
     get saveValue() {
-        return (typeof this.parameterSelection.saveValue === `object` && this.optionUnits[this.parameterSelection.saveValue.name] !== undefined)? 
+        return (typeof this.parameterSelection.saveValue === `object` && this.optionUnits[this.parameterSelection.saveValue.name] != undefined)? 
             { ...this.parameterSelection.saveValue, unit: this.displayUnit } : this.parameterSelection.saveValue
     }
     set saveValue(saveValue) {
@@ -118,7 +118,7 @@ export default class UIParameterWithUnit extends UITemplate {
                 this.#addPersistedOption(saveValue)
             delete saveValue.unit
             this.parameterSelection.saveValue = saveValue
-            if(displayUnit !== undefined)
+            if(displayUnit != undefined)
                 this.displayUnit = displayUnit
         } else {
             this.parameterSelection.saveValue = saveValue
@@ -133,12 +133,12 @@ export default class UIParameterWithUnit extends UITemplate {
     optionUnits = {}
 
     #addPersistedOption(value) {
-        if(value === null || typeof value !== `object` || value.name === undefined)
+        if(value === null || typeof value !== `object` || value.name == undefined)
             return
         const optionValue = { ...value }
         const unit = optionValue.unit
         delete optionValue.unit
-        if(unit !== undefined) {
+        if(unit != undefined) {
             this.optionUnits[optionValue.name] ??= []
             if(!this.optionUnits[optionValue.name].includes(unit))
                 this.optionUnits[optionValue.name].push(unit)
@@ -160,7 +160,7 @@ export default class UIParameterWithUnit extends UITemplate {
                 if(option.group) {
                     option.options = expand(option.options)
                     expandedOptions.push(option)
-                } else if(typeof option.value === `object` && this.optionUnits[option.value.name] !== undefined) {
+                } else if(typeof option.value === `object` && this.optionUnits[option.value.name] != undefined) {
                     for(const unitIndex in this.optionUnits[option.value.name]) {
                         option = {...options[optionIndex]}
                         option.value = {...option.value}
@@ -185,7 +185,7 @@ export default class UIParameterWithUnit extends UITemplate {
                 let option = options[optionIndex]
                 if(option.group) {
                     newOptions.push({ ...option, options: flatten(option.options) })
-                } else if(typeof option.value === `object` && option.value.unit !== undefined) {
+                } else if(typeof option.value === `object` && option.value.unit != undefined) {
                     this.optionUnits[option.value.name] ??= []
                     if(!option.disabled) //TODO show units but greyed out. current interface doesn't allow this
                         this.optionUnits[option.value.name].push(option.value.unit)
@@ -202,11 +202,11 @@ export default class UIParameterWithUnit extends UITemplate {
         }
         this.optionUnits = {}
         this.parameterSelection.options = flatten(options)
-        if(this.persistValueInOptions && persistedValue !== undefined)
+        if(this.persistValueInOptions && persistedValue != undefined)
             this.#addPersistedOption(persistedValue)
         const units = this.units
         this.unitSelection.measurement = GetMeasurementNameFromUnitName(units)
-        if(units !== undefined)
+        if(units != undefined)
             this.unitSelection.hidden = this.unitHidden
         else 
             this.unitSelection.hidden = true
