@@ -27,6 +27,7 @@ export default class GenericCalculation extends CalculationOrVariableSelection {
             this.#refreshReference()
         })
         this.name.value = nameValue
+        this.#refreshReference()
     }
 
     #refreshReference = () => {
@@ -37,8 +38,8 @@ export default class GenericCalculation extends CalculationOrVariableSelection {
     #baseReference = undefined
     get reference() { return super.reference }
     set reference(reference) {
-        this.#baseReference = reference
         if(objectTester(reference, this.#baseReference)) return
+        this.#baseReference = reference
         this.#refreshReference()
     }
 
