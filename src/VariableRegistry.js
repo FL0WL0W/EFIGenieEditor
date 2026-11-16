@@ -98,6 +98,8 @@ export default class VariableRegistry extends EventTarget {
     }
     GetVariableId(reference) {
         let variable = this.GetVariableByReference(reference)
+        if(variable == undefined)
+            return
         if(variable.id == undefined) {
             variable.id = this.GenerateVariableId()
             const match = getMatcherForReference(reference)

@@ -1,6 +1,25 @@
 import { gzip, ungzip } from "pako"
 import VariableRegistry from "./VariableRegistry"
 
+function numericArrayBuffer(value, byteLength, setter, endian, bigint = false) {
+    const values = Array.isArray(value) ? value : [value]
+    const buffer = new ArrayBuffer(values.length * byteLength)
+    const view = new DataView(buffer)
+    values.forEach((item, index) => {
+        view[setter](index * byteLength, bigint ? BigInt(item) : item, endian !== `big`)
+    })
+    return buffer
+}
+
+function arrayBufferValue(buffer, byteLength, getter, endian, bigint = false) {
+    const view = new DataView(buffer)
+    const values = []
+    for(let i = 0; i < buffer.byteLength; i += byteLength) {
+        values.push(view[getter](i, endian !== `big`))
+    }
+    return values
+}
+
 async function waitForFunctionToReturnFalse(f, timeout = 1000) {
     let trys = 0
     while(f() && trys++ < Math.max(1, timeout / Math.max(timeout / 10, 10)))
@@ -268,21 +287,21 @@ function typeLength(type) {
         case 11: return 1
     }
 }
-function parseVariable(arrayBuffer) {
-    let type = new Uint8Array(arrayBuffer)[0]
+function parseVariable(arrayBuffer, endian = `little`) {
+    let type = arrayBufferValue(arrayBuffer, 1, `getUint8`, endian)[0]
     switch(type) {
         case 0: return
-        case 1: return new Uint8Array(arrayBuffer.slice(1))[0]
-        case 2: return new Uint16Array(arrayBuffer.slice(1))[0]
-        case 3: return new Uint32Array(arrayBuffer.slice(1))[0]
-        // case 4: return new Uint64Array(arrayBuffer.slice(1))[0]
-        case 5: return new Int8Array(arrayBuffer.slice(1))[0]
-        case 6: return new Int16Array(arrayBuffer.slice(1))[0]
-        case 7: return new Int32Array(arrayBuffer.slice(1))[0]
-        // case 8: return new Int64Array(arrayBuffer.slice(1))[0]
-        case 9: return new Float32Array(arrayBuffer.slice(1))[0]
-        case 10: return new Float64Array(arrayBuffer.slice(1))[0]
-        case 11: return new Uint8Array(arrayBuffer.slice(1))[0] === 1
+        case 1: return arrayBufferValue(arrayBuffer.slice(1), 1, `getUint8`, endian)[0]
+        case 2: return arrayBufferValue(arrayBuffer.slice(1), 2, `getUint16`, endian)[0]
+        case 3: return arrayBufferValue(arrayBuffer.slice(1), 4, `getUint32`, endian)[0]
+        case 4: return arrayBufferValue(arrayBuffer.slice(1), 8, `getBigUint64`, endian, true)[0]
+        case 5: return arrayBufferValue(arrayBuffer.slice(1), 1, `getInt8`, endian)[0]
+        case 6: return arrayBufferValue(arrayBuffer.slice(1), 2, `getInt16`, endian)[0]
+        case 7: return arrayBufferValue(arrayBuffer.slice(1), 4, `getInt32`, endian)[0]
+        case 8: return arrayBufferValue(arrayBuffer.slice(1), 8, `getBigInt64`, endian, true)[0]
+        case 9: return arrayBufferValue(arrayBuffer.slice(1), 4, `getFloat32`, endian)[0]
+        case 10: return arrayBufferValue(arrayBuffer.slice(1), 8, `getFloat64`, endian)[0]
+        case 11: return arrayBufferValue(arrayBuffer.slice(1), 1, `getUint8`, endian)[0] == 1
     }
 }
 
@@ -332,6 +351,8 @@ class EFIGenieLog extends EventTarget {
 }
 
 class EFIGenieCommunication extends EFIGenieLog {
+    endian = `little`
+
     get saveValue() {
         return super.saveValue
     }
@@ -364,12 +385,12 @@ class EFIGenieCommunication extends EFIGenieLog {
         let metadataData = new ArrayBuffer()
         let length = 1
         for(let i = 0; i < Math.ceil(length); i++) {
-            const data = new Uint8Array([109]).buffer.concatArray(new Uint32Array([i]).buffer) // get metadata
+            const data = numericArrayBuffer(109, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(i, 4, `setUint32`, this.endian)) // get metadata
             let retData = await this._serial.command(data, 64)
             if(retData.byteLength !== 64) throw `Incorrect number of bytes returned when requesting metadata`
             
             if(i === 0) {
-                length = (new Uint32Array(retData.slice(0, 4))[0] + 4) / 64
+                length = (arrayBufferValue(retData, 4, `getUint32`, this.endian)[0] + 4) / 64
                 if(length > 1000)throw `Incorrect length returned when requesting metadata`
             }
             metadataData = metadataData.concatArray(retData)
@@ -378,7 +399,7 @@ class EFIGenieCommunication extends EFIGenieLog {
         if(length == 0)
             throw `engine errored`
             
-        length = new Uint32Array(metadataData.slice(0,4))[0]
+        length = arrayBufferValue(metadataData, 4, `getUint32`, this.endian)[0]
         metadataData = metadataData.slice(4, length + 4)
         const metadataString = ungzip(new Uint8Array(metadataData), { to: 'string' })
 
@@ -421,7 +442,7 @@ class EFIGenieCommunication extends EFIGenieLog {
 
         let data = new ArrayBuffer()
         for(let i = 0; i < variableIds.length; i++) {
-            data = data.concatArray(new Uint8Array([103]).buffer.concatArray(new Uint32Array([variableIds[i]]).buffer))
+            data = data.concatArray(numericArrayBuffer(103, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(variableIds[i], 4, `setUint32`, this.endian)))
         }
 
         await this._serial.write(data)
@@ -430,11 +451,11 @@ class EFIGenieCommunication extends EFIGenieLog {
         for(let i = 0; i < variableIds.length; i++) {
             let value = await this._serial.read(1)
             if(value.byteLength !== 1) throw "Incorrect number of bytes returned when polling variables"
-            const tLen = typeLength(new Uint8Array(value)[0])
+            const tLen = typeLength(arrayBufferValue(value, 1, `getUint8`, this.endian)[0])
             if(tLen > 0) {
                 value = value.concatArray(await this._serial.read(tLen))
                 if(value.byteLength !== tLen + 1) throw "Incorrect number of bytes returned when polling variables"
-                variableValues[variableIds[i]] = parseVariable(value)
+                variableValues[variableIds[i]] = parseVariable(value, this.endian)
             }
             bytes = bytes.concatArray(value)
         }
@@ -448,17 +469,18 @@ class EFIGenieCommunication extends EFIGenieLog {
     async #sendCommandAndWaitForAck(data, commandName) {
         const retData = await this._serial.command(data, 1)
         if(retData.byteLength !== 1)  throw `Incorrect number of bytes returned when ${commandName}`
-        if(new Uint8Array(retData)[0] !== 6) throw `Ack not returned when ${commandName}, ${new Uint8Array(retData)[0]}`
+        const ack = arrayBufferValue(retData, 1, `getUint8`, this.endian)[0]
+        if(ack !== 6) throw `Ack not returned when ${commandName}, ${ack}`
     }
 
     async stopExecution() {
         await this._serial.flush();
-        await this.#sendCommandAndWaitForAck(new Uint8Array([113]).buffer, `stopping execution`)
+        await this.#sendCommandAndWaitForAck(numericArrayBuffer(113, 1, `setUint8`, this.endian), `stopping execution`)
     }
 
     async startExecution() {
         await this._serial.flush();
-        await this.#sendCommandAndWaitForAck(new Uint8Array([115]).buffer, `starting execution`)
+        await this.#sendCommandAndWaitForAck(numericArrayBuffer(115, 1, `setUint8`, this.endian), `starting execution`)
     }
 
     async writeToAddress(address, data, chunks = 52, timeout = 1000) {
@@ -466,16 +488,16 @@ class EFIGenieCommunication extends EFIGenieLog {
         let i = 0
         while(left > 0) {
             let sendSize = Math.min(chunks, left)
-            await this.#sendCommandAndWaitForAck(new Uint8Array([119]).buffer.concatArray(new Uint32Array([ address + i, sendSize]).buffer).concatArray(data.slice(i, i + sendSize)), `writing data`)
+            await this.#sendCommandAndWaitForAck(numericArrayBuffer(119, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(address + i, 4, `setUint32`, this.endian)).concatArray(numericArrayBuffer(sendSize, 4, `setUint32`, this.endian)).concatArray(data.slice(i, i + sendSize)), `writing data`)
             left -= sendSize
             i += sendSize
         }
     }
 
     async getConfigAddress() {
-        const retData = await this._serial.command(new Uint8Array([99]).buffer, 4)
+        const retData = await this._serial.command(numericArrayBuffer(99, 1, `setUint8`, this.endian), 4)
         if(retData.byteLength !== 4) throw "Incorrect number of bytes returned when requesting config address"
-        return new Uint32Array(retData)[0]
+        return arrayBufferValue(retData, 4, `getUint32`, this.endian)[0]
     }
 
     async burnBin(bin) {

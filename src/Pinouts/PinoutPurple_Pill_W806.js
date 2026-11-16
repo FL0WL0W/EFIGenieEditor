@@ -76,6 +76,7 @@ Pinouts.Purple_Pill_W806 = {
         communication._serial = new Serial({ baudRate: 1000000 }, [ 
                 { usbVendorId: 0x1a86, usbProductId: 0x15023 } 
             ])
+        communication.endian = `little`
         communication.connect()
     }
 }

@@ -46,6 +46,7 @@ Pinouts.ESP32C6_Expander = {
         // Pausing stops polling but keeps the transport open. Reuse it on resume.
         if(!(communication._serial instanceof Socket))
             communication._serial = new Socket("EFIGenieCommunication")
+        communication.endian = `little`
         communication.connect()
     }
 }
