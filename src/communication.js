@@ -305,7 +305,23 @@ function parseVariable(arrayBuffer, endian = `little`) {
     }
 }
 
+export function getLogTimestamps(records, currentTickId, startedLoggingTime, ticksPerSecond) {
+    let elapsedTicks = 0
+    let previousTick
+    return records.map(record => {
+        const tick = record[currentTickId]
+        // Subtract in raw uint32 ticks before converting to milliseconds.
+        if(previousTick !== undefined)
+            elapsedTicks += (tick - previousTick) >>> 0
+        previousTick = tick
+        return startedLoggingTime + elapsedTicks * 1000 / ticksPerSecond
+    })
+}
+
 class EFIGenieLog extends EventTarget { 
+    endian = `little`
+    ticksPerSecond = 1_000_000
+    startedLoggingTime = Date.now()
     variableMetadata = new VariableRegistry()
     variableMetadataValid = false
     logBytes = new ArrayBuffer()
@@ -313,7 +329,13 @@ class EFIGenieLog extends EventTarget {
     loggedVariableValues = []
 
     get saveValue() {
-        let objectArray = gzip(new TextEncoder().encode(JSON.stringify(this.variableMetadata.variableReferences))).buffer
+        const metadata = {
+            variableReferences: this.variableMetadata.variableReferences,
+            endian: this.endian,
+            ticksPerSecond: this.ticksPerSecond,
+            startedLoggingTime: this.startedLoggingTime
+        }
+        let objectArray = gzip(new TextEncoder().encode(JSON.stringify(metadata))).buffer
         return (new Uint32Array([objectArray.byteLength]).buffer)
             .concatArray(objectArray)
             .concatArray(new Uint32Array([this.loggedVariableIds.length]).buffer)
@@ -322,8 +344,14 @@ class EFIGenieLog extends EventTarget {
     }
     set saveValue(saveValue) {
         const variableMetadataLength = new Uint32Array(saveValue.slice(0, 4))[0]
+        const metadata = JSON.parse(ungzip(new Uint8Array(saveValue.slice(4, variableMetadataLength + 4)), { to: 'string' }))
         this.variableMetadata.Clear()
-        this.variableMetadata.variableReferences = JSON.parse(ungzip(new Uint8Array(saveValue.slice(4, variableMetadataLength + 4)), { to: 'string' }))
+        // Older logs stored only the variable registry; use the selected target's
+        // byte order and tick frequency when that information is absent.
+        this.variableMetadata.variableReferences = metadata.variableReferences ?? metadata
+        this.endian = metadata.endian ?? this.endian
+        this.ticksPerSecond = metadata.ticksPerSecond ?? this.ticksPerSecond
+        this.startedLoggingTime = metadata.startedLoggingTime ?? Date.now()
         this.variableMetadataValid = true
         const loggedVariableIdsLength = new Uint32Array(saveValue.slice(variableMetadataLength + 4, variableMetadataLength + 8))[0]
         this.loggedVariableIds = [ ...(new Uint32Array(saveValue.slice(variableMetadataLength + 8, variableMetadataLength + 8 + loggedVariableIdsLength * 4))) ]
@@ -342,7 +370,7 @@ class EFIGenieLog extends EventTarget {
                     value = value.concatArray(this.logBytes.slice(index, index+tLen))
                     if(value.byteLength !== tLen + 1) throw "Incorrect number of bytes returned when polling variables"
                     index += tLen
-                    variableValues[this.loggedVariableIds[i]] = parseVariable(value)
+                    variableValues[this.loggedVariableIds[i]] = parseVariable(value, this.endian)
                 }
             }
             this.loggedVariableValues.push(variableValues)
@@ -351,14 +379,10 @@ class EFIGenieLog extends EventTarget {
 }
 
 class EFIGenieCommunication extends EFIGenieLog {
-    endian = `little`
-
     get saveValue() {
         return super.saveValue
     }
     set saveValue(saveValue) {
-        //need to save this date and recall it when loading saveValue
-        this.startedLoggingTime = Date.now()
         super.saveValue = saveValue
         this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
     }
@@ -371,6 +395,7 @@ class EFIGenieCommunication extends EFIGenieLog {
             variableMetadata: this.variableMetadata,
             loggedVariableValues: this.loggedVariableValues,
             startedLoggingTime: this.startedLoggingTime,
+            ticksPerSecond: this.ticksPerSecond,
             connectionError: this.connectionError,
             connected: this.connected
         }

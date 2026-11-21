@@ -359,6 +359,9 @@ window.addEventListener(`load`, function() {
             }
 
             const result = evt.target.result
+            const target = Pinouts[b.TargetDevice.value]
+            communication.ticksPerSecond = target.TicksPerSecond ?? 1_000_000
+            communication.endian = target.ProcessorDefinition?.find(type => type.type === `UINT32`)?.endian ?? `little`
             communication.saveValue = result;
         }
 
@@ -414,6 +417,7 @@ window.addEventListener(`load`, function() {
             return;
         }
         btnConnect.classList.add(`connecting`)
+        communication.ticksPerSecond = Pinouts[b.TargetDevice.value].TicksPerSecond ?? 1_000_000
         Pinouts[b.TargetDevice.value].Connect?.()
 
     })

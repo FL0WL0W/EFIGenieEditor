@@ -290,7 +290,7 @@ export default class ConfigList extends HTMLDivElement {
         })
         itemContainer.reference = this.reference
         Object.entries(itemContainer.item).forEach(function([elementName, element]) {
-            if(itemContainer[elementName] !== undefined)
+            if(elementName in itemContainer)
                 return
             Object.defineProperty(itemContainer, elementName, {
                 get: function() { return this.item[elementName] },

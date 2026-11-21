@@ -12,7 +12,7 @@ const input = 'digitalin';
 const interruptInput = 'digitalin digitalinterrupt';
 const output = 'digitalout';
 const inputOutput = 'digitalin digitalout';
-const analogInput = 'analogin';
+const analogInput = 'analog';
 
 const connectorPins = {
     // Blue MX123: 56 cavities. The 56-way header has no power blade.
@@ -174,6 +174,7 @@ function makePin(connector, cavity, functionName, supportedModes) {
 
 Pinouts.E78 = {
     name: 'E78',
+    TicksPerSecond: 128_000_000,
     Overlay: overlayURL,
     OverlayWidth: 3950,
     OverlayElementHeight: 120,

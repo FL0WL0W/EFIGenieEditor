@@ -1,7 +1,7 @@
 import { objectTester } from "../JavascriptUI/UIUtils"
 import UITemplate from "../JavascriptUI/UITemplate"
 import { defaultFilter } from "../VariableRegistry"
-import { communication } from "../communication"
+import { communication, getLogTimestamps } from "../communication"
 import ConfigList from "../Top/ConfigList"
 import UIParameterWithUnit from "./UIParameterWithUnit"
 import UINumber from "../JavascriptUI/UINumber"
@@ -89,7 +89,7 @@ export default class UIPlot extends UITemplate {
     static type = `plot`
     variablesToPlot = new ConfigList({
         itemConstructor: UIPlot_Variable,
-        // saveValue: [{}]
+        saveValue: [{}]
     })
 
     constructor(prop) {
@@ -167,7 +167,7 @@ export default class UIPlot extends UITemplate {
         })
 
         this.Setup(prop)
-        communication.addEventListener(`change`, ({ detail: { variableMetadata, loggedVariableValues, startedLoggingTime } }) => {
+        communication.addEventListener(`change`, ({ detail: { variableMetadata, loggedVariableValues, startedLoggingTime, ticksPerSecond } }) => {
             const displayUnits = [ undefined, ...[...this.variablesToPlot.children].map(x => x.variable.displayUnit)]
             const references = [ { name: `CurrentTick` }, ...[...this.variablesToPlot.children].map(x => x.variable.value) ].map( reference => {
                 if(reference?.name === `CurrentTick`) return reference
@@ -179,10 +179,7 @@ export default class UIPlot extends UITemplate {
                 const variableId = variable?.id
                 if(reference) {
                     if(reference.name === `CurrentTick`) {
-                        const UINT32_MAX = 0xFFFFFFFF
-                        const ticks = loggedVariableValues.map(x => x[variableId] / 1000)
-                        let previousTick = 0
-                        return ticks.map((tick, idx) => startedLoggingTime + (previousTick += (idx > 0? (tick - ticks[idx - 1] + (tick >= ticks[idx-1]? 0 : UINT32_MAX)) : 0)))
+                        return getLogTimestamps(loggedVariableValues, variableId, startedLoggingTime, ticksPerSecond)
                     }
                     return loggedVariableValues.map(x => ConvertValueFromUnitToUnit(x[variableId], variable?.unit, displayUnits[idx]))
                 }
