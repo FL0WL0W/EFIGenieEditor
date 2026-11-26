@@ -140,17 +140,55 @@ window.addEventListener(`load`, function() {
     window.fileBrowserDialog = new UIDialog()
     window.fileBrowserDialog.content.append(window.fileBrowser)
 
+    let configJsonName = window.localStorage.getItem(`lastConfigName`) ?? `config`
+    let loadingConfig = false
+    let configLoadVersion = 0
+
     const loadConfig = (config) => {
         try {
-            let saveValue = JSON.parse(config)
-            if(b.TargetDevice.value !== saveValue.TargetDevice) {
-                b.TargetDevice.value = saveValue.TargetDevice
-                return
+            const saveValue = JSON.parse(config)
+            if(!Pinouts[saveValue?.TargetDevice]) return false
+            ++configLoadVersion
+            loadingConfig = true
+            try {
+                // Target changes are synchronous and may replace window.b.
+                // Finish selecting/mounting the target before assigning its tune.
+                if(b.TargetDevice.value !== saveValue.TargetDevice)
+                    b.TargetDevice.value = saveValue.TargetDevice
+                b.saveValue = saveValue
+                document.querySelector(`#btnLoad`).value = ``
+                return true
+            } finally { loadingConfig = false }
+        } catch { return false }
+    }
+
+    const loadDefaultConfig = (targetDevice) => {
+        const version = ++configLoadVersion
+        const xhr = new XMLHttpRequest()
+        xhr.open(`GET`, `config.json`, true)
+        xhr.onload = xhr.onerror = () => {
+            // A file opened or target selected after this request takes priority.
+            if(version !== configLoadVersion || (targetDevice && b.TargetDevice.value !== targetDevice)) return
+            const fallbackName = window.localStorage.getItem(`lastConfigName`) ?? configJsonName
+            const candidates = [
+                { name: `config`, data: xhr.status === 200 ? xhr.responseText : undefined },
+                { name: fallbackName, data: fallbackName ? window.localStorage.getItem(fallbackName) : undefined }
+            ]
+            for(const { name, data } of candidates) {
+                if(!data) continue
+                try {
+                    if(targetDevice && JSON.parse(data)?.TargetDevice !== targetDevice) continue
+                } catch { continue }
+                if(loadConfig(data)) {
+                    configJsonName = name
+                    window.localStorage.setItem(`lastConfigName`, name)
+                    return
+                }
             }
-            b.saveValue = saveValue
-            let btnLoad = document.querySelector(`#btnLoad`)
-            btnLoad.value = ``
-        } catch { }
+            configJsonName = undefined
+            window.localStorage.removeItem(`lastConfigName`)
+        }
+        xhr.send()
     }
 
     window.buildConfig = buildConfig
@@ -160,41 +198,26 @@ window.addEventListener(`load`, function() {
 
         document.querySelector(`#target`).innerHTML = `Target: `
         document.querySelector(`#target`).append(b.TargetDevice)
-        b.TargetDevice.addEventListener(`change`, (e) => {
+        b.TargetDevice.addEventListener(`change`, () => {
             const targetDevice = b.TargetDevice.value
+            const target = Pinouts[targetDevice]
+            if(!target) return
             window.localStorage.setItem(`lastTarget`, targetDevice)
-            if(b.constructor !== Pinouts[targetDevice].Top) {
-                window.b = new Pinouts[b.TargetDevice.value].Top
+            if(!loadingConfig) ++configLoadVersion
+            if(b.constructor !== target.Top) {
+                window.b = new target.Top()
+                // Mount first so pin-option updates operate on the new controls.
+                setupTop()
                 b.TargetDevice.value = targetDevice
+                if(loadingConfig) return
 
-                let lastConfig = window.localStorage.getItem(configJsonName)
+                const lastConfig = configJsonName ? window.localStorage.getItem(configJsonName) : undefined
                 if(configJsonName !== `config` && lastConfig) {
-                    loadConfig(lastConfig)
-                } else {
-                    const xhr = new XMLHttpRequest()
-                    xhr.open(`GET`, `config.json`, true)
-                    xhr.onload = () => {
-                        if (xhr.status == 200) {
-                            lastConfig = xhr.responseText
-                        }
-                        if (lastConfig) {
-                            if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
-                                window.localStorage.setItem(`lastConfigName`, configJsonName = `config`)
-                                loadConfig(lastConfig)
-                            }
-                            return
-                        }
-                        lastConfig = window.localStorage.getItem(window.localStorage.getItem(`lastConfigName`))
-                        if(JSON.parse(lastConfig)?.TargetDevice === targetDevice) {
-                            configJsonName = window.localStorage.getItem(`lastConfigName`)
-                            loadConfig(lastConfig)
-                            return
-                        }
-                        window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
-                    }
-                    xhr.send()
+                    try {
+                        if(JSON.parse(lastConfig)?.TargetDevice === targetDevice && loadConfig(lastConfig)) return
+                    } catch { }
                 }
-                setupTop();
+                loadDefaultConfig(targetDevice)
             }
         })
 
@@ -206,38 +229,21 @@ window.addEventListener(`load`, function() {
     setupTop()
 
     const lastTarget = window.localStorage.getItem(`lastTarget`)
-    let configJsonName = window.localStorage.getItem(`lastConfigName`) ?? `config`
-    let lastConfig = window.localStorage.getItem(configJsonName)
+    const lastConfig = window.localStorage.getItem(configJsonName)
     window.fileBrowser.addEventListener(`filedelete`, ({ detail }) => {
         if(configJsonName !== detail.name) return
         configJsonName = undefined
         window.localStorage.removeItem(`lastConfigName`)
     })
 
-    if(configJsonName !== `config` && lastConfig) {
-        loadConfig(lastConfig)
-    } else if(lastTarget){
-        b.TargetDevice.value = lastTarget
-    } else {      
-        const xhr = new XMLHttpRequest()
-        xhr.open(`GET`, `config.json`, true)
-        xhr.onreadystatechange = () => {
-            if (xhr.status == 200) {
-                lastConfig = xhr.responseText
-            }
-            if (lastConfig) {
-                loadConfig(lastConfig)
-                window.localStorage.setItem(`lastConfigName`, configJsonName = `config`)
-                return
-            }
-            lastConfig = window.localStorage.getItem(configJsonName = window.localStorage.getItem(`lastConfigName`))
-            if (lastConfig) {
-                loadConfig(lastConfig)
-                return
-            }
-            window.localStorage.setItem(`lastConfigName`, configJsonName = undefined)
-        };
-        xhr.send()
+    if(!(configJsonName !== `config` && lastConfig && loadConfig(lastConfig))) {
+        const targetDevice = Pinouts[lastTarget] ? lastTarget : undefined
+        if(targetDevice) {
+            loadingConfig = true
+            try { b.TargetDevice.value = targetDevice }
+            finally { loadingConfig = false }
+        }
+        loadDefaultConfig(targetDevice)
     }
 
     const browseConfigs = () => {

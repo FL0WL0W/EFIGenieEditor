@@ -159,7 +159,7 @@ export class EFIGenieCommunication extends EFIGenieLog {
     async #flush() {
         if(!this.#communicationService) throw new Error(`No communication service configured`)
         await this.#exclusive(async () => {
-            await this.#communicationService.Connect()
+            await this.#retryCommand(() => this.#communicationService.Connect())
             await this.#stopSubscriptions()
             this.#received = new Uint8Array()
         })
@@ -201,17 +201,48 @@ export class EFIGenieCommunication extends EFIGenieLog {
         return operation
     }
 
-    #command(data, numberOfReceiveBytes, timeout = 1000) {
+    async #retryCommand(operation) {
+        const attempts = 3
+        const retryDelay = 100
+        const service = this.#communicationService
+        const wasConnected = this.connected
+        let lastError
+        for(let attempt = 0; attempt < attempts; attempt++) {
+            if(attempt && (service !== this.#communicationService || (wasConnected && !this.connected))) throw lastError
+            this.#received = new Uint8Array()
+            try {
+                const result = await operation(attempt)
+                if(attempt) {
+                    // Let duplicate replies from a timed-out attempt drain before
+                    // another command can reuse the same response prefix.
+                    await new Promise(resolve => setTimeout(resolve, retryDelay))
+                    this.#received = new Uint8Array()
+                }
+                return result
+            } catch(error) {
+                lastError = error instanceof Error ? error : new Error(String(error))
+                lastError.attempts = attempt + 1
+                if(attempt === attempts - 1 || (wasConnected && !this.connected)) throw lastError
+                await new Promise(resolve => setTimeout(resolve, retryDelay))
+            }
+        }
+    }
+
+    #command(data, numberOfReceiveBytes, timeout = 1000, validate) {
         return this.#exclusive(async () => {
             await this.#stopSubscriptions()
-            await this.#communicationService.Send(data)
-            if(this.#options.responsePrefixes) {
-                const response = new Uint8Array(await this.#read(numberOfReceiveBytes + 1, timeout))
-                const prefix = new Uint8Array(data.buffer ?? data, data.byteOffset ?? 0, data.byteLength)[0]
-                if(response[0] !== prefix) throw new Error(`Unexpected response prefix: ${response[0]}, expected ${prefix}`)
-                return response.slice(1).buffer
-            }
-            return this.#read(numberOfReceiveBytes, timeout)
+            return this.#retryCommand(async () => {
+                await this.#communicationService.Send(data)
+                let response
+                if(this.#options.responsePrefixes) {
+                    const bytes = new Uint8Array(await this.#read(numberOfReceiveBytes + 1, timeout))
+                    const prefix = new Uint8Array(data.buffer ?? data, data.byteOffset ?? 0, data.byteLength)[0]
+                    if(bytes[0] !== prefix) throw new Error(`Unexpected response prefix: ${bytes[0]}, expected ${prefix}`)
+                    response = bytes.slice(1).buffer
+                } else response = await this.#read(numberOfReceiveBytes, timeout)
+                validate?.(response)
+                return response
+            })
         })
     }
 
@@ -242,8 +273,9 @@ export class EFIGenieCommunication extends EFIGenieLog {
             this.loggedVariableValues.push(values)
             this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
         }, (prefix, status) => {
-            if(this.#subscriptionReplyPrefix === undefined || (prefix !== undefined && prefix !== this.#subscriptionReplyPrefix))
-                throw new Error(`Unexpected subscription acknowledgement`)
+            // Ignore late ACKs when no command is waiting, or when a previous
+            // command's prefix differs from the current command.
+            if(this.#subscriptionReplyPrefix === undefined || (prefix !== undefined && prefix !== this.#subscriptionReplyPrefix)) return
             const received = new Uint8Array(this.#received.length + 1)
             received.set(this.#received)
             received[this.#received.length] = status
@@ -253,12 +285,18 @@ export class EFIGenieCommunication extends EFIGenieLog {
     }
 
     async #subscriptionCommand(data, prefix) {
-        this.#received = new Uint8Array()
         this.#subscriptionReplyPrefix = prefix
         try {
-            await this.#communicationService.Send(data)
-            const status = new Uint8Array(await this.#read(1))[0]
-            if(status !== 6) throw new Error(`Subscription command ${String.fromCharCode(prefix)} rejected (NACK ${status})`)
+            await this.#retryCommand(async attempt => {
+                if(attempt) {
+                    // Discard an incomplete/corrupt old frame before retrying.
+                    this.#decoder = this.#createSubscriptionDecoder()
+                    this.#streamError = undefined
+                }
+                await this.#communicationService.Send(data)
+                const status = new Uint8Array(await this.#read(1))[0]
+                if(status !== 6) throw new Error(`Subscription command ${String.fromCharCode(prefix)} rejected (NACK ${status})`)
+            })
         } finally { this.#subscriptionReplyPrefix = undefined }
     }
 
@@ -332,7 +370,7 @@ export class EFIGenieCommunication extends EFIGenieLog {
 
     async #subscriptionLoop() {
         await this.#exclusive(async () => {
-            await this.#communicationService.Connect()
+            await this.#retryCommand(() => this.#communicationService.Connect())
             await this.#stopSubscriptions(true)
         })
         if(!this.connected) return
@@ -467,22 +505,29 @@ export class EFIGenieCommunication extends EFIGenieLog {
             data = data.concatArray(numericArrayBuffer(103, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(variableIds[i], 4, `setUint32`, this.endian)))
         }
 
-        await this.#communicationService.Send(data)
-        let bytes = new ArrayBuffer()
-        let variableValues = {}
-        for(let i = 0; i < variableIds.length; i++) {
-            if(this.#options.responsePrefixes && new Uint8Array(await this.#read(1))[0] !== 103)
-                throw new Error(`Unexpected variable response prefix`)
-            let value = await this.#read(1)
-            if(value.byteLength !== 1) throw "Incorrect number of bytes returned when polling variables"
-            const tLen = typeLength(arrayBufferValue(value, 1, `getUint8`, this.endian)[0])
-            if(tLen > 0) {
-                value = value.concatArray(await this.#read(tLen))
-                if(value.byteLength !== tLen + 1) throw "Incorrect number of bytes returned when polling variables"
-                variableValues[variableIds[i]] = parseVariable(value, this.endian)
-            }
-            bytes = bytes.concatArray(value)
-        }
+        const { bytes, variableValues } = await this.#exclusive(async () => {
+            await this.#stopSubscriptions()
+            return this.#retryCommand(async () => {
+                await this.#communicationService.Send(data)
+                let bytes = new ArrayBuffer()
+                let variableValues = {}
+                for(let i = 0; i < variableIds.length; i++) {
+                    if(this.#options.responsePrefixes && new Uint8Array(await this.#read(1))[0] !== 103)
+                        throw new Error(`Unexpected variable response prefix`)
+                    let value = await this.#read(1)
+                    if(value.byteLength !== 1) throw "Incorrect number of bytes returned when polling variables"
+                    const tLen = typeLength(arrayBufferValue(value, 1, `getUint8`, this.endian)[0])
+                    if(tLen === undefined) throw new Error(`Unsupported polled variable type: ${new Uint8Array(value)[0]}`)
+                    if(tLen > 0) {
+                        value = value.concatArray(await this.#read(tLen))
+                        if(value.byteLength !== tLen + 1) throw "Incorrect number of bytes returned when polling variables"
+                        variableValues[variableIds[i]] = parseVariable(value, this.endian)
+                    }
+                    bytes = bytes.concatArray(value)
+                }
+                return { bytes, variableValues }
+            })
+        })
 
         this.logBytes = this.logBytes.concatArray(bytes)
         this.loggedVariableValues.push(variableValues)
@@ -490,11 +535,11 @@ export class EFIGenieCommunication extends EFIGenieLog {
         this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
     }
 
-    async #sendCommandAndWaitForAck(data, commandName) {
-        const retData = await this.#command(data, 1)
-        if(retData.byteLength !== 1)  throw `Incorrect number of bytes returned when ${commandName}`
-        const ack = arrayBufferValue(retData, 1, `getUint8`, this.endian)[0]
-        if(ack !== 6) throw `Ack not returned when ${commandName}, ${ack}`
+    async #sendCommandAndWaitForAck(data, commandName, timeout = 1000) {
+        await this.#command(data, 1, timeout, retData => {
+            const ack = new Uint8Array(retData)[0]
+            if(ack !== 6) throw new Error(`Ack not returned when ${commandName}, ${ack}`)
+        })
     }
 
     async stopExecution() {
@@ -512,7 +557,7 @@ export class EFIGenieCommunication extends EFIGenieLog {
         let i = 0
         while(left > 0) {
             let sendSize = Math.min(chunks, left)
-            await this.#sendCommandAndWaitForAck(numericArrayBuffer(119, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(address + i, 4, `setUint32`, this.endian)).concatArray(numericArrayBuffer(sendSize, 4, `setUint32`, this.endian)).concatArray(data.slice(i, i + sendSize)), `writing data`)
+            await this.#sendCommandAndWaitForAck(numericArrayBuffer(119, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(address + i, 4, `setUint32`, this.endian)).concatArray(numericArrayBuffer(sendSize, 4, `setUint32`, this.endian)).concatArray(data.slice(i, i + sendSize)), `writing data`, timeout)
             left -= sendSize
             i += sendSize
         }
@@ -540,21 +585,6 @@ export class EFIGenieCommunication extends EFIGenieLog {
 
         if(reconnect)
             await this.connect(this.#communicationService, reconnectOptions)
-    }
-
-    async #pollVariablesWithRetry() {
-        const retries = 3
-        for(let attempt = 0; attempt <= retries && this.connected; attempt++) {
-            try {
-                // Each poll flushes stale bytes before issuing its read queries.
-                await this.pollVariables()
-                return
-            } catch(error) {
-                if(!this.connected) return
-                if(attempt === retries) throw error
-                await new Promise(resolve => setTimeout(resolve, 10))
-            }
-        }
     }
 
     /** Connect with polling by default; E78 opts into subscriptions and auxiliary ISO-TP services. */
@@ -586,7 +616,7 @@ export class EFIGenieCommunication extends EFIGenieLog {
         try {
             await this.#openAuxiliaries()
             if(this.#options.variableMode === `subscribe`) await this.#subscriptionLoop()
-            else while(this.connected) await this.#pollVariablesWithRetry()
+            else while(this.connected) await this.pollVariables()
         } catch(error) {
             if(!this.connected) return
             console.log(error)
@@ -597,7 +627,10 @@ export class EFIGenieCommunication extends EFIGenieLog {
             this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
         } finally {
             try {
-                if(this.#communicationService.Ready()) await this.#exclusive(() => this.#stopSubscriptions())
+                // A failed clear has already exhausted its retries. Avoid
+                // sending another three clear commands during error cleanup.
+                if(this.#streamState !== `draining` && this.#communicationService.Ready())
+                    await this.#exclusive(() => this.#stopSubscriptions())
             } catch(error) { console.warn(`Could not clear EFIGenie subscriptions`, error) }
             this.#streamState = `command`
             this.#decoder = undefined
