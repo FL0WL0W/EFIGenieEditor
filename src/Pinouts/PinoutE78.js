@@ -1,4 +1,5 @@
-import CommunicationService_WebSocket from "../CommunicationService/CommunicationService_WebSocket.js"
+import CommunicationService_Serial from "../CommunicationService/CommunicationService_Serial.js"
+import CANService_SLCAN from "../CANService/CANService_SLCAN.js"
 import overlayURL from './E78.svg';
 import Pinouts from './Pinouts';
 import TopEngine from '../Top/TopEngine';
@@ -204,9 +205,13 @@ Pinouts.E78 = {
         downloadBin(bin, 'E78-Config.bin');
     },
     Connect: function() {
-        const service = communication.communicationService instanceof CommunicationService_WebSocket
-            ? communication.communicationService
-            : new CommunicationService_WebSocket("/EFIGenieCommunication")
+        this.slCANSerialService ??= new CommunicationService_Serial({ baudRate: 1000000 }, [
+            { usbVendorId: 0x16d0, usbProductId: 0x117e }
+        ])
+        // Stock CANable SLCAN firmware does not acknowledge commands.
+        this.slCANService ??= new CANService_SLCAN(this.slCANSerialService, { acknowledgements: false })
+        const service = this.slCANService.GetISOTPService(0x609, 0x601)
+
         communication.endian = `big`
         return communication.connect(service)
     }

@@ -17,6 +17,14 @@ export default class CommunicationService_ISOTP extends ICommunicationService {
     #connecting
     #sending = false
 
+    get diagnostics() {
+        return { listenId: this.ListenId, transmitId: this.TransmitId,
+            lastError: this.lastError,
+            receive: this.#rx ? { received: this.#rx.offset, expected: this.#rx.bytes.length,
+                nextSequence: this.#rx.sequence } : undefined,
+            can: this.#can.diagnostics }
+    }
+
     constructor(canService, listenId, transmitId, { timeout = 250 } = {}) {
         super()
         if(!Number.isFinite(timeout) || timeout <= 0) throw new RangeError(`Invalid ISO-TP timeout`)

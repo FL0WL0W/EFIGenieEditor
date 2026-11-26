@@ -8,11 +8,14 @@ const hex = (value, width) => value.toString(16).toUpperCase().padStart(width, `
  * LAWICEL SLCAN over an injected ICommunicationService (serial or WebSocket).
  * Connect opens the transport, closes the CAN channel, sets its bitrate, then
  * opens it with C/Sn/O commands. Commands are serialized and await CR or z/Z ACKs;
- * BELL rejects the pending command. A timeout faults the session until Close().
+ * BELL rejects the pending command. After a fault, Connect closes the underlying
+ * transport before starting a fresh session, so late ACKs cannot satisfy retries.
  *
  * This instance owns one SLCAN channel, mapped to busNumber (default 0). Received
  * t/T data frames may include timestamps; RTR/status/version records are ignored.
  * Send resolves at adapter acknowledgement, which does not prove on-bus delivery.
+ * For CANable firmware without command replies, set acknowledgements: false;
+ * Send then resolves at transport write completion, without adapter confirmation.
  * Close detaches its byte callback, closes ISO-TP endpoints, and closes transport.
  * Protocol: https://www.canusb.com/docs/canusb_manual.pdf
  *
@@ -32,18 +35,32 @@ export default class CANService_SLCAN extends ICANService {
     #line = ``
     #discardLine = false
     #encoder = new TextEncoder()
+    #recentRecords = []
 
-    constructor(communicationService, { bitRate = 500000, busNumber = 0, timeout = 1000 } = {}) {
+    get diagnostics() {
+        return { bitRate: this.bitRate, acknowledgements: this.acknowledgements,
+            ready: this.Ready(), lastError: this.lastError,
+            recentRecords: this.#recentRecords.slice() }
+    }
+
+    #trace(direction, record) {
+        this.#recentRecords.push({ direction, record, time: Date.now() })
+        if(this.#recentRecords.length > 32) this.#recentRecords.shift()
+    }
+
+    constructor(communicationService, { bitRate = 500000, busNumber = 0, timeout = 1000, acknowledgements = true } = {}) {
         super()
         if(!(communicationService instanceof ICommunicationService))
             throw new TypeError(`SLCAN requires an ICommunicationService`)
         if(!bitRates.includes(bitRate)) throw new RangeError(`Unsupported SLCAN bit rate`)
         CANIdentifier({ CANIdentifier: 0, CANBusNumber: busNumber })
         if(!Number.isFinite(timeout) || timeout <= 0) throw new RangeError(`Invalid SLCAN timeout`)
+        if(typeof acknowledgements !== `boolean`) throw new TypeError(`Invalid SLCAN acknowledgements option`)
         this.#communication = communicationService
         this.bitRate = bitRate
         this.busNumber = busNumber
         this.timeout = timeout
+        this.acknowledgements = acknowledgements
     }
 
     Ready() {
@@ -54,7 +71,6 @@ export default class CANService_SLCAN extends ICANService {
         if(this.#closing) throw new Error(`SLCAN service is closing`)
         if(this.#connecting) return this.#connecting
         if(this.Ready()) return
-        if(this.#fault) throw new Error(`Close the faulted SLCAN session before reconnecting`, { cause: this.#fault })
         const connect = this.#open()
         this.#connecting = connect
         try { await connect }
@@ -63,7 +79,14 @@ export default class CANService_SLCAN extends ICANService {
 
     async #open() {
         this.#ready = false
+        // Reset only the byte transport here. Closing ISO-TP endpoints would
+        // wait for their Connect(), which is already waiting for this call.
+        if(this.#fault) {
+            await this.#operations
+            await this.#closeTransport()
+        }
         this.lastError = undefined
+        this.#recentRecords = []
         this.#line = ``
         this.#discardLine = false
         if(this.#callbackId === undefined)
@@ -94,7 +117,7 @@ export default class CANService_SLCAN extends ICANService {
     async #request(command) {
         if(this.#fault) throw this.#fault
         let timer
-        const reply = new Promise((resolve, reject) => {
+        const reply = !this.acknowledgements ? Promise.resolve() : new Promise((resolve, reject) => {
             this.#waiter = { resolve, reject }
             timer = setTimeout(() => {
                 const error = new Error(`SLCAN command timed out: ${command}`)
@@ -105,6 +128,7 @@ export default class CANService_SLCAN extends ICANService {
         })
         try {
             // Register the ACK waiter before sending; replies may arrive during Send.
+            this.#trace(`TX`, command)
             await Promise.all([this.#communication.Send(this.#encoder.encode(`${command}\r`)), reply])
         } catch(error) {
             this.lastError = error
@@ -122,6 +146,7 @@ export default class CANService_SLCAN extends ICANService {
     #receive(data) {
         for(const byte of data) {
             if(byte === 7) {
+                this.#trace(`RX`, `BELL`)
                 this.#line = ``
                 this.#discardLine = false
                 const error = new Error(`SLCAN adapter rejected command`)
@@ -147,6 +172,7 @@ export default class CANService_SLCAN extends ICANService {
     }
 
     #record(line) {
+        this.#trace(`RX`, line)
         if(line === `` || line === `z` || line === `Z`) {
             this.#waiter?.resolve()
             return
@@ -194,13 +220,17 @@ export default class CANService_SLCAN extends ICANService {
             await this.#operations
             if(this.#ready && !this.#fault && this.#communication.Ready()) await this.#queue(`C`)
         } finally {
-            this.#ready = false
-            if(this.#callbackId !== undefined) this.#communication.UnRegisterReceiveCallBack(this.#callbackId)
-            this.#callbackId = undefined
-            this.#line = ``
-            this.#discardLine = false
-            await this.#communication.Close()
-            this.#fault = undefined
+            await this.#closeTransport()
         }
+    }
+
+    async #closeTransport() {
+        this.#ready = false
+        if(this.#callbackId !== undefined) this.#communication.UnRegisterReceiveCallBack(this.#callbackId)
+        this.#callbackId = undefined
+        this.#line = ``
+        this.#discardLine = false
+        await this.#communication.Close()
+        this.#fault = undefined
     }
 }

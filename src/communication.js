@@ -168,16 +168,21 @@ export class EFIGenieCommunication extends EFIGenieLog {
     }
 
     async #read(numberOfBytes, timeout = 1000) {
+        const timeoutError = () => {
+            const error = new Error(`Timeout waiting for data (received ${this.#received.byteLength} of ${numberOfBytes} bytes)`)
+            error.diagnostics = this.#communicationService.diagnostics
+            return error
+        }
         const deadline = Date.now() + timeout
         while(this.#received.byteLength < numberOfBytes) {
             if(!this.#communicationService.Ready())
                 throw this.#communicationService.lastError ?? new Error(`Communication service disconnected`)
             const remaining = deadline - Date.now()
-            if(remaining <= 0) throw new Error(`Timeout waiting for data`)
+            if(remaining <= 0) throw timeoutError()
             await new Promise((resolve, reject) => {
                 const timer = setTimeout(() => {
                     this.#wakeRead = undefined
-                    reject(new Error(`Timeout waiting for data`))
+                    reject(timeoutError())
                 }, remaining)
                 this.#wakeRead = () => {
                     clearTimeout(timer)
