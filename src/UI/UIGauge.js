@@ -30,13 +30,44 @@ export default class UIGauge extends UITemplate {
     data-needle-circle-size="7"
     data-needle-circle-outer="true"
     data-needle-circle-inner="false"
+    data-animation="false"
     data-animation-duration="50"
     data-animation-rule="linear"
 ></canvas>`
 
     #activeTemplate
+    #renderValue
+    #renderFrame
+    #renderPaused = false
+
+    connectedCallback() {
+        this.#renderPaused = false
+        this.#scheduleRender(this.#renderValue)
+    }
+
+    disconnectedCallback() {
+        this.#renderPaused = true
+        this.#cancelRender()
+    }
+
+    #cancelRender() {
+        if(this.#renderFrame !== undefined) cancelAnimationFrame(this.#renderFrame)
+        this.#renderFrame = undefined
+    }
+
+    #scheduleRender(value) {
+        if(!Number.isFinite(value)) return
+        this.#renderValue = value
+        if(this.#renderPaused || this.#renderFrame !== undefined) return
+        this.#renderFrame = requestAnimationFrame(() => {
+            this.#renderFrame = undefined
+            this.gauge.value = this.#renderValue
+        })
+    }
 
     Setup(prop) {
+        this.#cancelRender()
+        this.#renderValue = undefined
         this.gauge?.destroy?.()
         super.Setup(prop)
         this.#activeTemplate = this.template ?? this.constructor.template
@@ -44,6 +75,11 @@ export default class UIGauge extends UITemplate {
         canvas.addEventListener(`click`, () => {
             this.configDialog.show()
         })
+        // Repeated animation restarts in canvas-gauges retain the first target
+        // value, freezing the number during fast telemetry. Render live readings
+        // directly, including for previously saved custom templates.
+        canvas.dataset.animation = `false`
+        canvas.dataset.animateOnInit = `false`
         BaseGauge.fromElement(canvas)
         this.gauge = document.gauges.find(x=> x.canvas.element === canvas)
         this.#updateGauge()
@@ -59,8 +95,9 @@ export default class UIGauge extends UITemplate {
     set value(value) { 
         if(this.#value === value)
             return
+        if(!Number.isFinite(value)) return
         this.#value = value
-        this.gauge.value = ConvertValueFromUnitToUnit(value, this.valueUnit, this.displayUnit)
+        this.#scheduleRender(ConvertValueFromUnitToUnit(value, this.valueUnit, this.displayUnit))
     }
 
     get saveValue() { 
@@ -105,7 +142,7 @@ export default class UIGauge extends UITemplate {
     set lowRedline(lowRedline) { this.configTemplate.lowRedline.value = lowRedline }
 
     #updateGauge() {
-        let options = {}
+        let options = { animation: false, animateOnInit: false }
         options.minValue = parseFloat(this.min?.toFixed(2) ?? 0)
         options.maxValue = parseFloat(this.max?.toFixed(2) ?? 100)
         let i = options.minValue
@@ -140,7 +177,7 @@ export default class UIGauge extends UITemplate {
         options.units = this.configTemplate.variable.displayUnit
 
         this.gauge.update(options)
-        this.gauge.value = ConvertValueFromUnitToUnit(this.value, this.valueUnit, this.displayUnit)
+        this.#scheduleRender(ConvertValueFromUnitToUnit(this.value, this.valueUnit, this.displayUnit))
         this.gauge.draw()
     }
 
