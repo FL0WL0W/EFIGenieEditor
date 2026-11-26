@@ -378,7 +378,7 @@ export default class Dashboard extends UITemplate {
             const row = this.loggedVariables.querySelector(`.selected`)
             if(!row) return
             row.refreshRate = this.loggedVariablesRefreshSelection.value
-            communication.variablesToPoll = []
+            this.#syncLoggedVariables(communication.variableMetadata)
             this.dispatchEvent(new Event(`change`, { bubbles: true }))
         })
         this.loggedVariablesUnitSelection.addEventListener(`change`, () => {
@@ -908,14 +908,21 @@ export default class Dashboard extends UITemplate {
         return registry.GetVariableByReference({ name: reference.name, measurement })
     }
 
+    #syncLoggedVariables(metadata) {
+        const variables = [...this.loggedVariables.children]
+            .filter(row => row instanceof UILoggedVariable)
+            .map(row => ({ id: this.ResolveVariable(row.variable, metadata)?.id, refreshRate: row.refreshRate ?? 60 }))
+        communication.setLoggedVariables(variables)
+    }
+
     #updateLoggedValues(values, metadata) {
+        this.#syncLoggedVariables(metadata)
         ;[...this.loggedVariables.children].filter(row => row instanceof UILoggedVariable).forEach(row => {
             const variable = this.ResolveVariable(row.variable, metadata)
             if(!variable) {
                 row.value = undefined
                 return
             }
-            if(communication.variablesToPoll.indexOf(variable.id) === -1) communication.variablesToPoll.push(variable.id)
             if(values?.[variable.id] === undefined) return
             const converted = ConvertValueFromUnitToUnit(values[variable.id], variable.unit, row.unit)
             row.value = converted ?? values[variable.id]
@@ -950,6 +957,7 @@ export default class Dashboard extends UITemplate {
             if(!available) row.value = undefined
         })
         this.#refreshRequiredLoggedVariables()
+        this.#syncLoggedVariables(communication.variableMetadata)
         for(const widget of this.elements.children) widget.querySelector(`.dashboard-widget-content`)?.RefreshAvailability?.()
     }
 

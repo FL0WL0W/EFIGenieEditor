@@ -1,6 +1,7 @@
 import { gzip, ungzip } from "pako"
 import VariableRegistry from "./VariableRegistry.js"
 import ICommunicationService from "./CommunicationService/ICommunicationService.js"
+import { typeLength, parseVariable, subscribeCommand, clearSubscriptionsCommand, SubscriptionDecoder, refreshRateInterval } from "./VariableSubscriptions.js"
 
 function numericArrayBuffer(value, byteLength, setter, endian, bigint = false) {
     const values = Array.isArray(value) ? value : [value]
@@ -19,40 +20,6 @@ function arrayBufferValue(buffer, byteLength, getter, endian, bigint = false) {
         values.push(view[getter](i, endian !== `big`))
     }
     return values
-}
-
-function typeLength(type) {
-    switch(type) {
-        case 0: return 0
-        case 1: return 1
-        case 2: return 2
-        case 3: return 4
-        case 4: return 8
-        case 5: return 1
-        case 6: return 2
-        case 7: return 4
-        case 8: return 8
-        case 9: return 4
-        case 10: return 8
-        case 11: return 1
-    }
-}
-function parseVariable(arrayBuffer, endian = `little`) {
-    let type = arrayBufferValue(arrayBuffer, 1, `getUint8`, endian)[0]
-    switch(type) {
-        case 0: return
-        case 1: return arrayBufferValue(arrayBuffer.slice(1), 1, `getUint8`, endian)[0]
-        case 2: return arrayBufferValue(arrayBuffer.slice(1), 2, `getUint16`, endian)[0]
-        case 3: return arrayBufferValue(arrayBuffer.slice(1), 4, `getUint32`, endian)[0]
-        case 4: return arrayBufferValue(arrayBuffer.slice(1), 8, `getBigUint64`, endian, true)[0]
-        case 5: return arrayBufferValue(arrayBuffer.slice(1), 1, `getInt8`, endian)[0]
-        case 6: return arrayBufferValue(arrayBuffer.slice(1), 2, `getInt16`, endian)[0]
-        case 7: return arrayBufferValue(arrayBuffer.slice(1), 4, `getInt32`, endian)[0]
-        case 8: return arrayBufferValue(arrayBuffer.slice(1), 8, `getBigInt64`, endian, true)[0]
-        case 9: return arrayBufferValue(arrayBuffer.slice(1), 4, `getFloat32`, endian)[0]
-        case 10: return arrayBufferValue(arrayBuffer.slice(1), 8, `getFloat64`, endian)[0]
-        case 11: return arrayBufferValue(arrayBuffer.slice(1), 1, `getUint8`, endian)[0] == 1
-    }
 }
 
 export function getLogTimestamps(records, currentTickId, startedLoggingTime, ticksPerSecond) {
@@ -135,6 +102,21 @@ export class EFIGenieCommunication extends EFIGenieLog {
     #wakeRead
     #commands = Promise.resolve()
     #pollTask
+    #disconnectTask
+    #options = { variableMode: `poll`, auxiliaryServices: [], responsePrefixes: false }
+    #auxiliaries = []
+    #streamState = `command`
+    #decoder
+    #subscriptionReplyPrefix
+    #subscribing = false
+    #activeSubscriptionIds = []
+    #variableRefreshRates = new Map()
+    #activeSubscriptionIntervals = new Map()
+    #latestSubscriptionRecords = new Map()
+    #subscriptionTimeout = 1000
+    #streamError
+    #lastSample = 0
+    #wakeLoop
 
     get communicationService() { return this.#communicationService }
 
@@ -149,9 +131,22 @@ export class EFIGenieCommunication extends EFIGenieLog {
             this.#communicationService.UnRegisterReceiveCallBack(this.#receiveCallbackId)
             await this.#communicationService.Close()
         }
+        this.#options = { variableMode: `poll`, auxiliaryServices: [], responsePrefixes: false }
+        this.#streamState = `command`
+        this.#decoder = undefined
+        this.#streamError = undefined
         this.#received = new Uint8Array()
         this.#communicationService = service
         this.#receiveCallbackId = service.RegisterReceiveCallBack((sender, data) => {
+            if(this.#streamState !== `command`) {
+                try { this.#decoder.receive(data) }
+                catch(error) {
+                    this.#streamError = error
+                    this.#wakeRead?.()
+                    this.#wakeLoop?.()
+                }
+                return data.byteLength
+            }
             const received = new Uint8Array(this.#received.byteLength + data.byteLength)
             received.set(this.#received)
             received.set(data, this.#received.byteLength)
@@ -163,8 +158,11 @@ export class EFIGenieCommunication extends EFIGenieLog {
 
     async #flush() {
         if(!this.#communicationService) throw new Error(`No communication service configured`)
-        await this.#communicationService.Connect()
-        this.#received = new Uint8Array()
+        await this.#exclusive(async () => {
+            await this.#communicationService.Connect()
+            await this.#stopSubscriptions()
+            this.#received = new Uint8Array()
+        })
     }
 
     async #read(numberOfBytes, timeout = 1000) {
@@ -175,6 +173,7 @@ export class EFIGenieCommunication extends EFIGenieLog {
         }
         const deadline = Date.now() + timeout
         while(this.#received.byteLength < numberOfBytes) {
+            if(this.#streamError && this.#streamState !== `command`) throw this.#streamError
             if(!this.#communicationService.Ready())
                 throw this.#communicationService.lastError ?? new Error(`Communication service disconnected`)
             const remaining = deadline - Date.now()
@@ -196,14 +195,187 @@ export class EFIGenieCommunication extends EFIGenieLog {
         return result
     }
 
+    #exclusive(action) {
+        const operation = this.#commands.then(action)
+        this.#commands = operation.catch(() => {})
+        return operation
+    }
+
     #command(data, numberOfReceiveBytes, timeout = 1000) {
-        const command = this.#commands.then(async () => {
+        return this.#exclusive(async () => {
+            await this.#stopSubscriptions()
             await this.#communicationService.Send(data)
+            if(this.#options.responsePrefixes) {
+                const response = new Uint8Array(await this.#read(numberOfReceiveBytes + 1, timeout))
+                const prefix = new Uint8Array(data.buffer ?? data, data.byteOffset ?? 0, data.byteLength)[0]
+                if(response[0] !== prefix) throw new Error(`Unexpected response prefix: ${response[0]}, expected ${prefix}`)
+                return response.slice(1).buffer
+            }
             return this.#read(numberOfReceiveBytes, timeout)
         })
-        // Keep the queue usable after a failed command; the caller gets the error.
-        this.#commands = command.catch(() => {})
-        return command
+    }
+
+    #createSubscriptionDecoder() {
+        return new SubscriptionDecoder(this.endian, (tick, records) => {
+            // Updates already in flight can arrive while clearing or installing
+            // a selection. Only complete frames from the active set become rows.
+            if(this.#streamState !== `streaming` || this.#subscribing) return
+            const ids = this.#activeSubscriptionIds
+            if(!records.size || [...records.keys()].some(id => !ids.includes(id)))
+                throw new Error(`Subscription sample does not match selected variables`)
+            for(const [id, record] of records) this.#latestSubscriptionRecords.set(id, record)
+            const tickId = this.#currentTickId()
+            const tickRecord = new Uint8Array(5)
+            tickRecord[0] = 3 // UINT32, retained in the existing saved-log format.
+            new DataView(tickRecord.buffer).setUint32(1, tick, this.endian !== `big`)
+            const values = { [tickId]: tick }
+            const raw = [...tickRecord]
+            for(const id of ids) {
+                // Slower variables retain their last reading; before their
+                // first update the saved-log record uses the existing VOID type.
+                const record = this.#latestSubscriptionRecords.get(id) ?? new Uint8Array([0])
+                raw.push(...record)
+                if(record[0] !== 0) values[id] = parseVariable(record.buffer, this.endian)
+            }
+            this.#lastSample = Date.now()
+            this.logBytes = this.logBytes.concatArray(new Uint8Array(raw).buffer)
+            this.loggedVariableValues.push(values)
+            this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
+        }, (prefix, status) => {
+            if(this.#subscriptionReplyPrefix === undefined || (prefix !== undefined && prefix !== this.#subscriptionReplyPrefix))
+                throw new Error(`Unexpected subscription acknowledgement`)
+            const received = new Uint8Array(this.#received.length + 1)
+            received.set(this.#received)
+            received[this.#received.length] = status
+            this.#received = received
+            this.#wakeRead?.()
+        })
+    }
+
+    async #subscriptionCommand(data, prefix) {
+        this.#received = new Uint8Array()
+        this.#subscriptionReplyPrefix = prefix
+        try {
+            await this.#communicationService.Send(data)
+            const status = new Uint8Array(await this.#read(1))[0]
+            if(status !== 6) throw new Error(`Subscription command ${String.fromCharCode(prefix)} rejected (NACK ${status})`)
+        } finally { this.#subscriptionReplyPrefix = undefined }
+    }
+
+    async #stopSubscriptions(force = false) {
+        if(this.#options.variableMode !== `subscribe` || (!force && this.#streamState === `command`)) return
+        this.#decoder ??= this.#createSubscriptionDecoder()
+        this.#streamState = `draining`
+        await this.#subscriptionCommand(clearSubscriptionsCommand(this.endian), 101)
+        this.#streamState = `command`
+        this.#decoder = undefined
+    }
+
+    #currentTickId() {
+        return this.variableMetadata.GetVariableId({ name: `CurrentTick`, type: `tick` })
+    }
+
+    #selectedVariableIds() {
+        const tick = this.#currentTickId()
+        const ids = this.#options.variableMode === `subscribe` ? this.variablesToPoll.filter(id => id !== tick) : [tick, ...this.variablesToPoll]
+        return [...new Set(ids.filter(id => id !== undefined && id !== null))]
+    }
+
+    #setLogLayout(ids) {
+        if(ids.length !== this.loggedVariableIds.length || ids.some((id, index) => id !== this.loggedVariableIds[index])) {
+            this.logBytes = new ArrayBuffer()
+            this.loggedVariableValues = []
+            this.loggedVariableIds = ids.slice()
+            this.#latestSubscriptionRecords.clear()
+        }
+    }
+
+    async #syncSubscriptions() {
+        if(!this.connected) return
+        if(this.#streamError) throw this.#streamError
+        if(!this.#communicationService.Ready())
+            throw this.#communicationService.lastError ?? new Error(`Communication service disconnected`)
+        const ids = this.#selectedVariableIds()
+        const logIds = [this.#currentTickId(), ...ids]
+        const intervals = new Map(ids.map(id => [id, refreshRateInterval(this.#variableRefreshRates.get(id))]))
+        const changed = logIds.length !== this.loggedVariableIds.length || logIds.some((id, i) => id !== this.loggedVariableIds[i]) ||
+            ids.some(id => intervals.get(id) !== this.#activeSubscriptionIntervals.get(id))
+        if(this.#streamState === `streaming` && !changed) {
+            if(ids.length && Date.now() - this.#lastSample >= this.#subscriptionTimeout)
+                throw new Error(`Timeout waiting for subscribed variables`)
+            return
+        }
+        await this.#stopSubscriptions()
+        this.#setLogLayout(logIds)
+        if(!ids.length) return
+        if(ids.some(id => !Number.isInteger(id) || id < 0 || id >= 0xffffffff))
+            throw new Error(`Invalid subscription variable ID`)
+        // Include d STX, the tick, and d ETX in the ISO-TP payload budget.
+        if(8 + ids.length * 13 > 4095) throw new Error(`Too many subscribed variables for one ISO-TP sample`)
+        this.#activeSubscriptionIds = ids.slice()
+        this.#activeSubscriptionIntervals = intervals
+        // Even a healthy 0.5 Hz subscription may be quiet for two seconds.
+        this.#subscriptionTimeout = Math.max(1000, Math.min(...intervals.values()) * 2000 + 250)
+        this.#decoder = this.#createSubscriptionDecoder()
+        this.#streamState = `streaming`
+        this.#subscribing = true
+        try {
+            // Waiting for each ACK also prevents overrunning the ECU's bounded
+            // command queue and associates a bare queue-full NACK with its ID.
+            for(const id of ids) {
+                if(!this.connected) return
+                await this.#subscriptionCommand(subscribeCommand(id, intervals.get(id), this.endian), 100)
+            }
+        } finally { this.#subscribing = false }
+        this.#lastSample = Date.now()
+    }
+
+    async #subscriptionLoop() {
+        await this.#exclusive(async () => {
+            await this.#communicationService.Connect()
+            await this.#stopSubscriptions(true)
+        })
+        if(!this.connected) return
+        await this.pollVariableMetadata()
+        if(this.#currentTickId() === undefined) {
+            // Older metadata may omit CurrentTick. Reserve a log-only ID for
+            // the tick carried in each frame; this ID is never subscribed.
+            this.variableMetadata.variableReferences = {
+                ...this.variableMetadata.variableReferences, CurrentTick: { id: 0xffffffff, type: `tick` }
+            }
+        }
+        this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
+        while(this.connected) {
+            await this.#exclusive(() => this.#syncSubscriptions())
+            if(!this.connected) break
+            await new Promise(resolve => {
+                const timer = setTimeout(() => { this.#wakeLoop = undefined; resolve() }, 100)
+                this.#wakeLoop = () => { clearTimeout(timer); this.#wakeLoop = undefined; resolve() }
+            })
+        }
+    }
+
+    async #openAuxiliaries() {
+        for(const auxiliary of this.#options.auxiliaryServices) {
+            const { service, onReceive } = auxiliary
+            const id = service.RegisterReceiveCallBack((sender, data) => {
+                onReceive(data)
+                return data.byteLength
+            })
+            this.#auxiliaries.push({ ...auxiliary, id })
+            await service.Connect()
+        }
+    }
+
+    async #closeAuxiliaries() {
+        const auxiliaries = this.#auxiliaries.splice(0)
+        const results = await Promise.allSettled(auxiliaries.map(async ({ service, id, onClose }) => {
+            service.UnRegisterReceiveCallBack(id)
+            try { await service.Close() }
+            finally { onClose?.() }
+        }))
+        const failed = results.find(result => result.status === `rejected`)
+        if(failed) throw failed.reason
     }
 
     get saveValue() {
@@ -215,6 +387,24 @@ export class EFIGenieCommunication extends EFIGenieLog {
     }
 
     variablesToPoll = []
+
+    /** Apply the Logged Variables GUI's per-row Hz settings (Max = -1). */
+    setLoggedVariables(variables) {
+        const rates = new Map()
+        for(const { id, refreshRate = 60 } of variables) {
+            if(id === undefined || id === null) continue
+            const interval = refreshRateInterval(refreshRate)
+            // Multiple display units can refer to the same ECU variable.
+            // Request the fastest selected rate once, with Max taking priority.
+            if(!rates.has(id) || interval < refreshRateInterval(rates.get(id))) rates.set(id, refreshRate)
+        }
+        const ids = [...rates.keys()]
+        const changed = ids.length !== this.variablesToPoll.length || ids.some((id, i) => id !== this.variablesToPoll[i]) ||
+            ids.some(id => rates.get(id) !== this.#variableRefreshRates.get(id))
+        this.variablesToPoll = ids
+        this.#variableRefreshRates = rates
+        if(changed) this.#wakeLoop?.()
+    }
 
     get #changeDetail() {
         return {
@@ -265,32 +455,12 @@ export class EFIGenieCommunication extends EFIGenieLog {
 
         await this.#flush();
 
-        let variableIds = []
-        const currentTickId = this.variableMetadata.GetVariableId({name: `CurrentTick`, type: `tick`})
-        if(currentTickId)
-            variableIds.push(currentTickId)
-        for (let variablesToPollIndex in this.variablesToPoll) {
-            const variableId = this.variablesToPoll[variablesToPollIndex]
-            if(variableId != undefined && variableIds.indexOf(variableId) === -1)
-                variableIds.push(variableId)
-        }
-        if(variableIds.length < 1)
+        const variableIds = this.#selectedVariableIds()
+        if(variableIds.length < 1) {
+            await new Promise(resolve => setTimeout(resolve, 100))
             return
-
-        if(variableIds.length != this.loggedVariableIds?.length) {
-            this.logBytes = new ArrayBuffer()
-            this.loggedVariableValues = []
-            this.loggedVariableIds = variableIds
-        } else {
-            for(var i = 0; i < variableIds.length; i++){
-                if(variableIds[i] !== this.loggedVariableIds[i]){
-                    this.logBytes = new ArrayBuffer()
-                    this.loggedVariableValues = []
-                    this.loggedVariableIds = variableIds
-                    break
-                }
-            }
         }
+        this.#setLogLayout(variableIds)
 
         let data = new ArrayBuffer()
         for(let i = 0; i < variableIds.length; i++) {
@@ -301,6 +471,8 @@ export class EFIGenieCommunication extends EFIGenieLog {
         let bytes = new ArrayBuffer()
         let variableValues = {}
         for(let i = 0; i < variableIds.length; i++) {
+            if(this.#options.responsePrefixes && new Uint8Array(await this.#read(1))[0] !== 103)
+                throw new Error(`Unexpected variable response prefix`)
             let value = await this.#read(1)
             if(value.byteLength !== 1) throw "Incorrect number of bytes returned when polling variables"
             const tLen = typeLength(arrayBufferValue(value, 1, `getUint8`, this.endian)[0])
@@ -353,7 +525,8 @@ export class EFIGenieCommunication extends EFIGenieLog {
     }
 
     async burnBin(bin, service = this.#communicationService) {
-        let reconnect = this.connected
+        const reconnect = this.connected
+        const reconnectOptions = service === this.#communicationService ? this.#options : {}
         await this.disconnect()
         await this.setCommunicationService(service)
 
@@ -366,7 +539,7 @@ export class EFIGenieCommunication extends EFIGenieLog {
         this.variableMetadataValid = false
 
         if(reconnect)
-            this.connect()
+            await this.connect(this.#communicationService, reconnectOptions)
     }
 
     async #pollVariablesWithRetry() {
@@ -384,10 +557,20 @@ export class EFIGenieCommunication extends EFIGenieLog {
         }
     }
 
-    /** Start polling with the supplied ICommunicationService, or resume the current one. */
-    async connect(service = this.#communicationService) {
+    /** Connect with polling by default; E78 opts into subscriptions and auxiliary ISO-TP services. */
+    async connect(service = this.#communicationService, options = {}) {
+        const { variableMode = `poll`, auxiliaryServices = [], responsePrefixes = variableMode === `subscribe` } = options
+        if(![`poll`, `subscribe`].includes(variableMode)) throw new RangeError(`Invalid variable mode`)
+        if(auxiliaryServices.some(({ service, onReceive }) => !(service instanceof ICommunicationService) || typeof onReceive !== `function`))
+            throw new TypeError(`Invalid auxiliary communication service`)
+        await this.#disconnectTask
+        if(this.polling && !this.connected) await this.#pollTask
         await this.setCommunicationService(service)
         if(this.polling) return
+        this.#options = { variableMode, auxiliaryServices, responsePrefixes }
+        this.#streamError = undefined
+        this.#streamState = `command`
+        this.#latestSubscriptionRecords.clear()
         this.variableMetadata.Clear()
         this.variableMetadataValid = false
         this.logBytes = new ArrayBuffer()
@@ -401,9 +584,11 @@ export class EFIGenieCommunication extends EFIGenieLog {
 
     async #pollLoop() {
         try {
-            while(this.connected)
-                await this.#pollVariablesWithRetry()
+            await this.#openAuxiliaries()
+            if(this.#options.variableMode === `subscribe`) await this.#subscriptionLoop()
+            else while(this.connected) await this.#pollVariablesWithRetry()
         } catch(error) {
+            if(!this.connected) return
             console.log(error)
             this.variableMetadata.Clear()
             this.variableMetadataValid = false
@@ -411,13 +596,34 @@ export class EFIGenieCommunication extends EFIGenieLog {
             this.connectionError = true
             this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
         } finally {
+            try {
+                if(this.#communicationService.Ready()) await this.#exclusive(() => this.#stopSubscriptions())
+            } catch(error) { console.warn(`Could not clear EFIGenie subscriptions`, error) }
+            this.#streamState = `command`
+            this.#decoder = undefined
+            try { await this.#closeAuxiliaries() }
+            catch(error) { console.warn(`Could not close auxiliary services`, error) }
+            try { await this.#communicationService.Close() }
+            catch(error) { console.warn(`Could not close communication service`, error) }
             this.polling = false
         }
     }
 
     async disconnect() {
+        if(this.#disconnectTask) return this.#disconnectTask
+        const task = this.#disconnect()
+        this.#disconnectTask = task
+        try { await task }
+        finally { this.#disconnectTask = undefined }
+    }
+
+    async #disconnect() {
         this.connected = false
+        this.#wakeLoop?.()
         await this.#pollTask
+        await this.#commands
+        await this.#communicationService?.Close()
+        this.#received = new Uint8Array()
         this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
     }
 }

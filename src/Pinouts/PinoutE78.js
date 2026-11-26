@@ -1,3 +1,4 @@
+import ConsoleReceiver from "../CommunicationService/ConsoleReceiver.js"
 import CommunicationService_Serial from "../CommunicationService/CommunicationService_Serial.js"
 import CANService_SLCAN from "../CANService/CANService_SLCAN.js"
 import overlayURL from './E78.svg';
@@ -213,6 +214,12 @@ Pinouts.E78 = {
         const service = this.slCANService.GetISOTPService(0x609, 0x601)
 
         communication.endian = `big`
-        return communication.connect(service)
+        const printfService = this.slCANService.GetISOTPService(0x608, 0x600)
+        const printf = new ConsoleReceiver()
+        return communication.connect(service, {
+            variableMode: `subscribe`,
+            responsePrefixes: true,
+            auxiliaryServices: [{ service: printfService, onReceive: data => printf.receive(data), onClose: () => printf.close() }]
+        })
     }
 };
