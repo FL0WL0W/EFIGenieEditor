@@ -1,9 +1,10 @@
+import CommunicationService_WebSocket from "../CommunicationService/CommunicationService_WebSocket.js"
 import overlayURL from './E78.svg';
 import Pinouts from './Pinouts';
 import TopEngine from '../Top/TopEngine';
 import buildConfig from '../buildConfig';
 import { downloadBin } from '../download';
-import { communication, Socket } from '../communication';
+import { communication } from '../communication';
 
 // E78DigitalService uses connector * 100 + cavity (X2-5 is 205). Keep this
 // list in connector numbering, not MPC5566 SIU pad numbering. The available
@@ -203,10 +204,10 @@ Pinouts.E78 = {
         downloadBin(bin, 'E78-Config.bin');
     },
     Connect: function() {
-        // Pausing stops polling but keeps the transport open. Reuse it on resume.
-        if(!(communication._serial instanceof Socket))
-            communication._serial = new Socket("EFIGenieCommunication")
+        const service = communication.communicationService instanceof CommunicationService_WebSocket
+            ? communication.communicationService
+            : new CommunicationService_WebSocket("/EFIGenieCommunication")
         communication.endian = `big`
-        communication.connect()
+        return communication.connect(service)
     }
 };

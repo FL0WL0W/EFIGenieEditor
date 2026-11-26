@@ -1,4 +1,5 @@
-import { communication, Serial } from '../communication';
+import CommunicationService_Serial from "../CommunicationService/CommunicationService_Serial.js"
+import { communication } from '../communication';
 import { BurnW806 } from './BurnW806';
 import overlayURL from './Purple_Pill_W806.svg';
 import Pinouts from "./Pinouts"
@@ -70,13 +71,15 @@ Pinouts.Purple_Pill_W806 = {
     Type: "TopEngine",
     Top: TopEngine,
     Burn: async function(cfg) {
-        await BurnW806(cfg, this.Type, processorDefinition);
+        await BurnW806(cfg, this.Type, this.ProcessorDefinition);
     },
     Connect: function() {
-        communication._serial = new Serial({ baudRate: 1000000 }, [ 
-                { usbVendorId: 0x1a86, usbProductId: 0x15023 } 
+        const service = communication.communicationService instanceof CommunicationService_Serial
+            ? communication.communicationService
+            : new CommunicationService_Serial({ baudRate: 1000000 }, [
+                { usbVendorId: 0x1a86, usbProductId: 0x7523 }
             ])
         communication.endian = `little`
-        communication.connect()
+        return communication.connect(service)
     }
 }

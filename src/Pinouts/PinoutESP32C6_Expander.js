@@ -1,4 +1,5 @@
-import { communication, Socket } from '../communication';
+import CommunicationService_WebSocket from "../CommunicationService/CommunicationService_WebSocket.js"
+import { communication } from '../communication';
 import TopExpander from '../Top/TopExpander';
 import { BurnESP32 } from './BurnESP32';
 import overlayURL from './ESP32C6_Expander.svg';
@@ -43,10 +44,10 @@ Pinouts.ESP32C6_Expander = {
         await BurnESP32(cfg, this.Type, this.ProcessorDefinition);
     },
     Connect: function() {
-        // Pausing stops polling but keeps the transport open. Reuse it on resume.
-        if(!(communication._serial instanceof Socket))
-            communication._serial = new Socket("EFIGenieCommunication")
+        const service = communication.communicationService instanceof CommunicationService_WebSocket
+            ? communication.communicationService
+            : new CommunicationService_WebSocket("/EFIGenieCommunication")
         communication.endian = `little`
-        communication.connect()
+        return communication.connect(service)
     }
 }

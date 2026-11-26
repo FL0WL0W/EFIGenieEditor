@@ -1,5 +1,6 @@
 import { gzip, ungzip } from "pako"
-import VariableRegistry from "./VariableRegistry"
+import VariableRegistry from "./VariableRegistry.js"
+import ICommunicationService from "./CommunicationService/ICommunicationService.js"
 
 function numericArrayBuffer(value, byteLength, setter, endian, bigint = false) {
     const values = Array.isArray(value) ? value : [value]
@@ -18,257 +19,6 @@ function arrayBufferValue(buffer, byteLength, getter, endian, bigint = false) {
         values.push(view[getter](i, endian !== `big`))
     }
     return values
-}
-
-async function waitForFunctionToReturnFalse(f, timeout = 1000) {
-    let trys = 0
-    while(f() && trys++ < Math.max(1, timeout / Math.max(timeout / 10, 10)))
-        await new Promise(r => setTimeout(r, Math.max(timeout / 10, 10)))
-    if(f())
-        return false
-    return true
-}
-
-export class Serial {
-    #options
-    #filters
-    #serialPort
-    #cummulativeValue = new ArrayBuffer()
-    #commandLock
-
-    async #readWithTimeout(stream, timeout) {
-        if(!await waitForFunctionToReturnFalse(function() { return stream.locked }))
-            return { value: undefined, done: false }
-        
-        const readStream = new TransformStream()
-        stream.pipeThrough(readStream, { preventClose: true, preventCancel: true })
-
-        const reader = readStream.readable.getReader();
-        let cancelResult
-        let start = Date.now()
-        const timer = setTimeout(() => {
-            cancelResult = { value: undefined, done: false }
-            reader.cancel()
-        }, timeout)
-        const result = await reader.read()
-        clearTimeout(timer)
-        reader.cancel()
-        return cancelResult ?? result
-    }
-    
-    get options() { return this.#options }
-    set options(options) { 
-        this.#options = options
-        this.#serialPort = undefined
-    }
-    get filters() { return this.#filters }
-    set filters(filters) { 
-        this.#filters = filters
-        this.#serialPort = undefined
-    }
-    constructor(options, filters) {
-        this.options = options ?? { baudRate: 115200 }
-        this.filters = filters
-    }
-
-    async #connect() {
-        if(!("serial" in navigator))
-            throw `WebSerial not supported. please open in a supported browser`
-
-        if(this.#serialPort === undefined) {
-            let ports = await navigator.serial.getPorts({ filter: this.filters })
-            if(ports.length !== 1)
-                this.#serialPort = await navigator.serial.requestPort({ filter: this.filters })
-            else
-                this.#serialPort = ports[0]
-        }
-
-        if(this.#serialPort.readable && this.#serialPort.writable)
-            return
-
-        await this.#serialPort.open(this.options)
-    }
-
-    async flush() {
-        this.#cummulativeValue = new ArrayBuffer()
-        await this.#connect()
-
-        while(true) {
-            const { value, done } = await this.#readWithTimeout(this.#serialPort.readable, 10)
-            if (done)
-                throw "Serial closed"
-            if(!value || (value?.byteLength ?? 0) <= 0) {
-                break;
-            }
-        }
-    }
-
-    async read(numberOfBytes, timeout = 1000) {
-        await this.#connect()
-
-        let trys = 0
-        while(numberOfBytes == undefined || this.#cummulativeValue.byteLength < numberOfBytes) {
-            const { value, done } = await this.#readWithTimeout(this.#serialPort.readable, timeout / 10)
-            if (done)
-                throw "Serial closed"
-            if (!value && trys++ > 10)
-                break
-            if(value) {
-                trys = 0
-                this.#cummulativeValue = this.#cummulativeValue.concatArray(value)
-            }
-            if(numberOfBytes == undefined)
-                break
-        }
-        let retBytes = numberOfBytes == undefined? this.#cummulativeValue : this.#cummulativeValue.slice(0, numberOfBytes)
-        this.#cummulativeValue = numberOfBytes == undefined? new ArrayBuffer() : this.#cummulativeValue.slice(numberOfBytes)
-        return retBytes
-    }
-    async write(sendBytes) {
-        await this.#connect()
-
-        const writable = this.#serialPort.writable
-        if(!await waitForFunctionToReturnFalse(function() { return writable.locked }))
-            return
-
-        const writer = writable.getWriter()
-        await writer.write(sendBytes)
-        writer.releaseLock()
-    }
-    async command(sendBytes, numberOfReceiveBytes, timeout = 1000) {
-        const thisClass = this
-        if(!await waitForFunctionToReturnFalse(function() { return thisClass.#commandLock }))
-            throw `Serial locked`
-        this.#commandLock = true
-        let retBytes
-        try {
-            await this.write(sendBytes)
-            retBytes = this.read(numberOfReceiveBytes, timeout)
-        } catch(e) {
-            throw e
-        } finally {
-            this.#commandLock = false
-        }
-        return retBytes ?? new ArrayBuffer()
-    }
-}
-
-export class Socket {
-    #commandLock = false
-    #webSocket
-    #uri
-
-    constructor(uri) {
-        this.#uri = uri
-    }
-
-    async #connect() {
-        if(this.#webSocket != undefined && this.#webSocket.readyState === WebSocket.OPEN)
-            return
-
-        this.#webSocket = new WebSocket(`ws://${window.location.host}/${this.#uri}`)
-
-        // Buffer for incoming messages
-        this.incomingMessages = []
-        this.#webSocket.onmessage = event => {
-            if (event.data instanceof Blob) {
-                // Handle binary data as needed
-                event.data.arrayBuffer().then(buffer => this.incomingMessages.push(buffer))
-            } else {
-                this.incomingMessages.push(event.data)
-            }
-        };
-
-        return new Promise((resolve, reject) => {
-            const timer = setTimeout(() => {
-                reject(new Error("WebSocket connection timed out"));
-            }, 1000);
-
-            this.#webSocket.onopen = () => {
-                clearTimeout(timer);
-                resolve();
-            };
-
-            this.#webSocket.onerror = (error) => {
-                clearTimeout(timer);
-                reject(error);
-            };
-        });
-    }
-
-    async flush() {
-        this.incomingMessages = []
-        await this.#connect()
-    }
-
-    async read(numberOfBytes, timeout = 1000) {
-        await this.#connect()
-
-        if(numberOfBytes === 0)
-            return []
-
-        const startTime = Date.now()
-        while (this.incomingMessages.length === 0) {
-            if (Date.now() - startTime > timeout) {
-                throw new Error("Timeout waiting for data.");
-            }
-            await new Promise(r => setTimeout(r, 10))
-        }
-
-        // Extract the first available message
-        const data = this.incomingMessages.shift()
-
-        // Handle partial reads
-        if (data instanceof ArrayBuffer && data.byteLength > numberOfBytes) {
-            const result = data.slice(0, numberOfBytes)
-            const remaining = data.slice(numberOfBytes)
-            this.incomingMessages.unshift(remaining) // Put the remainder back into the queue
-            return result
-        }
-
-        return data
-    }
-
-    async write(sendBytes, timeout = 1000) {
-        await this.#connect()
-
-        if (this.#webSocket.readyState !== WebSocket.OPEN) {
-            throw new Error("WebSocket is not open.")
-        }
-
-        // Wrap the send operation in a promise to handle timeouts
-        const promise = new Promise((resolve, reject) => {
-            this.#webSocket.send(sendBytes);
-            resolve();
-        })
-
-        // Enforce timeout
-        return Promise.race([
-            promise,
-            new Promise((_, reject) => setTimeout(() => reject(new Error("Write timeout")), timeout))
-        ])
-    }
-    
-    async command(sendBytes, numberOfReceiveBytes, timeout = 1000) {
-        const thisClass = this
-        if(!await waitForFunctionToReturnFalse(function() { return thisClass.#commandLock }))
-            throw `Socket locked`
-        this.#commandLock = true
-        let retBytes
-        try {
-            await this.write(sendBytes, timeout)
-            retBytes = this.read(numberOfReceiveBytes, timeout)
-        } catch(e) {
-            throw e
-        } finally {
-            this.#commandLock = false
-        }
-        return retBytes ?? new ArrayBuffer()
-    }
-
-    close() {
-        this.#webSocket.close()
-    }
 }
 
 function typeLength(type) {
@@ -378,7 +128,79 @@ class EFIGenieLog extends EventTarget {
     }
 }
 
-class EFIGenieCommunication extends EFIGenieLog {
+export class EFIGenieCommunication extends EFIGenieLog {
+    #communicationService
+    #receiveCallbackId
+    #received = new Uint8Array()
+    #wakeRead
+    #commands = Promise.resolve()
+    #pollTask
+
+    get communicationService() { return this.#communicationService }
+
+    /** Replace the injected ICommunicationService after stopping the old session. */
+    async setCommunicationService(service) {
+        if(!(service instanceof ICommunicationService))
+            throw new TypeError(`Expected an ICommunicationService`)
+        if(service === this.#communicationService) return
+        if(this.connected || this.polling) await this.disconnect()
+        await this.#commands
+        if(this.#communicationService) {
+            this.#communicationService.UnRegisterReceiveCallBack(this.#receiveCallbackId)
+            await this.#communicationService.Close()
+        }
+        this.#received = new Uint8Array()
+        this.#communicationService = service
+        this.#receiveCallbackId = service.RegisterReceiveCallBack((sender, data) => {
+            const received = new Uint8Array(this.#received.byteLength + data.byteLength)
+            received.set(this.#received)
+            received.set(data, this.#received.byteLength)
+            this.#received = received
+            this.#wakeRead?.()
+            return data.byteLength
+        })
+    }
+
+    async #flush() {
+        if(!this.#communicationService) throw new Error(`No communication service configured`)
+        await this.#communicationService.Connect()
+        this.#received = new Uint8Array()
+    }
+
+    async #read(numberOfBytes, timeout = 1000) {
+        const deadline = Date.now() + timeout
+        while(this.#received.byteLength < numberOfBytes) {
+            if(!this.#communicationService.Ready())
+                throw this.#communicationService.lastError ?? new Error(`Communication service disconnected`)
+            const remaining = deadline - Date.now()
+            if(remaining <= 0) throw new Error(`Timeout waiting for data`)
+            await new Promise((resolve, reject) => {
+                const timer = setTimeout(() => {
+                    this.#wakeRead = undefined
+                    reject(new Error(`Timeout waiting for data`))
+                }, remaining)
+                this.#wakeRead = () => {
+                    clearTimeout(timer)
+                    this.#wakeRead = undefined
+                    resolve()
+                }
+            })
+        }
+        const result = this.#received.slice(0, numberOfBytes).buffer
+        this.#received = this.#received.slice(numberOfBytes)
+        return result
+    }
+
+    #command(data, numberOfReceiveBytes, timeout = 1000) {
+        const command = this.#commands.then(async () => {
+            await this.#communicationService.Send(data)
+            return this.#read(numberOfReceiveBytes, timeout)
+        })
+        // Keep the queue usable after a failed command; the caller gets the error.
+        this.#commands = command.catch(() => {})
+        return command
+    }
+
     get saveValue() {
         return super.saveValue
     }
@@ -405,13 +227,13 @@ class EFIGenieCommunication extends EFIGenieLog {
         if(this.variableMetadataValid === true)
             return
 
-        await this._serial.flush();
+        await this.#flush();
 
         let metadataData = new ArrayBuffer()
         let length = 1
         for(let i = 0; i < Math.ceil(length); i++) {
             const data = numericArrayBuffer(109, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(i, 4, `setUint32`, this.endian)) // get metadata
-            let retData = await this._serial.command(data, 64)
+            let retData = await this.#command(data, 64)
             if(retData.byteLength !== 64) throw `Incorrect number of bytes returned when requesting metadata`
             
             if(i === 0) {
@@ -436,7 +258,7 @@ class EFIGenieCommunication extends EFIGenieLog {
     async pollVariables() {
         await this.pollVariableMetadata()
 
-        await this._serial.flush();
+        await this.#flush();
 
         let variableIds = []
         const currentTickId = this.variableMetadata.GetVariableId({name: `CurrentTick`, type: `tick`})
@@ -470,15 +292,15 @@ class EFIGenieCommunication extends EFIGenieLog {
             data = data.concatArray(numericArrayBuffer(103, 1, `setUint8`, this.endian).concatArray(numericArrayBuffer(variableIds[i], 4, `setUint32`, this.endian)))
         }
 
-        await this._serial.write(data)
+        await this.#communicationService.Send(data)
         let bytes = new ArrayBuffer()
         let variableValues = {}
         for(let i = 0; i < variableIds.length; i++) {
-            let value = await this._serial.read(1)
+            let value = await this.#read(1)
             if(value.byteLength !== 1) throw "Incorrect number of bytes returned when polling variables"
             const tLen = typeLength(arrayBufferValue(value, 1, `getUint8`, this.endian)[0])
             if(tLen > 0) {
-                value = value.concatArray(await this._serial.read(tLen))
+                value = value.concatArray(await this.#read(tLen))
                 if(value.byteLength !== tLen + 1) throw "Incorrect number of bytes returned when polling variables"
                 variableValues[variableIds[i]] = parseVariable(value, this.endian)
             }
@@ -492,19 +314,19 @@ class EFIGenieCommunication extends EFIGenieLog {
     }
 
     async #sendCommandAndWaitForAck(data, commandName) {
-        const retData = await this._serial.command(data, 1)
+        const retData = await this.#command(data, 1)
         if(retData.byteLength !== 1)  throw `Incorrect number of bytes returned when ${commandName}`
         const ack = arrayBufferValue(retData, 1, `getUint8`, this.endian)[0]
         if(ack !== 6) throw `Ack not returned when ${commandName}, ${ack}`
     }
 
     async stopExecution() {
-        await this._serial.flush();
+        await this.#flush();
         await this.#sendCommandAndWaitForAck(numericArrayBuffer(113, 1, `setUint8`, this.endian), `stopping execution`)
     }
 
     async startExecution() {
-        await this._serial.flush();
+        await this.#flush();
         await this.#sendCommandAndWaitForAck(numericArrayBuffer(115, 1, `setUint8`, this.endian), `starting execution`)
     }
 
@@ -520,14 +342,15 @@ class EFIGenieCommunication extends EFIGenieLog {
     }
 
     async getConfigAddress() {
-        const retData = await this._serial.command(numericArrayBuffer(99, 1, `setUint8`, this.endian), 4)
+        const retData = await this.#command(numericArrayBuffer(99, 1, `setUint8`, this.endian), 4)
         if(retData.byteLength !== 4) throw "Incorrect number of bytes returned when requesting config address"
         return arrayBufferValue(retData, 4, `getUint32`, this.endian)[0]
     }
 
-    async burnBin(bin) {
+    async burnBin(bin, service = this.#communicationService) {
         let reconnect = this.connected
         await this.disconnect()
+        await this.setCommunicationService(service)
 
         await this.stopExecution()
         const configAddress = await this.getConfigAddress()
@@ -556,39 +379,41 @@ class EFIGenieCommunication extends EFIGenieLog {
         }
     }
 
-    connect() {
-        if(this.polling)
-            return
+    /** Start polling with the supplied ICommunicationService, or resume the current one. */
+    async connect(service = this.#communicationService) {
+        await this.setCommunicationService(service)
+        if(this.polling) return
+        this.variableMetadata.Clear()
+        this.variableMetadataValid = false
+        this.logBytes = new ArrayBuffer()
+        this.loggedVariableValues = []
+        this.startedLoggingTime = Date.now()
+        this.connected = true
+        this.connectionError = false
         this.polling = true
-        if(!this.connected) {
+        this.#pollTask = this.#pollLoop()
+    }
+
+    async #pollLoop() {
+        try {
+            while(this.connected)
+                await this.#pollVariablesWithRetry()
+        } catch(error) {
+            console.log(error)
             this.variableMetadata.Clear()
             this.variableMetadataValid = false
-            this.logBytes = new ArrayBuffer()
-            this.loggedVariableValues = []
-            this.startedLoggingTime = Date.now()
+            this.connected = false
+            this.connectionError = true
+            this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
+        } finally {
+            this.polling = false
         }
-        this.connected = true
-        this.connectionError = false;
-        const thisClass = this
-        this.#pollVariablesWithRetry().then(function() {
-            thisClass.polling = false
-            if(thisClass.connected)
-                thisClass.connect()
-        }).catch(function(e) {
-            console.log(e)
-            thisClass.variableMetadata.Clear()
-            thisClass.variableMetadataValid = false
-            thisClass.polling = false
-            thisClass.connected = false
-            thisClass.connectionError = true;
-            thisClass.dispatchEvent(new CustomEvent(`change`, { detail: thisClass.#changeDetail }))
-        })
     }
+
     async disconnect() {
         this.connected = false
-        const thisClass = this
-        await waitForFunctionToReturnFalse(function() { return thisClass.polling || thisClass.connected })
-        thisClass.dispatchEvent(new CustomEvent(`change`, { detail: thisClass.#changeDetail }))
+        await this.#pollTask
+        this.dispatchEvent(new CustomEvent(`change`, { detail: this.#changeDetail }))
     }
 }
 
